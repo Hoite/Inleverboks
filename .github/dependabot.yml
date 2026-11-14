@@ -28,6 +28,11 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    ignore:
+      # Only patch releases of Python (3.15.x); a new minor version (and its alphas and
+      # betas) is a deliberate upgrade, together with pyproject.toml and CI.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
       prefix: "chore(docker)"
 
