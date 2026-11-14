@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+
+# Local config and data
+.env
+/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Kubernetes secrets
+deploy/k8s/overlays/*/secret.env
+
+# Playwright
+test-results/
+playwright-report/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+.claude/settings.local.json
