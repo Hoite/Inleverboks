@@ -132,5 +132,17 @@ async def test_invalid_keys(storage: StorageBackend, key: str) -> None:
         await storage.exists(key)
 
 
+async def test_modified(storage: StorageBackend) -> None:
+    from datetime import UTC, datetime, timedelta  # noqa: PLC0415
+
+    before = datetime.now(UTC) - timedelta(minutes=5)
+    await storage.put("tmp/m", _chunks(b"x"))
+    modified = await storage.modified("tmp/m")
+    assert modified.tzinfo is not None
+    assert before <= modified <= datetime.now(UTC) + timedelta(minutes=5)
+    with pytest.raises(ObjectNotFoundError):
+        await storage.modified("tmp/none")
+
+
 async def test_healthcheck(storage: StorageBackend) -> None:
     await storage.healthcheck()

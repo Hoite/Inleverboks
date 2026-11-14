@@ -6,6 +6,7 @@ import os
 import re
 import uuid
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 from anyio import to_thread
@@ -90,6 +91,14 @@ class LocalStorage:
             return (await to_thread.run_sync(path.stat)).st_size
         except FileNotFoundError as exc:
             raise ObjectNotFoundError(key) from exc
+
+    async def modified(self, key: str) -> datetime:
+        path = self._path(key)
+        try:
+            stat = await to_thread.run_sync(path.stat)
+        except FileNotFoundError as exc:
+            raise ObjectNotFoundError(key) from exc
+        return datetime.fromtimestamp(stat.st_mtime, UTC)
 
     async def list_keys(self, prefix: str) -> AsyncIterator[str]:
         base = self._path(prefix) if prefix else self.root

@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import re
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -175,6 +176,12 @@ class S3Storage:
         _check_key(key)
         result = await self._call("head_object", Bucket=self.bucket, Key=key)
         return int(result["ContentLength"])
+
+    async def modified(self, key: str) -> datetime:
+        _check_key(key)
+        result = await self._call("head_object", Bucket=self.bucket, Key=key)
+        value: datetime = result["LastModified"]
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
 
     async def list_keys(self, prefix: str) -> AsyncIterator[str]:
         if prefix:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 
@@ -41,6 +42,10 @@ class StorageBackend(Protocol):
     async def exists(self, key: str) -> bool: ...
 
     async def size(self, key: str) -> int: ...
+
+    async def modified(self, key: str) -> datetime:
+        """Last modification time (aware UTC). Raises ObjectNotFoundError."""
+        ...
 
     def list_keys(self, prefix: str) -> AsyncIterator[str]: ...
 
