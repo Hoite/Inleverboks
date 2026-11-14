@@ -15,7 +15,7 @@ CSP = "; ".join(
         "img-src 'self' data: blob:",
         "font-src 'self'",
         "connect-src 'self'",
-        "worker-src 'self' blob:",
+        "worker-src 'none'",
         "frame-src 'self'",
         "object-src 'none'",
         "base-uri 'none'",
@@ -147,7 +147,13 @@ async def _plain_response(send: Send, status: int, body: bytes) -> None:
 
 
 class CachedStaticFiles(StaticFiles):
-    """Static files with long caching when requested with a content hash (``?v=``)."""
+    """Static files with long caching when requested with a content hash (``?v=``).
+
+    The preview frame (``preview/``) runs in a sandboxed iframe with an opaque origin. It
+    gets its own CSP (inline styles allowed there only, for docx-preview and SheetJS), and
+    the libraries it loads get ``Access-Control-Allow-Origin: *`` because module imports
+    and fetches from an opaque origin are cross-origin. These are public files.
+    """
 
     async def get_response(self, path: str, scope: Scope) -> Response:
         response = await super().get_response(path, scope)
@@ -155,4 +161,39 @@ class CachedStaticFiles(StaticFiles):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         else:
             response.headers.setdefault("Cache-Control", "no-cache")
+        if path.startswith(("preview/", "vendor/")):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        if path == "preview/frame.html":
+            origin = _origin(scope)
+            response.headers["Content-Security-Policy"] = PREVIEW_CSP.format(origin=origin)
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
         return response
+
+
+PREVIEW_CSP = "; ".join(
+    [
+        "default-src 'none'",
+        "script-src 'self' {origin}",
+        "style-src 'self' {origin} 'unsafe-inline'",
+        "img-src blob: data:",
+        "font-src blob: data:",
+        "connect-src 'self' {origin}",
+        "worker-src 'none'",
+        "base-uri 'none'",
+        "form-action 'none'",
+        "frame-ancestors 'self'",
+    ]
+)
+
+
+def _origin(scope: Scope) -> str:
+    scheme = scope.get("scheme", "http")
+    host = ""
+    for name, value in scope.get("headers", []):
+        if name == b"host":
+            host = value.decode("latin-1")
+            break
+    if not host or any(ch in host for ch in " ;,'\"\n"):
+        return ""
+    return f"{scheme}://{host}"

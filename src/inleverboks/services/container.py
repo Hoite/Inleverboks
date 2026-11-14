@@ -17,6 +17,8 @@ from inleverboks.services.audit import AuditService
 from inleverboks.services.auth import AuthService
 from inleverboks.services.classlists import ClassListService
 from inleverboks.services.exams import ExamService
+from inleverboks.services.student_flow import StudentFlowService
+from inleverboks.services.submissions import SubmissionService
 from inleverboks.services.system_settings import SettingsService
 from inleverboks.services.totp import TotpService
 from inleverboks.services.users import UserService
@@ -37,6 +39,8 @@ class Services:
     users: UserService
     exams: ExamService
     classlists: ClassListService
+    flow: StudentFlowService
+    submissions: SubmissionService
     mailer: Mailer = field(default_factory=NullMailer)
     scanner: FileScanner = field(default_factory=NoopScanner)
     # Rate-limit delays; tests replace this with a no-op.
@@ -66,6 +70,8 @@ def build_services(
         totp=totp,
     )
     users = UserService(clock=clock, audit=audit, auth=auth, whitelist=whitelist, totp=totp)
+    exams = ExamService(clock=clock, audit=audit, settings=settings, env=env)
+    flow = StudentFlowService(clock=clock, audit=audit, exams=exams, settings=settings)
     return Services(
         env=env,
         clock=clock,
@@ -77,6 +83,14 @@ def build_services(
         totp=totp,
         auth=auth,
         users=users,
-        exams=ExamService(clock=clock, audit=audit, settings=settings, env=env),
+        exams=exams,
         classlists=ClassListService(clock, audit),
+        flow=flow,
+        submissions=SubmissionService(
+            clock=clock,
+            audit=audit,
+            settings=settings,
+            flow=flow,
+            secret_key=env.secret_key.get_secret_value(),
+        ),
     )

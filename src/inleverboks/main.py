@@ -24,6 +24,7 @@ from inleverboks.i18n import gettext as _
 from inleverboks.log import configure_logging
 from inleverboks.services.container import Services, build_services
 from inleverboks.services.errors import NotFoundError, PermissionDeniedError
+from inleverboks.services.student_flow import StateCodec
 from inleverboks.web.csrf import CsrfCookieMiddleware, verify_csrf
 from inleverboks.web.deps import ForbiddenError, RedirectError
 from inleverboks.web.middleware import (
@@ -31,6 +32,7 @@ from inleverboks.web.middleware import (
     CachedStaticFiles,
     SecurityHeadersMiddleware,
 )
+from inleverboks.web.pdf import PdfRenderer
 from inleverboks.web.routes import admin, auth, classlists, exams, health, public, student
 from inleverboks.web.templating import build_templates, render
 
@@ -81,6 +83,8 @@ def create_app(
     app.state.storage = storage
     app.state.services = build_services(settings, storage, clock=clock, limiter=limiter)
     app.state.templates = build_templates(settings)
+    app.state.student_codec = StateCodec(settings.secret_key.get_secret_value())
+    app.state.pdf = PdfRenderer(app.state.templates.env)
 
     app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
     # The student page at /{slug} is a catch-all and must come last.
