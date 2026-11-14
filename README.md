@@ -79,6 +79,14 @@ verificatiecode. Ingeleverde bestanden zijn voor studenten nooit meer in te zien
 **HTTPS is nodig.** De browser berekent de SHA-256 met de Web Crypto API, en die werkt alleen in
 een beveiligde context (HTTPS, of `localhost` tijdens het ontwikkelen).
 
+## Docenten
+
+Op de examenpagina zien docenten live wie heeft ingeleverd, met signalen zoals "leeg sjabloon"
+of "identiek aan een andere student". Ze kunnen een inlevering ongedaan maken of ongeldig
+verklaren (met een reden), alles downloaden als zip (met `manifest.csv` en een
+integriteitscontrole), het overzicht als CSV exporteren, een proces-verbaal (PDF) maken en een
+ontvangstbewijs van een student controleren. Elke download en export komt in het auditlog.
+
 ## Auditlog
 
 Alles wat ertoe doet (logins, uitnodigingen, rolwijzigingen, wijzigingen in de whitelist en de

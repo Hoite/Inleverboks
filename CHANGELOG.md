@@ -54,3 +54,14 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
     opslag, een idempotency key en maximaal één actieve inlevering per student;
   - het ontvangstbewijs (scherm, afdrukken, PDF via een eenmalige token) en het resetten
     voor gedeelde computers (geen cache, geen browseropslag, automatische reset).
+- Docentkant (fase 5):
+  - een live overzicht (elke 10 seconden) met tellers, filters, sortering en signalen (leeg
+    sjabloon, lockbestand, leeg bestand, naam wijkt af, identiek aan een andere student, niet op
+    de lijst, verlenging, zip, aantal wijkt af);
+  - studentdetail met alle pogingen; inleveringen ongedaan maken en ongeldig verklaren (met
+    reden, de bestanden blijven bewaard);
+  - downloads per bestand, per student (zip) en voor het hele examen (gestreamde zip met
+    ZIP64, mapnamen veilig voor Windows, `manifest.csv` en een integriteitscontrole);
+  - CSV-export van het overzicht, het proces-verbaal (PDF) met de verplichte onderdelen en
+    handtekeningvelden, de controle van ontvangstbewijzen, en het auditlog per examen en het
+    systeemlog bekijken en exporteren (CSV en PDF), met de status van de hash-keten.

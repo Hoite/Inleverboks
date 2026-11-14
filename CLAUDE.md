@@ -101,6 +101,12 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   opnieuw controleren), opslaan (eerst `tmp/…`, dan de definitieve key) en `commit` (één
   transactie; bij een conflict worden de bestanden weer verwijderd). Er is géén route die een
   ingeleverd bestand aan een student teruggeeft; een test controleert dat.
+- **Docentkant:** `services/overview.py` bouwt de rijen, tellers en signalen; `services/exports.py`
+  bevat de naamgeving voor Windows, de CSV-conventies en de streaming zip met
+  integriteitscontrole (manifest als laatste entry); `services/pv.py` maakt het
+  proces-verbaal. De overzichtstabel ververst via HTMX met een element-id `poll-…`.
+- **Testhulp studentflow:** `tests/student_helpers.py` (examen maken, stappen doorlopen,
+  uploaden) en de fixtures `owner` en `exam` in `tests/integration/conftest.py`.
 - **Teksten in JavaScript** komen uit `client_texts()` (server-side vertaald) via de
   configuratie in `data-config`. Zet nooit losse teksten in JS.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of
@@ -126,6 +132,6 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - [x] Fase 2: kern (datamodel, auth, audit, S3-backend)
 - [x] Fase 3: examens
 - [x] Fase 4: studentflow
-- [ ] Fase 5: docentkant
+- [x] Fase 5: docentkant
 - [ ] Fase 6: levenscyclus
 - [ ] Fase 7: afronding
