@@ -1,0 +1,15 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ _("Recovery codes") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <h1>{{ _("Recovery codes") }}</h1>
+  <div class="alert alert-warning" role="status">
+    <span class="alert-icon" aria-hidden="true">!</span>
+    <div><p>{{ _("Store these codes in a safe place. Each code works once. They are shown only now.") }}</p></div>
+  </div>
+  <ul class="code-list mono">
+    {% for code in codes %}<li>{{ code }}</li>{% endfor %}
+  </ul>
+  <p><a class="button" href="/docent">{{ _("Continue") }}</a></p>
+</div>
+{% endblock %}

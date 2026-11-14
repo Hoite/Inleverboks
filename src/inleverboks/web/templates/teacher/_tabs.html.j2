@@ -1,0 +1,10 @@
+<nav class="tabs" aria-label="{{ _('Exams') }}">
+  <a href="/docent"{% if tab == "mine" %} aria-current="page"{% endif %}>{{ _("My exams") }}</a>
+  <a href="/docent/gedeeld"{% if tab == "shared" %} aria-current="page"{% endif %}>{{ _("Shared with me") }}</a>
+  <a href="/docent/afgerond"{% if tab == "finalized" %} aria-current="page"{% endif %}>{{ _("Finalized exams") }}</a>
+  <a href="/docent/sjablonen"{% if tab == "templates" %} aria-current="page"{% endif %}>{{ _("Exam templates") }}</a>
+  <a href="/docent/klassenlijsten"{% if tab == "classlists" %} aria-current="page"{% endif %}>{{ _("Class lists") }}</a>
+  {% if current_user.is_admin %}
+  <a href="/docent/alle"{% if tab == "all" %} aria-current="page"{% endif %}>{{ _("All exams") }}</a>
+  {% endif %}
+</nav>

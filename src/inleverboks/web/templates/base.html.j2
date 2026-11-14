@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
+  {% if current_user %}
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
+  <script src="{{ asset('vendor/htmx/htmx.min.js') }}" defer></script>
+  {% endif %}
+</head>
+<body>
+  <a class="skip-link" href="#main">{{ _("Skip to content") }}</a>
+  {% if demo_mode %}
+  <div class="demo-banner" role="status">{{ _("Demo environment: do not use for real exams.") }}</div>
+  {% endif %}
+  <header class="site-header">
+    <a class="brand" href="{{ '/docent' if current_user else '/' }}">
+      <img class="brand-mark" src="{{ asset('img/placeholder-logo.svg') }}" alt="" width="28" height="28">
+      <span>{{ app_name }}</span>
+    </a>
+    {% block header_nav %}
+    {% if current_user and auth.stage == "full" %}
+    <nav class="header-nav" aria-label="{{ _('Main menu') }}">
+      <a href="/docent"{% if current_path.startswith('/docent') %} aria-current="page"{% endif %}>{{ _("Exams") }}</a>
+      {% if current_user.is_admin %}
+      <a href="/admin/gebruikers"{% if current_path.startswith('/admin') %} aria-current="page"{% endif %}>{{ _("Admin") }}</a>
+      {% endif %}
+      <a href="/account"{% if current_path.startswith('/account') %} aria-current="page"{% endif %}>{{ _("Account") }}</a>
+      <form method="post" action="/logout" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="link-button">{{ _("Log out") }}</button>
+      </form>
+    </nav>
+    {% elif current_user %}
+    <nav class="header-nav">
+      <form method="post" action="/logout" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="link-button">{{ _("Log out") }}</button>
+      </form>
+    </nav>
+    {% endif %}
+    {% endblock %}
+  </header>
+  <main id="main" class="container{% block container_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

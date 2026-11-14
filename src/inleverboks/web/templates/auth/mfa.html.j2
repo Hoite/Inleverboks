@@ -1,0 +1,18 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box with context %}
+{% block title %}{{ _("Two-step verification") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <h1>{{ _("Two-step verification") }}</h1>
+  {{ errors_box(errors) }}
+  <form method="post" action="/login/code" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="code">{{ _("Code from your authenticator app") }}</label>
+      <input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" required autofocus class="code-input" maxlength="32">
+      <p class="hint">{{ _("No access to the app? Enter one of your recovery codes.") }}</p>
+    </div>
+    <button type="submit" class="button">{{ _("Confirm") }}</button>
+  </form>
+</div>
+{% endblock %}

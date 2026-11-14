@@ -1,0 +1,43 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("Account") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Account") }}</h1>
+{% if ok == "password" %}{{ ok_box(_("Your password has been changed.")) }}{% endif %}
+{% if ok == "totp_disabled" %}{{ ok_box(_("Two-step verification has been disabled.")) }}{% endif %}
+{{ errors_box(errors) }}
+<dl class="details">
+  <dt>{{ _("Name") }}</dt><dd>{{ current_user.name }}</dd>
+  <dt>{{ _("E-mail address") }}</dt><dd>{{ current_user.email }}</dd>
+  <dt>{{ _("Role") }}</dt><dd>{{ _("Admin") if current_user.is_admin else _("Teacher") }}</dd>
+</dl>
+
+<section class="card">
+  <h2>{{ _("Password") }}</h2>
+  <p><a class="button button-secondary" href="/account/wachtwoord">{{ _("Change password") }}</a></p>
+</section>
+
+<section class="card">
+  <h2>{{ _("Two-step verification") }}</h2>
+  {% if current_user.totp_enabled %}
+  <p><span class="badge badge-success"><span aria-hidden="true">✓</span> {{ _("Enabled") }}</span></p>
+  <form method="post" action="/account/herstelcodes" class="inline-form">
+    {{ csrf() }}
+    <button type="submit" class="button button-secondary">{{ _("New recovery codes") }}</button>
+  </form>
+  {% if not totp_required %}
+  <form method="post" action="/account/tweestaps/uit" class="stack top-gap">
+    {{ csrf() }}
+    <div class="field">
+      <label for="disable-password">{{ _("Password (to disable)") }}</label>
+      <input id="disable-password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="button button-danger">{{ _("Disable two-step verification") }}</button>
+  </form>
+  {% endif %}
+  {% else %}
+  <p><span class="badge badge-neutral">{{ _("Not enabled") }}</span></p>
+  <p><a class="button" href="/account/tweestaps">{{ _("Set up two-step verification") }}</a></p>
+  {% endif %}
+</section>
+{% endblock %}

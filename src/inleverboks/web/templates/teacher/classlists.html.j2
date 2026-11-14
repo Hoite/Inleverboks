@@ -1,0 +1,23 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ _("Class lists") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("Exams") }}</h1>
+  <a class="button" href="/docent/klassenlijsten/nieuw">{{ _("Import class list") }}</a>
+</div>
+{% include "teacher/_tabs.html.j2" %}
+{% if class_lists %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Students") }}</th><th scope="col">{{ _("Imported") }}</th></tr></thead>
+  <tbody>
+  {% for cl in class_lists %}
+    <tr><td><a href="/docent/klassenlijsten/{{ cl.id }}">{{ cl.name }}</a></td><td>{{ cl.entries|length }}</td><td>{{ cl.created_at|localtime }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">{{ _("No class lists yet.") }}</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box with context %}
+{% block title %}{{ _("Import class list") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent/klassenlijsten">{{ _("Class lists") }}</a></p>
+<h1>{{ _("Import class list") }}</h1>
+{{ errors_box(errors) }}
+<form method="post" action="/docent/klassenlijsten/importeren" class="stack">
+  {{ csrf() }}
+  <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
+  <input type="hidden" name="delimiter" value="{{ delimiter }}">
+  {# Enter submits "check", never "save". #}
+  <button type="submit" name="action" value="check" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ _("Check") }}</button>
+  <div class="field narrow">
+    <label for="name">{{ _("Name") }}</label>
+    <input id="name" name="name" type="text" maxlength="200" required value="{{ name }}">
+  </div>
+  <fieldset>
+    <legend>{{ _("Columns") }}</legend>
+    <label class="checkbox"><input type="checkbox" name="has_header" value="true"{% if has_header %} checked{% endif %}> {{ _("The first row contains column names") }}</label>
+    <div class="grid-3">
+    {% for f in fields %}
+      <div class="field">
+        <label for="map_{{ f }}">{{ field_labels[f] }}</label>
+        <select id="map_{{ f }}" name="map_{{ f }}">
+          <option value="">{{ _("(none)") }}</option>
+          {% for index, title in columns %}<option value="{{ index }}"{% if mapping.get(f) == index %} selected{% endif %}>{{ title }}</option>{% endfor %}
+        </select>
+      </div>
+    {% endfor %}
+    </div>
+  </fieldset>
+  <div class="form-actions">
+    <button type="submit" name="action" value="check" class="button button-secondary">{{ _("Check") }}</button>
+    {% if result and result.ok %}
+    <button type="submit" name="action" value="save" class="button">{{ _("Save class list (%(n)s students)", n=result.entries|length) }}</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if result %}
+  {% if result.errors %}
+  <section>
+    <h2>{{ _("Errors") }}</h2>
+    <div class="alert alert-error" role="alert"><span class="alert-icon" aria-hidden="true">!</span>
+      <div>
+        <p>{{ _("%(n)s rows have errors. Fix the file and import it again.", n=result.errors|length) }}</p>
+        <ul>{% for row, code, value in result.errors[:50] %}<li>{{ _("Row %(r)s", r=row) }}: {{ messages.get(code, code) }}{% if value %} (<span class="mono">{{ value }}</span>){% endif %}</li>{% endfor %}</ul>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+  <section>
+    <h2>{{ _("Preview") }}</h2>
+    <p>{{ _("%(n)s valid rows.", n=result.entries|length) }}</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">{{ _("Row") }}</th>{% for f in fields %}<th scope="col">{{ field_labels[f] }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for e in preview %}
+        <tr><td>{{ e.row_number }}</td><td class="mono">{{ e.student_number }}</td><td>{{ e.first_name }}</td><td>{{ e.infix or "" }}</td><td>{{ e.last_name }}</td><td>{{ e.class_name or "" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+{% else %}
+<p class="muted">{{ _("Choose the columns and click Check.") }}</p>
+{% endif %}
+{% endblock %}

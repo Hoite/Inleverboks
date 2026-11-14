@@ -1,0 +1,116 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("Users") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% if ok == "saved" %}{{ ok_box(_("Saved.")) }}{% endif %}
+{% if ok == "invite_revoked" %}{{ ok_box(_("Invitation revoked.")) }}{% endif %}
+{{ errors_box(errors) }}
+
+<section class="card">
+  <h2>{{ _("Invite a teacher") }}</h2>
+  <form method="post" action="/admin/uitnodigingen" class="row-form">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="invite-email">{{ _("E-mail address") }}</label>
+      <input id="invite-email" name="email" type="email" required value="{{ invite_email }}" autocomplete="off">
+    </div>
+    <button type="submit" class="button">{{ _("Create invitation link") }}</button>
+  </form>
+</section>
+
+{% if open_invites %}
+<section>
+  <h2>{{ _("Open invitations") }}</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ _("E-mail address") }}</th><th scope="col">{{ _("Valid until") }}</th><th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th></tr></thead>
+    <tbody>
+    {% for invite in open_invites %}
+      <tr>
+        <td>{{ invite.email }}</td>
+        <td>{{ invite.expires_at|localtime }}</td>
+        <td class="actions">
+          <form method="post" action="/admin/uitnodigingen/{{ invite.id }}/intrekken" class="inline-form">
+            {{ csrf() }}<button type="submit" class="button button-small button-secondary">{{ _("Revoke") }}</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<section>
+  <h2>{{ _("Users") }}</h2>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">{{ _("Name") }}</th>
+        <th scope="col">{{ _("E-mail address") }}</th>
+        <th scope="col">{{ _("Role") }}</th>
+        <th scope="col">{{ _("Status") }}</th>
+        <th scope="col">{{ _("Two-step") }}</th>
+        <th scope="col">{{ _("Last login") }}</th>
+        <th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for user in users %}
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td>
+          {% if user.is_local_admin %}{{ _("Local admin") }}{% elif user.is_admin %}{{ _("Admin") }}{% else %}{{ _("Teacher") }}{% endif %}
+        </td>
+        <td>
+          {% if user.is_active %}<span class="badge badge-success"><span aria-hidden="true">✓</span> {{ _("Active") }}</span>
+          {% else %}<span class="badge badge-neutral"><span aria-hidden="true">✕</span> {{ _("Deactivated") }}</span>{% endif %}
+        </td>
+        <td>{{ _("Yes") if user.totp_enabled else _("No") }}</td>
+        <td>{{ user.last_login_at|localtime }}</td>
+        <td class="actions">
+          {% if not user.is_local_admin %}
+            {% if user.id != current_user.id %}
+            <form method="post" action="/admin/gebruikers/{{ user.id }}/actief" class="inline-form">
+              {{ csrf() }}
+              {% if user.is_active %}
+              <button type="submit" class="button button-small button-secondary">{{ _("Deactivate") }}</button>
+              {% else %}
+              <input type="hidden" name="active" value="true">
+              <button type="submit" class="button button-small button-secondary">{{ _("Activate") }}</button>
+              {% endif %}
+            </form>
+            {% endif %}
+            {% if user.is_active %}
+            <form method="post" action="/admin/gebruikers/{{ user.id }}/admin" class="inline-form">
+              {{ csrf() }}
+              {% if user.is_admin %}
+              <button type="submit" class="button button-small button-secondary">{{ _("Remove admin rights") }}</button>
+              {% else %}
+              <input type="hidden" name="admin" value="true">
+              <button type="submit" class="button button-small button-secondary">{{ _("Make admin") }}</button>
+              {% endif %}
+            </form>
+            {% endif %}
+          {% endif %}
+          <details class="inline-details">
+            <summary class="button button-small button-secondary">{{ _("Reset link") }}</summary>
+            <form method="post" action="/admin/gebruikers/{{ user.id }}/reset" class="stack">
+              {{ csrf() }}
+              <label class="checkbox"><input type="checkbox" name="reset_totp" value="true"> {{ _("Also reset two-step verification") }}</label>
+              <button type="submit" class="button button-small">{{ _("Create reset link") }}</button>
+            </form>
+          </details>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

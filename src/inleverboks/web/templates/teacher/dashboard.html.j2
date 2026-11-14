@@ -1,0 +1,40 @@
+{% extends "base.html.j2" %}
+{% from "teacher/_status.html.j2" import status_badge %}
+{% block title %}{{ _("Exams") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("Exams") }}</h1>
+  <a class="button" href="/docent/examens/nieuw">{{ _("New exam") }}</a>
+</div>
+{% include "teacher/_tabs.html.j2" %}
+{% if rows %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th scope="col">{{ _("Exam") }}</th>
+      <th scope="col">{{ _("Status") }}</th>
+      <th scope="col">{{ _("Start") }}</th>
+      <th scope="col">{{ _("End") }}</th>
+      <th scope="col">{{ _("Handed in") }}</th>
+      <th scope="col">{{ _("Link") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td><a href="/docent/examens/{{ row.exam.id }}">{{ row.exam.name }}</a></td>
+      <td>{{ status_badge(row.status, status_labels) }}</td>
+      <td>{{ row.exam.starts_at|localtime }}</td>
+      <td>{{ row.exam.ends_at|localtime }}</td>
+      <td>{{ row.submissions }}</td>
+      <td class="mono small">/{{ row.exam.slug }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">{{ _("No exams yet.") }}</p>
+{% endif %}
+{% endblock %}

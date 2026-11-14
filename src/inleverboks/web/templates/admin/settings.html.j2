@@ -1,0 +1,61 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, ok_box, field_error with context %}
+{% block title %}{{ _("Settings") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% if ok == "saved" %}{{ ok_box(_("Saved.")) }}{% endif %}
+{% if errors %}
+<div class="alert alert-error" role="alert"><span class="alert-icon" aria-hidden="true">!</span><div><p>{{ _("Check the marked fields.") }}</p></div></div>
+{% endif %}
+<form method="post" action="/admin/instellingen" class="stack settings-form">
+  {{ csrf() }}
+  <fieldset>
+    <legend>{{ _("Retention") }}</legend>
+    <div class="field">
+      <label for="retention_days">{{ _("Retention period (days)") }}</label>
+      <input id="retention_days" name="retention_days" type="number" min="1" max="3650" required value="{{ values.retention_days }}" aria-describedby="retention_days-hint">
+      <p class="hint" id="retention_days-hint">{{ _("Day 1 is the calendar day after the effective end date of the exam.") }}</p>
+      {{ field_error(errors, "retention_days") }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>{{ _("Students") }}</legend>
+    <div class="field">
+      <label for="student_number_regex">{{ _("Student number format (regular expression)") }}</label>
+      <input id="student_number_regex" name="student_number_regex" type="text" class="mono" required value="{{ values.student_number_regex }}">
+      {{ field_error(errors, "student_number_regex") }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>{{ _("Default limits for new exams") }}</legend>
+    <div class="field">
+      <label for="default_max_file_mb">{{ _("Maximum per file (MB)") }}</label>
+      <input id="default_max_file_mb" name="default_max_file_mb" type="number" min="1" max="{{ env.max_file_mb }}" required value="{{ values.default_max_file_mb }}" aria-describedby="file-hint">
+      <p class="hint" id="file-hint">{{ _("Upper limit of this installation: %(n)s MB.", n=env.max_file_mb) }}</p>
+      {{ field_error(errors, "default_max_file_mb") }}
+    </div>
+    <div class="field">
+      <label for="default_max_submission_mb">{{ _("Maximum per submission (MB)") }}</label>
+      <input id="default_max_submission_mb" name="default_max_submission_mb" type="number" min="1" max="{{ env.max_submission_mb }}" required value="{{ values.default_max_submission_mb }}" aria-describedby="sub-hint">
+      <p class="hint" id="sub-hint">{{ _("Upper limit of this installation: %(n)s MB.", n=env.max_submission_mb) }}</p>
+      {{ field_error(errors, "default_max_submission_mb") }}
+    </div>
+    <div class="field">
+      <label for="max_files_per_submission">{{ _("Maximum number of files per submission") }}</label>
+      <input id="max_files_per_submission" name="max_files_per_submission" type="number" min="1" max="{{ env.max_files_per_submission }}" required value="{{ values.max_files_per_submission }}">
+      {{ field_error(errors, "max_files_per_submission") }}
+    </div>
+    <div class="field">
+      <label for="default_extensions">{{ _("Default allowed extensions") }}</label>
+      <textarea id="default_extensions" name="default_extensions" rows="3" class="mono">{{ values.default_extensions|join(", ") }}</textarea>
+      {{ field_error(errors, "default_extensions") }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>{{ _("Security") }}</legend>
+    <label class="checkbox"><input type="checkbox" name="require_totp_all" value="true"{% if values.require_totp_all %} checked{% endif %}> {{ _("Two-step verification mandatory for all teachers") }}</label>
+  </fieldset>
+  <button type="submit" class="button">{{ _("Save") }}</button>
+</form>
+{% endblock %}

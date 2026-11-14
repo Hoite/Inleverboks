@@ -1,0 +1,30 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box with context %}
+{% block title %}{{ _("Create account") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <h1>{{ _("Create account") }}</h1>
+  {{ errors_box(errors) }}
+  <form method="post" action="/uitnodiging/{{ token }}" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="email">{{ _("E-mail address") }}</label>
+      <input id="email" type="email" value="{{ email }}" readonly autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="name">{{ _("Name") }}</label>
+      <input id="name" name="name" type="text" autocomplete="name" required maxlength="200" autofocus>
+    </div>
+    <div class="field">
+      <label for="password">{{ _("Password") }}</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" required minlength="{{ min_length }}" aria-describedby="password-hint">
+      <p class="hint" id="password-hint">{{ _("At least %(n)s characters. Avoid common passwords.", n=min_length) }}</p>
+    </div>
+    <div class="field">
+      <label for="confirm">{{ _("Repeat password") }}</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" required minlength="{{ min_length }}">
+    </div>
+    <button type="submit" class="button">{{ _("Create account") }}</button>
+  </form>
+</div>
+{% endblock %}

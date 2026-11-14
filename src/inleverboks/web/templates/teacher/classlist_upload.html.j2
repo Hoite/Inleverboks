@@ -1,0 +1,23 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box with context %}
+{% block title %}{{ _("Import class list") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent/klassenlijsten">{{ _("Class lists") }}</a></p>
+<div class="narrow">
+  <h1>{{ _("Import class list") }}</h1>
+  {{ errors_box(errors) }}
+  <form method="post" action="/docent/klassenlijsten/nieuw" enctype="multipart/form-data" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="name">{{ _("Name") }}</label>
+      <input id="name" name="name" type="text" maxlength="200" value="{{ name }}" placeholder="{{ _('e.g. ICT-2A 2026') }}">
+    </div>
+    <div class="field">
+      <label for="file">{{ _("CSV file") }}</label>
+      <input id="file" name="file" type="file" accept=".csv,text/csv" required aria-describedby="file-hint">
+      <p class="hint" id="file-hint">{{ _("Separated by ; or , in UTF-8 or Windows-1252. You choose the columns in the next step.") }}</p>
+    </div>
+    <button type="submit" class="button">{{ _("Next") }}</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("IP presets") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% if ok == "saved" %}{{ ok_box(_("Saved.")) }}{% endif %}
+{% if ok == "removed" %}{{ ok_box(_("Removed.")) }}{% endif %}
+{{ errors_box(errors) }}
+<section class="card">
+  <h2>{{ _("New preset") }}</h2>
+  <form method="post" action="/admin/ip-presets" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="name">{{ _("Name") }}</label>
+      <input id="name" name="name" type="text" required maxlength="100" value="{{ name }}" placeholder="{{ _('e.g. School network') }}">
+    </div>
+    <div class="field">
+      <label for="cidrs">{{ _("IP ranges") }}</label>
+      <textarea id="cidrs" name="cidrs" rows="3" class="mono" required placeholder="10.20.0.0/16">{{ cidrs }}</textarea>
+      <p class="hint">{{ _("One range per line, or separated by commas.") }}</p>
+    </div>
+    <button type="submit" class="button">{{ _("Save") }}</button>
+  </form>
+</section>
+<section>
+  <h2>{{ _("IP presets") }}</h2>
+  {% for preset in presets %}
+  <details class="card">
+    <summary><strong>{{ preset.name }}</strong> <span class="mono small">{{ preset.cidrs|join(", ") }}</span></summary>
+    <form method="post" action="/admin/ip-presets" class="stack top-gap">
+      {{ csrf() }}
+      <input type="hidden" name="preset_id" value="{{ preset.id }}">
+      <div class="field">
+        <label for="name-{{ preset.id }}">{{ _("Name") }}</label>
+        <input id="name-{{ preset.id }}" name="name" type="text" required maxlength="100" value="{{ preset.name }}">
+      </div>
+      <div class="field">
+        <label for="cidrs-{{ preset.id }}">{{ _("IP ranges") }}</label>
+        <textarea id="cidrs-{{ preset.id }}" name="cidrs" rows="3" class="mono" required>{{ preset.cidrs|join("\n") }}</textarea>
+      </div>
+      <button type="submit" class="button button-secondary">{{ _("Save") }}</button>
+    </form>
+    <form method="post" action="/admin/ip-presets/{{ preset.id }}/verwijderen" class="top-gap">
+      {{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button>
+    </form>
+  </details>
+  {% else %}
+  <p class="muted">{{ _("No presets yet.") }}</p>
+  {% endfor %}
+  <p class="hint">{{ _("Changing a preset does not change exams that already use it; their ranges were copied when saved.") }}</p>
+</section>
+{% endblock %}

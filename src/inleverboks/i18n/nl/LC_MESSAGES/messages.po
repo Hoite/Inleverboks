@@ -1,0 +1,1062 @@
+# Dutch translations for Inleverboks.
+# Message IDs are English; every UI string goes through gettext.
+msgid ""
+msgstr ""
+"Project-Id-Version:  inleverboks\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-14 08:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: nl\n"
+"Language-Team: nl <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Page not found"
+msgstr "Pagina niet gevonden"
+
+msgid "Back to the start page"
+msgstr "Terug naar de startpagina"
+
+msgid "You do not have access to this page."
+msgstr "Je hebt geen toegang tot deze pagina."
+
+msgid "This request was refused."
+msgstr "Dit verzoek is geweigerd."
+
+msgid "This field is required."
+msgstr "Dit veld is verplicht."
+
+msgid "This text is too long."
+msgstr "Deze tekst is te lang."
+
+msgid "The end time must be after the start time."
+msgstr "De eindtijd moet na de starttijd liggen."
+
+msgid "Use 3 to 80 characters: a-z, 0-9 and single dashes."
+msgstr "Gebruik 3 tot 80 tekens: a-z, 0-9 en losse streepjes."
+
+msgid "This link name is reserved. Choose another one."
+msgstr "Deze linknaam is gereserveerd. Kies een andere."
+
+msgid "This link name is already in use."
+msgstr "Deze linknaam is al in gebruik."
+
+msgid "This value is not valid."
+msgstr "Deze waarde is niet geldig."
+
+msgid "Enter IP addresses or ranges such as 10.0.0.0/8."
+msgstr "Vul IP-adressen of bereiken in, zoals 10.0.0.0/8."
+
+msgid "Too many IP ranges."
+msgstr "Te veel IP-bereiken."
+
+msgid "Enter at least one IP range or choose a preset."
+msgstr "Vul minimaal één IP-bereik in of kies een preset."
+
+msgid "Value out of range."
+msgstr "Waarde buiten het toegestane bereik."
+
+msgid "May not exceed the maximum per submission."
+msgstr "Mag niet groter zijn dan het maximum per inlevering."
+
+msgid "Too many expected files."
+msgstr "Te veel verwachte bestanden."
+
+msgid "Add an expected file or allow an extra file."
+msgstr "Voeg een verwacht bestand toe of sta een extra bestand toe."
+
+msgid "Enter a valid date and time."
+msgstr "Vul een geldige datum en tijd in."
+
+msgid "This time does not exist (the clock moves forward for summer time)."
+msgstr "Dit tijdstip bestaat niet (de klok gaat vooruit voor de zomertijd)."
+
+msgid "Enter a valid e-mail address."
+msgstr "Vul een geldig e-mailadres in."
+
+msgid "This e-mail address is not on the whitelist."
+msgstr "Dit e-mailadres staat niet op de whitelist."
+
+msgid "An account with this e-mail address already exists."
+msgstr "Er bestaat al een account met dit e-mailadres."
+
+msgid "This invitation link is invalid, already used or expired."
+msgstr "Deze uitnodigingslink is ongeldig, al gebruikt of verlopen."
+
+msgid "This reset link is invalid, already used or expired."
+msgstr "Deze resetlink is ongeldig, al gebruikt of verlopen."
+
+msgid "Enter your name."
+msgstr "Vul je naam in."
+
+msgid "Choose a stronger password."
+msgstr "Kies een sterker wachtwoord."
+
+msgid "The current password is incorrect."
+msgstr "Het huidige wachtwoord klopt niet."
+
+msgid "The new password must differ from the current one."
+msgstr "Het nieuwe wachtwoord moet anders zijn dan het huidige."
+
+msgid "The passwords do not match."
+msgstr "De wachtwoorden zijn niet gelijk."
+
+msgid "The code is incorrect. Try again."
+msgstr "De code klopt niet. Probeer het opnieuw."
+
+msgid "Two-step verification is already enabled."
+msgstr "Tweestapsverificatie staat al aan."
+
+msgid "Start the setup of two-step verification first."
+msgstr "Start eerst het instellen van tweestapsverificatie."
+
+msgid "Two-step verification is not enabled."
+msgstr "Tweestapsverificatie staat niet aan."
+
+msgid "Two-step verification is mandatory for your account."
+msgstr "Tweestapsverificatie is verplicht voor jouw account."
+
+msgid "User not found."
+msgstr "Gebruiker niet gevonden."
+
+msgid "This account is deactivated."
+msgstr "Dit account is gedeactiveerd."
+
+msgid "This account cannot be deactivated."
+msgstr "Dit account kan niet worden gedeactiveerd."
+
+msgid "The admin rights of the local admin cannot be removed."
+msgstr "De adminrechten van de local admin kunnen niet worden afgenomen."
+
+msgid "The last admin cannot lose admin rights."
+msgstr "De laatste admin kan de adminrechten niet kwijtraken."
+
+msgid "Enter a valid domain, for example school.nl."
+msgstr "Vul een geldig domein in, bijvoorbeeld school.nl."
+
+msgid "This entry already exists."
+msgstr "Deze vermelding bestaat al."
+
+msgid "Not found."
+msgstr "Niet gevonden."
+
+msgid "Students have handed in. The file requirements can no longer be changed."
+msgstr "Er is al ingeleverd. De bestandseisen kunnen niet meer worden gewijzigd."
+
+msgid "This is not possible: students have already handed in."
+msgstr "Dit kan niet: er is al ingeleverd."
+
+msgid "Only a concept can be deleted."
+msgstr "Alleen een concept kan worden verwijderd."
+
+msgid "This exam is finalized and can no longer be changed."
+msgstr "Dit examen is afgerond en kan niet meer worden gewijzigd."
+
+msgid "This student number has an invalid format."
+msgstr "Dit studentnummer heeft een ongeldig formaat."
+
+msgid "The new end time must be after the end of the exam."
+msgstr "De nieuwe eindtijd moet na het einde van het examen liggen."
+
+msgid "Choose an active teacher."
+msgstr "Kies een actieve docent."
+
+msgid "The template file is larger than the maximum per file."
+msgstr "Het sjabloonbestand is groter dan het maximum per bestand."
+
+msgid "Class list not found."
+msgstr "Klassenlijst niet gevonden."
+
+msgid "Exam template not found."
+msgstr "Examensjabloon niet gevonden."
+
+msgid "Exam not found."
+msgstr "Examen niet gevonden."
+
+#, python-format
+msgid "Use at least %(n)s characters."
+msgstr "Gebruik minimaal %(n)s tekens."
+
+msgid "The password is too long."
+msgstr "Het wachtwoord is te lang."
+
+msgid "This password is too common."
+msgstr "Dit wachtwoord komt te vaak voor."
+
+msgid "Do not use your e-mail address in the password."
+msgstr "Gebruik je e-mailadres niet in het wachtwoord."
+
+msgid "Invitation link created"
+msgstr "Uitnodigingslink aangemaakt"
+
+msgid "Valid for 7 days, can be used once."
+msgstr "7 dagen geldig, eenmalig te gebruiken."
+
+msgid "Password reset link created"
+msgstr "Resetlink aangemaakt"
+
+msgid "Valid for 24 hours, can be used once."
+msgstr "24 uur geldig, eenmalig te gebruiken."
+
+msgid "This is not a valid regular expression."
+msgstr "Dit is geen geldige reguliere expressie."
+
+msgid "Enter extensions such as docx, pdf, py."
+msgstr "Vul extensies in zoals docx, pdf, py."
+
+msgid "Enter a name."
+msgstr "Vul een naam in."
+
+msgid "Enter at least one IP range."
+msgstr "Vul minimaal één IP-bereik in."
+
+msgid "A preset with this name already exists."
+msgstr "Er bestaat al een preset met deze naam."
+
+msgid "Too many attempts. Try again later."
+msgstr "Te veel pogingen. Probeer het later opnieuw."
+
+msgid "E-mail address or password is incorrect."
+msgstr "E-mailadres of wachtwoord klopt niet."
+
+msgid "Your account has been created."
+msgstr "Je account is aangemaakt."
+
+msgid "You can now log in. Two-step verification can be enabled under Account."
+msgstr "Je kunt nu inloggen. Tweestapsverificatie zet je aan onder Account."
+
+msgid "Log in"
+msgstr "Inloggen"
+
+msgid "Your password has been changed."
+msgstr "Je wachtwoord is gewijzigd."
+
+msgid "The file is too large (maximum 2 MB)."
+msgstr "Het bestand is te groot (maximaal 2 MB)."
+
+msgid "The file has too many rows."
+msgstr "Het bestand heeft te veel rijen."
+
+msgid "The file contains no rows."
+msgstr "Het bestand bevat geen rijen."
+
+msgid "Choose a column for student number, first name and last name."
+msgstr "Kies een kolom voor studentnummer, voornaam en achternaam."
+
+msgid "Enter a name for the class list."
+msgstr "Vul een naam in voor de klassenlijst."
+
+msgid "Fix the errors in the file first."
+msgstr "Herstel eerst de fouten in het bestand."
+
+msgid "Student number missing"
+msgstr "Studentnummer ontbreekt"
+
+msgid "Invalid student number"
+msgstr "Ongeldig studentnummer"
+
+msgid "First or last name missing"
+msgstr "Voornaam of achternaam ontbreekt"
+
+msgid "Duplicate student number"
+msgstr "Dubbel studentnummer"
+
+msgid "Student number"
+msgstr "Studentnummer"
+
+msgid "First name"
+msgstr "Voornaam"
+
+msgid "Infix"
+msgstr "Tussenvoegsel"
+
+msgid "Last name"
+msgstr "Achternaam"
+
+msgid "Class (optional)"
+msgstr "Klas (optioneel)"
+
+#, python-format
+msgid "Column %(n)s"
+msgstr "Kolom %(n)s"
+
+msgid "Concept"
+msgstr "Concept"
+
+msgid "Scheduled"
+msgstr "Gepland"
+
+msgid "Open"
+msgstr "Open"
+
+msgid "Closed"
+msgstr "Gesloten"
+
+msgid "Finalized"
+msgstr "Afgerond"
+
+msgid "Skip to content"
+msgstr "Naar de inhoud"
+
+msgid "Demo environment: do not use for real exams."
+msgstr "Demo-omgeving: niet gebruiken voor echte examens."
+
+msgid "Main menu"
+msgstr "Hoofdmenu"
+
+msgid "Exams"
+msgstr "Examens"
+
+msgid "Admin"
+msgstr "Admin"
+
+msgid "Account"
+msgstr "Account"
+
+msgid "Log out"
+msgstr "Uitloggen"
+
+msgid "Teacher login"
+msgstr "Inloggen docent"
+
+msgid "Hand in exam work"
+msgstr "Examenwerk inleveren"
+
+msgid "Open the hand-in link that your teacher shows you."
+msgstr "Open de inleverlink die je docent laat zien."
+
+msgid "Users"
+msgstr "Gebruikers"
+
+msgid "Whitelist"
+msgstr "Whitelist"
+
+msgid "IP presets"
+msgstr "IP-presets"
+
+msgid "Settings"
+msgstr "Instellingen"
+
+msgid "System log"
+msgstr "Systeemlog"
+
+msgid "Filter on event"
+msgstr "Filteren op gebeurtenis"
+
+msgid "Filter"
+msgstr "Filteren"
+
+msgid "Time"
+msgstr "Tijdstip"
+
+msgid "Actor"
+msgstr "Actor"
+
+msgid "IP address"
+msgstr "IP-adres"
+
+msgid "Event"
+msgstr "Gebeurtenis"
+
+msgid "Details"
+msgstr "Details"
+
+msgid "No events."
+msgstr "Geen gebeurtenissen."
+
+msgid "Saved."
+msgstr "Opgeslagen."
+
+msgid "Removed."
+msgstr "Verwijderd."
+
+msgid "New preset"
+msgstr "Nieuwe preset"
+
+msgid "Name"
+msgstr "Naam"
+
+msgid "e.g. School network"
+msgstr "bijv. Schoolnetwerk"
+
+msgid "IP ranges"
+msgstr "IP-bereiken"
+
+msgid "One range per line, or separated by commas."
+msgstr "Eén bereik per regel, of gescheiden door komma's."
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Remove"
+msgstr "Verwijderen"
+
+msgid "No presets yet."
+msgstr "Nog geen presets."
+
+msgid "Changing a preset does not change exams that already use it; their ranges were copied when saved."
+msgstr ""
+"Een preset wijzigen verandert niets aan examens die hem al gebruiken; hun bereiken zijn bij het "
+"opslaan gekopieerd."
+
+msgid "For"
+msgstr "Voor"
+
+msgid "Copy this link and send it yourself (for example via Teams):"
+msgstr "Kopieer deze link en stuur hem zelf door (bijvoorbeeld via Teams):"
+
+msgid "This link is shown only once."
+msgstr "Deze link wordt maar één keer getoond."
+
+msgid "Back to users"
+msgstr "Terug naar gebruikers"
+
+msgid "Check the marked fields."
+msgstr "Controleer de gemarkeerde velden."
+
+msgid "Retention"
+msgstr "Bewaartermijn"
+
+msgid "Retention period (days)"
+msgstr "Bewaartermijn (dagen)"
+
+msgid "Day 1 is the calendar day after the effective end date of the exam."
+msgstr "Dag 1 is de kalenderdag na de effectieve einddatum van het examen."
+
+msgid "Students"
+msgstr "Studenten"
+
+msgid "Student number format (regular expression)"
+msgstr "Formaat studentnummer (reguliere expressie)"
+
+msgid "Default limits for new exams"
+msgstr "Standaardgrenzen voor nieuwe examens"
+
+msgid "Maximum per file (MB)"
+msgstr "Maximum per bestand (MB)"
+
+#, python-format
+msgid "Upper limit of this installation: %(n)s MB."
+msgstr "Bovengrens van deze installatie: %(n)s MB."
+
+msgid "Maximum per submission (MB)"
+msgstr "Maximum per inlevering (MB)"
+
+msgid "Maximum number of files per submission"
+msgstr "Maximaal aantal bestanden per inlevering"
+
+msgid "Default allowed extensions"
+msgstr "Standaard toegestane extensies"
+
+msgid "Security"
+msgstr "Beveiliging"
+
+msgid "Two-step verification mandatory for all teachers"
+msgstr "Tweestapsverificatie verplicht voor alle docenten"
+
+msgid "Invitation revoked."
+msgstr "Uitnodiging ingetrokken."
+
+msgid "Invite a teacher"
+msgstr "Docent uitnodigen"
+
+msgid "E-mail address"
+msgstr "E-mailadres"
+
+msgid "Create invitation link"
+msgstr "Uitnodigingslink maken"
+
+msgid "Open invitations"
+msgstr "Openstaande uitnodigingen"
+
+msgid "Valid until"
+msgstr "Geldig tot"
+
+msgid "Actions"
+msgstr "Acties"
+
+msgid "Revoke"
+msgstr "Intrekken"
+
+msgid "Role"
+msgstr "Rol"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Two-step"
+msgstr "Tweestaps"
+
+msgid "Last login"
+msgstr "Laatst ingelogd"
+
+msgid "Local admin"
+msgstr "Local admin"
+
+msgid "Teacher"
+msgstr "Docent"
+
+msgid "Active"
+msgstr "Actief"
+
+msgid "Deactivated"
+msgstr "Gedeactiveerd"
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "No"
+msgstr "Nee"
+
+msgid "Deactivate"
+msgstr "Deactiveren"
+
+msgid "Activate"
+msgstr "Activeren"
+
+msgid "Remove admin rights"
+msgstr "Adminrechten afnemen"
+
+msgid "Make admin"
+msgstr "Admin maken"
+
+msgid "Reset link"
+msgstr "Resetlink"
+
+msgid "Also reset two-step verification"
+msgstr "Ook tweestapsverificatie resetten"
+
+msgid "Create reset link"
+msgstr "Resetlink maken"
+
+msgid "Added."
+msgstr "Toegevoegd."
+
+msgid "Add"
+msgstr "Toevoegen"
+
+msgid "Domain or e-mail address"
+msgstr "Domein of e-mailadres"
+
+msgid "A domain allows every address at that domain (no subdomains)."
+msgstr "Een domein laat elk adres op dat domein toe (geen subdomeinen)."
+
+msgid "Type"
+msgstr "Soort"
+
+msgid "Value"
+msgstr "Waarde"
+
+msgid "Added"
+msgstr "Toegevoegd"
+
+msgid "Domain"
+msgstr "Domein"
+
+msgid "The whitelist is empty. Only the local admin can log in."
+msgstr "De whitelist is leeg. Alleen de local admin kan inloggen."
+
+msgid "Two-step verification has been disabled."
+msgstr "Tweestapsverificatie is uitgezet."
+
+msgid "Password"
+msgstr "Wachtwoord"
+
+msgid "Change password"
+msgstr "Wachtwoord wijzigen"
+
+msgid "Two-step verification"
+msgstr "Tweestapsverificatie"
+
+msgid "Enabled"
+msgstr "Aan"
+
+msgid "New recovery codes"
+msgstr "Nieuwe herstelcodes"
+
+msgid "Password (to disable)"
+msgstr "Wachtwoord (om uit te zetten)"
+
+msgid "Disable two-step verification"
+msgstr "Tweestapsverificatie uitzetten"
+
+msgid "Not enabled"
+msgstr "Niet ingesteld"
+
+msgid "Set up two-step verification"
+msgstr "Tweestapsverificatie instellen"
+
+msgid "Create account"
+msgstr "Account aanmaken"
+
+#, python-format
+msgid "At least %(n)s characters. Avoid common passwords."
+msgstr "Minimaal %(n)s tekens. Vermijd veelgebruikte wachtwoorden."
+
+msgid "Repeat password"
+msgstr "Herhaal wachtwoord"
+
+msgid "Forgot your password? Ask the admin for a reset link."
+msgstr "Wachtwoord vergeten? Vraag de admin om een resetlink."
+
+msgid "Code from your authenticator app"
+msgstr "Code uit je authenticator-app"
+
+msgid "No access to the app? Enter one of your recovery codes."
+msgstr "Geen toegang tot de app? Vul een van je herstelcodes in."
+
+msgid "Confirm"
+msgstr "Bevestigen"
+
+msgid "Choose a new password before you continue."
+msgstr "Kies een nieuw wachtwoord voordat je verdergaat."
+
+msgid "Current password"
+msgstr "Huidig wachtwoord"
+
+msgid "New password"
+msgstr "Nieuw wachtwoord"
+
+msgid "Repeat new password"
+msgstr "Herhaal nieuw wachtwoord"
+
+msgid "Recovery codes"
+msgstr "Herstelcodes"
+
+msgid "Store these codes in a safe place. Each code works once. They are shown only now."
+msgstr "Bewaar deze codes op een veilige plek. Elke code werkt één keer. Ze worden alleen nu getoond."
+
+msgid "Continue"
+msgstr "Verder"
+
+msgid "Scan the QR code with an authenticator app (for example Microsoft Authenticator)."
+msgstr "Scan de QR-code met een authenticator-app (bijvoorbeeld Microsoft Authenticator)."
+
+msgid "Enter the six-digit code shown in the app."
+msgstr "Vul de code van zes cijfers uit de app in."
+
+msgid "QR code for the authenticator app"
+msgstr "QR-code voor de authenticator-app"
+
+msgid "Cannot scan? Enter this key:"
+msgstr "Lukt scannen niet? Vul deze sleutel in:"
+
+msgid "Code"
+msgstr "Code"
+
+msgid "Enable"
+msgstr "Aanzetten"
+
+msgid "Server time"
+msgstr "Servertijd"
+
+msgid "This hand-in link has not been opened yet by the teacher."
+msgstr "Deze inleverlink is nog niet opengezet door de docent."
+
+#, python-format
+msgid "Not opened yet (opens at %(t)s)."
+msgstr "Nog niet geopend (opent om %(t)s)."
+
+msgid "Time remaining"
+msgstr "Resterende tijd"
+
+msgid "Handing in opens here."
+msgstr "Hier kun je straks inleveren."
+
+#, python-format
+msgid "%(a)s of %(b)s handed in"
+msgstr "%(a)s van %(b)s ingeleverd"
+
+#, python-format
+msgid "%(a)s handed in"
+msgstr "%(a)s ingeleverd"
+
+msgid "The link has not been opened yet by the teacher."
+msgstr "De link is nog niet opengezet door de docent."
+
+msgid "My exams"
+msgstr "Mijn examens"
+
+msgid "Shared with me"
+msgstr "Gedeeld met mij"
+
+msgid "Finalized exams"
+msgstr "Afgeronde examens"
+
+msgid "Exam templates"
+msgstr "Examensjablonen"
+
+msgid "Class lists"
+msgstr "Klassenlijsten"
+
+msgid "All exams"
+msgstr "Alle examens"
+
+#, python-format
+msgid "%(n)s students. Exams that use this list keep their own copy."
+msgstr "%(n)s studenten. Examens die deze lijst gebruiken, houden hun eigen kopie."
+
+msgid "Class"
+msgstr "Klas"
+
+msgid "Import class list"
+msgstr "Klassenlijst importeren"
+
+msgid "Check"
+msgstr "Controleren"
+
+msgid "Columns"
+msgstr "Kolommen"
+
+msgid "The first row contains column names"
+msgstr "De eerste rij bevat kolomnamen"
+
+msgid "(none)"
+msgstr "(geen)"
+
+#, python-format
+msgid "Save class list (%(n)s students)"
+msgstr "Klassenlijst opslaan (%(n)s studenten)"
+
+msgid "Errors"
+msgstr "Fouten"
+
+#, python-format
+msgid "%(n)s rows have errors. Fix the file and import it again."
+msgstr "%(n)s rijen bevatten fouten. Herstel het bestand en importeer het opnieuw."
+
+#, python-format
+msgid "Row %(r)s"
+msgstr "Rij %(r)s"
+
+msgid "Preview"
+msgstr "Voorbeeld"
+
+#, python-format
+msgid "%(n)s valid rows."
+msgstr "%(n)s geldige rijen."
+
+msgid "Row"
+msgstr "Rij"
+
+msgid "Choose the columns and click Check."
+msgstr "Kies de kolommen en klik op Controleren."
+
+msgid "e.g. ICT-2A 2026"
+msgstr "bijv. ICT-2A 2026"
+
+msgid "CSV file"
+msgstr "CSV-bestand"
+
+msgid "Separated by ; or , in UTF-8 or Windows-1252. You choose the columns in the next step."
+msgstr "Gescheiden door ; of , in UTF-8 of Windows-1252. In de volgende stap kies je de kolommen."
+
+msgid "Next"
+msgstr "Volgende"
+
+msgid "Imported"
+msgstr "Geïmporteerd"
+
+msgid "No class lists yet."
+msgstr "Nog geen klassenlijsten."
+
+msgid "New exam"
+msgstr "Nieuw examen"
+
+msgid "Exam"
+msgstr "Examen"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "End"
+msgstr "Einde"
+
+msgid "Handed in"
+msgstr "Ingeleverd"
+
+msgid "Link"
+msgstr "Link"
+
+msgid "No exams yet."
+msgstr "Nog geen examens."
+
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Presentation mode"
+msgstr "Presentatiemodus"
+
+msgid "Publish"
+msgstr "Publiceren"
+
+msgid "The exam is published."
+msgstr "Het examen is gepubliceerd."
+
+msgid "The exam is a concept again."
+msgstr "Het examen is weer een concept."
+
+msgid "A new access code has been generated."
+msgstr "Er is een nieuwe toegangscode gemaakt."
+
+msgid "Saved as exam template."
+msgstr "Opgeslagen als examensjabloon."
+
+msgid "Class list updated."
+msgstr "Klassenlijst bijgewerkt."
+
+msgid "Extension saved."
+msgstr "Verlenging opgeslagen."
+
+msgid "Extension removed."
+msgstr "Verlenging verwijderd."
+
+msgid "Ownership transferred."
+msgstr "Eigendom overgedragen."
+
+msgid "Template file uploaded."
+msgstr "Sjabloonbestand geüpload."
+
+msgid "Template file removed."
+msgstr "Sjabloonbestand verwijderd."
+
+msgid ""
+"This exam is a concept. Students see that the link has not been opened yet. Publish the exam to "
+"open it at the start time."
+msgstr ""
+"Dit examen is een concept. Studenten zien dat de link nog niet is opengezet. Publiceer het examen"
+" om het op de starttijd te openen."
+
+msgid "Hand-in link"
+msgstr "Inleverlink"
+
+msgid "Link for students"
+msgstr "Link voor studenten"
+
+msgid "QR code of the hand-in link"
+msgstr "QR-code van de inleverlink"
+
+msgid "Download QR (PNG)"
+msgstr "QR downloaden (PNG)"
+
+msgid "Download QR (SVG)"
+msgstr "QR downloaden (SVG)"
+
+msgid "Access code"
+msgstr "Toegangscode"
+
+msgid "Generate new code"
+msgstr "Nieuwe code maken"
+
+msgid "No access code."
+msgstr "Geen toegangscode."
+
+#, python-format
+msgid "last extension until %(t)s"
+msgstr "laatste verlenging tot %(t)s"
+
+msgid "Owner"
+msgstr "Eigenaar"
+
+msgid "Second reviewer"
+msgstr "Tweede beoordelaar"
+
+msgid "None"
+msgstr "Geen"
+
+msgid "IP restriction"
+msgstr "IP-beperking"
+
+msgid "Extensions"
+msgstr "Extensies"
+
+msgid "Maximum size"
+msgstr "Maximale grootte"
+
+#, python-format
+msgid "%(f)s MB per file, %(s)s MB per submission"
+msgstr "%(f)s MB per bestand, %(s)s MB per inlevering"
+
+msgid "Extra files"
+msgstr "Extra bestanden"
+
+msgid "Allowed"
+msgstr "Toegestaan"
+
+msgid "Not allowed"
+msgstr "Niet toegestaan"
+
+msgid "Expected files"
+msgstr "Verwachte bestanden"
+
+msgid "Label"
+msgstr "Label"
+
+msgid "Expected file name"
+msgstr "Verwachte bestandsnaam"
+
+msgid "Template file"
+msgstr "Sjabloonbestand"
+
+#, python-format
+msgid "Template file for %(label)s"
+msgstr "Sjabloonbestand voor %(label)s"
+
+msgid "Upload"
+msgstr "Uploaden"
+
+msgid "No expected files; students hand in extra files only."
+msgstr "Geen verwachte bestanden; studenten leveren alleen extra bestanden in."
+
+msgid "Class list"
+msgstr "Klassenlijst"
+
+#, python-format
+msgid "%(n)s students on the class list."
+msgstr "%(n)s studenten op de klassenlijst."
+
+msgid "Students who are not on the list cannot hand in."
+msgstr "Studenten die niet op de lijst staan, kunnen niet inleveren."
+
+msgid "Show class list"
+msgstr "Klassenlijst tonen"
+
+msgid "No class list. Students enter their name and student number themselves."
+msgstr "Geen klassenlijst. Studenten vullen zelf hun naam en studentnummer in."
+
+msgid "Use class list"
+msgstr "Klassenlijst gebruiken"
+
+msgid "No class list"
+msgstr "Geen klassenlijst"
+
+msgid "Apply"
+msgstr "Toepassen"
+
+msgid "New end time"
+msgstr "Nieuwe eindtijd"
+
+msgid "No extensions."
+msgstr "Geen verlengingen."
+
+msgid "Grant extension"
+msgstr "Verlenging geven"
+
+msgid "More"
+msgstr "Meer"
+
+msgid "Duplicate"
+msgstr "Dupliceren"
+
+msgid "Back to concept"
+msgstr "Terug naar concept"
+
+msgid "Delete concept"
+msgstr "Concept verwijderen"
+
+msgid "Save as exam template"
+msgstr "Opslaan als examensjabloon"
+
+msgid "Save as template"
+msgstr "Opslaan als sjabloon"
+
+msgid "Transfer ownership to"
+msgstr "Eigendom overdragen aan"
+
+msgid "Transfer"
+msgstr "Overdragen"
+
+msgid "Edit exam"
+msgstr "Examen bewerken"
+
+msgid "Description (optional)"
+msgstr "Omschrijving (optioneel)"
+
+msgid "Second reviewer (optional)"
+msgstr "Tweede beoordelaar (optioneel)"
+
+msgid "Link name"
+msgstr "Linknaam"
+
+msgid "Leave empty to derive it from the name. a-z, 0-9 and dashes."
+msgstr "Laat leeg om hem af te leiden van de naam. a-z, 0-9 en streepjes."
+
+#, python-format
+msgid "Label of file %(n)s"
+msgstr "Label van bestand %(n)s"
+
+msgid "e.g. Report"
+msgstr "bijv. Verslag"
+
+msgid "Expected file name (optional)"
+msgstr "Verwachte bestandsnaam (optioneel)"
+
+msgid "Extensions (optional)"
+msgstr "Extensies (optioneel)"
+
+#, python-format
+msgid "file %(n)s"
+msgstr "bestand %(n)s"
+
+msgid "Add expected file"
+msgstr "Verwacht bestand toevoegen"
+
+msgid ""
+"Use * as wildcard in the expected name. Template files can be uploaded on the exam page after "
+"saving."
+msgstr ""
+"Gebruik * als jokerteken in de verwachte naam. Sjabloonbestanden upload je na het opslaan op de "
+"examenpagina."
+
+msgid "Allow extra files"
+msgstr "Extra bestanden toestaan"
+
+msgid "Allowed extensions"
+msgstr "Toegestane extensies"
+
+msgid "Access"
+msgstr "Toegang"
+
+msgid "Access code required"
+msgstr "Toegangscode verplicht"
+
+msgid "Only allow certain IP addresses"
+msgstr "Alleen bepaalde IP-adressen toestaan"
+
+msgid "IP preset"
+msgstr "IP-preset"
+
+msgid "Other IP ranges"
+msgstr "Andere IP-bereiken"
+
+msgid "Class list (optional)"
+msgstr "Klassenlijst (optioneel)"
+
+msgid "Allow students who are not on the class list"
+msgstr "Studenten toestaan die niet op de klassenlijst staan"
+
+msgid "Cancel"
+msgstr "Annuleren"
+
+msgid "Go to"
+msgstr "Ga naar"
+
+msgid "Opens in"
+msgstr "Opent over"
+
+msgid "Leave presentation mode"
+msgstr "Presentatiemodus verlaten"
+
+msgid "Created"
+msgstr "Aangemaakt"
+
+msgid "New exam from template"
+msgstr "Nieuw examen met dit sjabloon"
+
+msgid "No exam templates yet. Save an exam as template from its page."
+msgstr "Nog geen examensjablonen. Sla een examen op als sjabloon via de examenpagina."
+

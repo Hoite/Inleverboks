@@ -1,0 +1,32 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf with context %}
+{% block title %}{{ _("Exam templates") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ _("Exams") }}</h1>
+  <a class="button" href="/docent/examens/nieuw">{{ _("New exam") }}</a>
+</div>
+{% include "teacher/_tabs.html.j2" %}
+{% if templates %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Expected files") }}</th><th scope="col">{{ _("Created") }}</th><th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th></tr></thead>
+  <tbody>
+  {% for t in templates %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td>{{ t.slots|map(attribute="label")|join(", ") }}</td>
+      <td>{{ t.created_at|localtime }}</td>
+      <td class="actions">
+        <a class="button button-small" href="/docent/examens/nieuw?sjabloon={{ t.id }}">{{ _("New exam from template") }}</a>
+        <form method="post" action="/docent/sjablonen/{{ t.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">{{ _("No exam templates yet. Save an exam as template from its page.") }}</p>
+{% endif %}
+{% endblock %}

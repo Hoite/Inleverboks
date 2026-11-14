@@ -1,0 +1,7 @@
+<nav class="tabs" aria-label="{{ _('Admin') }}">
+  <a href="/admin/gebruikers"{% if current_path.startswith('/admin/gebruikers') %} aria-current="page"{% endif %}>{{ _("Users") }}</a>
+  <a href="/admin/whitelist"{% if current_path.startswith('/admin/whitelist') %} aria-current="page"{% endif %}>{{ _("Whitelist") }}</a>
+  <a href="/admin/ip-presets"{% if current_path.startswith('/admin/ip-presets') %} aria-current="page"{% endif %}>{{ _("IP presets") }}</a>
+  <a href="/admin/instellingen"{% if current_path.startswith('/admin/instellingen') %} aria-current="page"{% endif %}>{{ _("Settings") }}</a>
+  <a href="/admin/auditlog"{% if current_path.startswith('/admin/auditlog') %} aria-current="page"{% endif %}>{{ _("System log") }}</a>
+</nav>

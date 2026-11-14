@@ -1,0 +1,8 @@
+<div id="counter" class="present-counter" hx-get="/docent/examens/{{ exam.id }}/presentatie/teller" hx-trigger="every 10s" hx-swap="outerHTML" aria-live="polite">
+  {% if expected %}
+  <p class="present-count">{{ _("%(a)s of %(b)s handed in", a=submitted, b=expected) }}</p>
+  {% else %}
+  <p class="present-count">{{ _("%(a)s handed in", a=submitted) }}</p>
+  {% endif %}
+  {% if status == "concept" %}<p class="present-status">{{ _("The link has not been opened yet by the teacher.") }}</p>{% endif %}
+</div>

@@ -1,0 +1,9 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ title }} · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <h1>{{ title }}</h1>
+  {% if body is defined and body %}<p>{{ body }}</p>{% endif %}
+  {% if link is defined and link %}<p><a class="button" href="{{ link }}">{{ link_text }}</a></p>{% endif %}
+</div>
+{% endblock %}

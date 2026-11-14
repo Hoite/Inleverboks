@@ -1,0 +1,18 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ title }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% include "admin/_nav.html.j2" %}
+<div class="narrow">
+  <p>{{ _("For") }} <strong>{{ email }}</strong>. {{ valid_text }}</p>
+  <div class="field">
+    <label for="link">{{ _("Copy this link and send it yourself (for example via Teams):") }}</label>
+    <input id="link" type="text" class="mono" readonly value="{{ url }}">
+  </div>
+  <div class="alert alert-warning" role="status">
+    <span class="alert-icon" aria-hidden="true">!</span>
+    <div><p>{{ _("This link is shown only once.") }}</p></div>
+  </div>
+  <p><a class="button button-secondary" href="/admin/gebruikers">{{ _("Back to users") }}</a></p>
+</div>
+{% endblock %}

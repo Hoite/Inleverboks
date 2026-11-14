@@ -1,0 +1,48 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("Whitelist") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% if ok == "added" %}{{ ok_box(_("Added.")) }}{% endif %}
+{% if ok == "removed" %}{{ ok_box(_("Removed.")) }}{% endif %}
+{{ errors_box(errors) }}
+<section class="card">
+  <h2>{{ _("Add") }}</h2>
+  <form method="post" action="/admin/whitelist" class="row-form">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="value">{{ _("Domain or e-mail address") }}</label>
+      <input id="value" name="value" type="text" required value="{{ value }}" placeholder="school.nl" aria-describedby="value-hint" autocomplete="off">
+      <p class="hint" id="value-hint">{{ _("A domain allows every address at that domain (no subdomains).") }}</p>
+    </div>
+    <button type="submit" class="button">{{ _("Add") }}</button>
+  </form>
+</section>
+<section>
+  <h2>{{ _("Whitelist") }}</h2>
+  {% if entries %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ _("Type") }}</th><th scope="col">{{ _("Value") }}</th><th scope="col">{{ _("Added") }}</th><th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th></tr></thead>
+    <tbody>
+    {% for entry in entries %}
+      <tr>
+        <td>{{ _("Domain") if entry.kind == "domain" else _("E-mail address") }}</td>
+        <td>{{ entry.value }}</td>
+        <td>{{ entry.created_at|localtime }}</td>
+        <td class="actions">
+          <form method="post" action="/admin/whitelist/{{ entry.id }}/verwijderen" class="inline-form">
+            {{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ _("The whitelist is empty. Only the local admin can log in.") }}</p>
+  {% endif %}
+</section>
+{% endblock %}

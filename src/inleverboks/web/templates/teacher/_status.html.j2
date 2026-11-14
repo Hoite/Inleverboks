@@ -1,0 +1,5 @@
+{% macro status_badge(status, labels) %}
+{% set icons = {"concept": "○", "scheduled": "◔", "open": "●", "closed": "■", "finalized": "✓"} %}
+{% set kinds = {"concept": "neutral", "scheduled": "warning", "open": "success", "closed": "neutral", "finalized": "neutral"} %}
+<span class="badge badge-{{ kinds[status] }}"><span aria-hidden="true">{{ icons[status] }}</span> {{ labels[status] }}</span>
+{% endmacro %}

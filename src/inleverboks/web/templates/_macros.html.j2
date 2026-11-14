@@ -1,0 +1,26 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endmacro %}
+
+{% macro errors_box(errors) %}
+{% if errors %}
+<div class="alert alert-error" role="alert">
+  <span class="alert-icon" aria-hidden="true">!</span>
+  <div>
+    {% if errors|length == 1 %}<p>{{ errors[0] }}</p>{% else %}
+    <p>{{ errors[0] }}</p>
+    <ul>{% for e in errors[1:] %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro ok_box(text) %}
+<div class="alert alert-success" role="status">
+  <span class="alert-icon" aria-hidden="true">✓</span>
+  <div><p>{{ text }}</p></div>
+</div>
+{% endmacro %}
+
+{% macro field_error(errors, name) %}
+{% if errors.get(name) %}<p class="field-error" id="{{ name }}-error"><span aria-hidden="true">!</span> {{ errors[name] }}</p>{% endif %}
+{% endmacro %}

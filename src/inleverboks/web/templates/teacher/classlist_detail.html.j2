@@ -1,0 +1,21 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf with context %}
+{% block title %}{{ class_list.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent/klassenlijsten">{{ _("Class lists") }}</a></p>
+<div class="page-head">
+  <h1>{{ class_list.name }}</h1>
+  <form method="post" action="/docent/klassenlijsten/{{ class_list.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Remove") }}</button></form>
+</div>
+<p>{{ _("%(n)s students. Exams that use this list keep their own copy.", n=entries|length) }}</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">{{ _("Student number") }}</th><th scope="col">{{ _("Last name") }}</th><th scope="col">{{ _("Infix") }}</th><th scope="col">{{ _("First name") }}</th><th scope="col">{{ _("Class") }}</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr><td class="mono">{{ e.student_number }}</td><td>{{ e.last_name }}</td><td>{{ e.infix or "" }}</td><td>{{ e.first_name }}</td><td>{{ e.class_name or "" }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
