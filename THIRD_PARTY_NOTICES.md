@@ -11,7 +11,11 @@ nooit van een CDN geladen. De versie, de bron-URL en de SHA-256 per bestand staa
 | Component | Versie | Licentie | Bron |
 |---|---|---|---|
 | htmx | 2.0.11 | 0BSD | `https://registry.npmjs.org/htmx.org/-/htmx.org-2.0.11.tgz` (`dist/htmx.min.js`) |
-| *(volgt in fase 4 en 7: pdf.js, docx-preview, JSZip, SheetJS, Poppins)* | | | |
+| pdf.js (`pdfjs-dist`) | 6.5.438 | Apache-2.0 | npm: `build/pdf.min.mjs`, `build/pdf.worker.min.mjs` |
+| docx-preview | 0.4.1 | Apache-2.0 | npm: `dist/docx-preview.min.js` |
+| JSZip | 3.10.2 | MIT (dubbel gelicentieerd MIT of GPL-3.0; gebruikt onder MIT) | npm: `dist/jszip.min.js` |
+| SheetJS Community Edition | 0.20.3 | Apache-2.0 | `https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js` (officiële distributie) |
+| *(volgt in fase 7: Poppins)* | | | |
 
 Bijwerken of controleren gaat met `uv run python scripts/vendor.py`. Een test controleert dat
 elk bestand overeenkomt met de vastgelegde SHA-256.
