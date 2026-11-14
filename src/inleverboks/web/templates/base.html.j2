@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  <link rel="stylesheet" href="/huisstijl/stijl.css?v={{ brand.version }}">
+  {% if brand.favicon %}
+  <link rel="icon" href="/huisstijl/favicon.png?v={{ brand.version }}" type="image/png">
+  {% else %}
   <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
+  {% endif %}
   {% block head_extra %}{% endblock %}
   {% if current_user %}
   <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
@@ -19,7 +24,11 @@
   {% endif %}
   <header class="site-header">
     <a class="brand" href="{{ '/docent' if current_user else '/' }}">
+      {% if brand.logo %}
+      <img class="brand-logo" src="/huisstijl/logo.png?v={{ brand.version }}" alt="">
+      {% else %}
       <img class="brand-mark" src="{{ asset('img/placeholder-logo.svg') }}" alt="" width="28" height="28">
+      {% endif %}
       <span>{{ app_name }}</span>
     </a>
     {% block header_nav %}

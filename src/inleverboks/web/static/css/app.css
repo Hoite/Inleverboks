@@ -20,7 +20,9 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --radius: 6px;
-  --focus-ring: 0 0 0 3px #ffbf47;
+  /* Two-tone ring: the yellow shows on dark backgrounds, the dark edge on light ones
+     (WCAG 1.4.11, at least 3:1 against whatever is next to it). */
+  --focus-ring: 0 0 0 3px #ffbf47, 0 0 0 5px #1a1a1a;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -139,7 +141,7 @@ input[type="text"], input[type="email"], input[type="password"], input[type="num
 input[type="datetime-local"], select, textarea {
   font: inherit;
   padding: .55rem .7rem;
-  border: 1px solid #8a99a5;
+  border: 1px solid #7a8793;
   border-radius: var(--radius);
   background: #fff;
   color: var(--color-text);
@@ -250,7 +252,7 @@ td.actions form, td.actions details { display: inline-block; margin: .1rem .15re
 .input-prefix { display: flex; align-items: stretch; }
 .input-prefix span {
   display: flex; align-items: center; padding: 0 .5rem; font-size: .85rem; color: var(--color-muted);
-  background: var(--color-primary-tint); border: 1px solid #8a99a5; border-right: 0;
+  background: var(--color-primary-tint); border: 1px solid #7a8793; border-right: 0;
   border-radius: var(--radius) 0 0 var(--radius); white-space: nowrap; max-width: 45%; overflow: hidden;
 }
 .input-prefix input { border-radius: 0 var(--radius) var(--radius) 0; }
@@ -348,3 +350,22 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .attempt-cancelled, .attempt-invalid { border-left: 5px solid var(--color-muted); }
 .attempt-active { border-left: 5px solid var(--color-success); }
 .review-form h3 { margin: 0; }
+
+/* House style (admin) */
+@font-face { font-family: "Poppins"; font-style: normal; font-weight: 400; font-display: swap; src: url("../vendor/poppins/poppins-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-style: normal; font-weight: 600; font-display: swap; src: url("../vendor/poppins/poppins-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-style: normal; font-weight: 700; font-display: swap; src: url("../vendor/poppins/poppins-latin-700-normal.woff2") format("woff2"); }
+.brand-logo { display: block; max-height: 32px; width: auto; }
+.branding-layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 60rem) { .branding-layout { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } .branding-layout > .card { position: sticky; top: 1rem; } }
+.color-input { display: inline-flex; align-items: center; gap: .75rem; }
+.color-input input[type="color"] { width: 3.5rem; height: 2.5rem; padding: .15rem; }
+.brand-preview { border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); }
+.brand-preview[data-font="poppins"] { font-family: "Poppins", system-ui, sans-serif; }
+.brand-preview[data-font="system"] { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.brand-preview-header { background: var(--color-primary); color: #fff; padding: .6rem 1rem; border-bottom: 4px solid var(--color-accent); font-weight: 700; }
+.brand-preview-body { padding: 1rem; }
+.brand-preview-body h3 { margin-top: 0; }
+.brand-preview .button { cursor: default; }
+.logo-preview { max-height: 64px; width: auto; border: 1px solid var(--color-border); padding: .5rem; background: #fff; }
+.contrast-table td:first-child { min-width: 14rem; }

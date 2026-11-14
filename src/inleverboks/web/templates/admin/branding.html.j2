@@ -1,0 +1,128 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, ok_box, errors_box, field_error with context %}
+{% block title %}{{ _("House style") }} · {{ app_name }}{% endblock %}
+{% block head_extra %}<script type="module" src="{{ asset('js/admin/branding.js') }}"></script>{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% set ok_messages = {"saved": _("Saved."), "reset": _("The default house style is restored."), "logo": _("The logo has been saved."), "logo_removed": _("The logo has been removed.")} %}
+{% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
+{{ errors_box(messages) }}
+{% if errors %}
+<div class="alert alert-error" role="alert"><span class="alert-icon" aria-hidden="true">!</span><div><p>{{ _("Check the marked fields.") }}</p></div></div>
+{% endif %}
+{% if checked %}
+<div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">i</span><div><p>{{ _("Preview only: these colours are not saved yet.") }}</p></div></div>
+{% endif %}
+
+<div class="branding-layout">
+<form method="post" action="/admin/huisstijl" class="stack settings-form" id="branding-form">
+  {{ csrf() }}
+  <button type="submit" name="action" value="save" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ _("Save") }}</button>
+  <fieldset>
+    <legend>{{ _("Name and font") }}</legend>
+    <div class="field">
+      <label for="app_name">{{ _("App name") }}</label>
+      <input id="app_name" name="app_name" type="text" required maxlength="60" value="{{ shown.app_name }}" data-brand-name{% if errors.get('app_name') %} aria-invalid="true" aria-describedby="app_name-error"{% endif %}>
+      {{ field_error(errors, "app_name") }}
+    </div>
+    <div class="field">
+      <label for="font">{{ _("Font") }}</label>
+      <select id="font" name="font" data-brand-font>
+        <option value="poppins"{% if shown.font == "poppins" %} selected{% endif %}>Poppins</option>
+        <option value="system"{% if shown.font == "system" %} selected{% endif %}>{{ _("System font") }}</option>
+      </select>
+      {{ field_error(errors, "font") }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>{{ _("Colours") }}</legend>
+    {% for key, label in color_labels.items() %}
+    <div class="field color-field">
+      <label for="color_{{ key }}">{{ label }}</label>
+      <span class="color-input">
+        <input id="color_{{ key }}" name="color_{{ key }}" type="color" value="{{ shown.colors[key] }}" data-brand-var="{{ key }}"{% if errors.get(key) %} aria-invalid="true" aria-describedby="{{ key }}-error"{% endif %}>
+        <output for="color_{{ key }}" class="mono small" data-brand-hex="{{ key }}">{{ shown.colors[key] }}</output>
+      </span>
+      {{ field_error(errors, key) }}
+    </div>
+    {% endfor %}
+  </fieldset>
+
+  <section aria-labelledby="contrast-title">
+    <h2 id="contrast-title">{{ _("Contrast check (WCAG AA)") }}</h2>
+    {% set failing = results|rejectattr("ok")|list %}
+    <p class="contrast-summary" data-contrast-summary>
+      <span data-state="ok"{% if failing %} hidden{% endif %}><span aria-hidden="true">✓</span> {{ _("All combinations meet WCAG AA.") }}</span>
+      <span data-state="fail"{% if not failing %} hidden{% endif %} class="field-error"><span aria-hidden="true">!</span> {{ _("Some combinations are hard to read. You can still save, but choose other colours if you can.") }}</span>
+    </p>
+    <div class="table-wrap">
+    <table class="contrast-table">
+      <thead><tr><th scope="col">{{ _("Combination") }}</th><th scope="col">{{ _("Contrast") }}</th><th scope="col">{{ _("Minimum") }}</th><th scope="col">{{ _("Result") }}</th></tr></thead>
+      <tbody>
+      {% for r in results %}
+        <tr data-contrast data-fg="{{ r.pair.fg }}" data-bg="{{ r.pair.bg }}" data-min="{{ r.pair.minimum }}">
+          <td>{{ pair_labels[r.pair.key] }}</td>
+          <td class="mono" data-ratio>{{ "%.2f"|format(r.ratio) }}:1</td>
+          <td class="mono">{{ "%.1f"|format(r.pair.minimum) }}:1</td>
+          <td>
+            <span data-state="ok"{% if not r.ok %} hidden{% endif %}><span aria-hidden="true">✓</span> {{ _("OK") }}</span>
+            <span data-state="fail" class="field-error"{% if r.ok %} hidden{% endif %}><span aria-hidden="true">!</span> {{ _("Too low") }}</span>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <div class="button-row">
+    <button type="submit" class="button">{{ _("Save") }}</button>
+    <button type="submit" class="button button-secondary" name="action" value="check">{{ _("Check without saving") }}</button>
+  </div>
+</form>
+
+<section class="card" aria-labelledby="preview-title">
+  <h2 id="preview-title">{{ _("Preview") }}</h2>
+  <div class="brand-preview" data-brand-preview data-font="{{ shown.font }}">
+    <div class="brand-preview-header"><span class="brand-preview-name" data-brand-name-preview>{{ shown.app_name }}</span></div>
+    <div class="brand-preview-body">
+      <h3>{{ _("Heading") }}</h3>
+      <p>{{ _("Body text with a link.") }} <a href="#preview-title">{{ _("A link") }}</a></p>
+      <p class="button-row"><span class="button">{{ _("Button") }}</span> <span class="button button-secondary">{{ _("Secondary") }}</span></p>
+      <table><thead><tr><th scope="col">{{ _("Table header") }}</th></tr></thead><tbody><tr><td>{{ _("Cell") }}</td></tr></tbody></table>
+    </div>
+  </div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="logo-title">
+  <h2 id="logo-title">{{ _("Logo") }}</h2>
+  {% if saved.logo %}
+  <p><img class="logo-preview" src="/huisstijl/logo.png?v={{ saved.version }}" alt="{{ _('Current logo') }}"></p>
+  {% else %}
+  <p class="muted">{{ _("No logo yet: a neutral placeholder is shown.") }}</p>
+  {% endif %}
+  <form method="post" action="/admin/huisstijl/logo" enctype="multipart/form-data" class="row-form">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="logo">{{ _("PNG or WebP, at most %(kb)s KB", kb=max_logo_kb) }}</label>
+      <input id="logo" name="logo" type="file" accept="image/png,image/webp" required aria-describedby="logo-hint">
+      <p class="hint" id="logo-hint">{{ _("The favicon is made from the logo. SVG is not supported.") }}</p>
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Upload logo") }}</button>
+  </form>
+  {% if saved.logo %}
+  <form method="post" action="/admin/huisstijl/logo/verwijderen" class="top-gap">
+    {{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Remove logo") }}</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="reset-title">
+  <h2 id="reset-title">{{ _("Default house style") }}</h2>
+  <form method="post" action="/admin/huisstijl/standaard">
+    {{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Back to default") }}</button>
+  </form>
+</section>
+{% endblock %}

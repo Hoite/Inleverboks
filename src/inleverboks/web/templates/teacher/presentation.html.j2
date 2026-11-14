@@ -6,7 +6,8 @@
   <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
   <title>{{ exam.name }} · {{ app_name }}</title>
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-  <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="/huisstijl/stijl.css?v={{ brand.version }}">
+  <link rel="icon" href="{{ '/huisstijl/favicon.png?v=' ~ brand.version if brand.favicon else asset('img/favicon.svg') }}" type="{{ 'image/png' if brand.favicon else 'image/svg+xml' }}">
   <script src="{{ asset('vendor/htmx/htmx.min.js') }}" defer></script>
   <script type="module" src="{{ asset('js/presentation.js') }}"></script>
 </head>

@@ -49,15 +49,15 @@
   <p id="confirm-intro"></p>
   <ul id="confirm-list"></ul>
   <div class="button-row">
-    <button type="button" class="button" id="confirm-yes"></button>
-    <button type="button" class="button button-secondary" id="confirm-no"></button>
+    <button type="button" class="button" id="confirm-yes">{{ _("Yes, hand in anyway") }}</button>
+    <button type="button" class="button button-secondary" id="confirm-no">{{ _("No, go back") }}</button>
   </div>
 </dialog>
 
 <dialog id="preview-dialog" class="preview-dialog" aria-labelledby="preview-title">
   <div class="preview-head">
     <h2 id="preview-title"></h2>
-    <button type="button" class="button button-secondary button-small" id="preview-close"></button>
+    <button type="button" class="button button-secondary button-small" id="preview-close">{{ _("Close") }}</button>
   </div>
   <p class="hint" id="preview-note"></p>
   <iframe id="preview-frame" title="{{ _('Preview') }}" sandbox="allow-scripts"></iframe>
@@ -66,6 +66,6 @@
 <dialog id="inactive-dialog" aria-labelledby="inactive-title">
   <h2 id="inactive-title"></h2>
   <p id="inactive-body"></p>
-  <button type="button" class="button" id="inactive-stay"></button>
+  <button type="button" class="button" id="inactive-stay">{{ _("Continue") }}</button>
 </dialog>
 {% endblock %}

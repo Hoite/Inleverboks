@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 13:56+0100\n"
+"POT-Creation-Date: 2026-11-14 14:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -189,6 +189,18 @@ msgstr "De reden is te lang."
 msgid "Only a finalized exam can be deleted permanently."
 msgstr "Alleen een afgerond examen kan definitief worden verwijderd."
 
+msgid "Choose a logo file."
+msgstr "Kies een logobestand."
+
+msgid "The logo is too large (at most 1 MB and 4 megapixels)."
+msgstr "Het logo is te groot (maximaal 1 MB en 4 megapixel)."
+
+msgid "The logo must be a PNG or WebP file."
+msgstr "Het logo moet een PNG- of WebP-bestand zijn."
+
+msgid "This image cannot be read."
+msgstr "Deze afbeelding kan niet worden gelezen."
+
 #, python-format
 msgid "Use at least %(n)s characters."
 msgstr "Gebruik minimaal %(n)s tekens."
@@ -249,6 +261,57 @@ msgstr "Inloggen"
 
 msgid "Your password has been changed."
 msgstr "Je wachtwoord is gewijzigd."
+
+msgid "Text on background"
+msgstr "Tekst op de achtergrond"
+
+msgid "Links and headings"
+msgstr "Links en koppen"
+
+msgid "Links on hover"
+msgstr "Links bij aanwijzen"
+
+msgid "White text on the header and buttons"
+msgstr "Witte tekst op de kopbalk en knoppen"
+
+msgid "White text on buttons on hover"
+msgstr "Witte tekst op knoppen bij aanwijzen"
+
+msgid "Primary colour on the light tint (table headers, tabs)"
+msgstr "Hoofdkleur op de lichte tint (tabelkoppen, tabbladen)"
+
+msgid "Text on the light tint"
+msgstr "Tekst op de lichte tint"
+
+msgid "Accent lines (not text, at least 3:1)"
+msgstr "Accentlijnen (geen tekst, minimaal 3:1)"
+
+msgid "Primary colour"
+msgstr "Hoofdkleur"
+
+msgid "Primary colour, dark (hover)"
+msgstr "Hoofdkleur, donker (aanwijzen)"
+
+msgid "Light tint (panels, table headers)"
+msgstr "Lichte tint (panelen, tabelkoppen)"
+
+msgid "Accent colour"
+msgstr "Accentkleur"
+
+msgid "Text"
+msgstr "Tekst"
+
+msgid "Background"
+msgstr "Achtergrond"
+
+msgid "Enter a name of at most 60 characters."
+msgstr "Vul een naam in van maximaal 60 tekens."
+
+msgid "Enter a colour as #rrggbb."
+msgstr "Vul een kleur in als #rrggbb."
+
+msgid "Choose a font."
+msgstr "Kies een lettertype."
 
 msgid "The file is too large (maximum 2 MB)."
 msgstr "Het bestand is te groot (maximaal 2 MB)."
@@ -590,6 +653,9 @@ msgstr "IP-presets"
 msgid "Settings"
 msgstr "Instellingen"
 
+msgid "House style"
+msgstr "Huisstijl"
+
 msgid "Filter on event"
 msgstr "Filteren op gebeurtenis"
 
@@ -623,6 +689,118 @@ msgstr "Geen gebeurtenissen."
 msgid "Saved."
 msgstr "Opgeslagen."
 
+msgid "The default house style is restored."
+msgstr "De standaardhuisstijl is teruggezet."
+
+msgid "The logo has been saved."
+msgstr "Het logo is opgeslagen."
+
+msgid "The logo has been removed."
+msgstr "Het logo is verwijderd."
+
+msgid "Check the marked fields."
+msgstr "Controleer de gemarkeerde velden."
+
+msgid "Preview only: these colours are not saved yet."
+msgstr "Alleen een voorbeeld: deze kleuren zijn nog niet opgeslagen."
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Name and font"
+msgstr "Naam en lettertype"
+
+msgid "App name"
+msgstr "Naam van de app"
+
+msgid "Font"
+msgstr "Lettertype"
+
+msgid "System font"
+msgstr "Systeemlettertype"
+
+msgid "Colours"
+msgstr "Kleuren"
+
+msgid "Contrast check (WCAG AA)"
+msgstr "Contrastcontrole (WCAG AA)"
+
+msgid "All combinations meet WCAG AA."
+msgstr "Alle combinaties voldoen aan WCAG AA."
+
+msgid "Some combinations are hard to read. You can still save, but choose other colours if you can."
+msgstr "Sommige combinaties zijn slecht leesbaar. Opslaan kan wel, maar kies als het kan andere kleuren."
+
+msgid "Combination"
+msgstr "Combinatie"
+
+msgid "Contrast"
+msgstr "Contrast"
+
+msgid "Minimum"
+msgstr "Minimum"
+
+msgid "Result"
+msgstr "Resultaat"
+
+msgid "OK"
+msgstr "Goed"
+
+msgid "Too low"
+msgstr "Te laag"
+
+msgid "Check without saving"
+msgstr "Controleren zonder opslaan"
+
+msgid "Heading"
+msgstr "Kop"
+
+msgid "Body text with a link."
+msgstr "Gewone tekst met een link."
+
+msgid "A link"
+msgstr "Een link"
+
+msgid "Button"
+msgstr "Knop"
+
+msgid "Secondary"
+msgstr "Secundair"
+
+msgid "Table header"
+msgstr "Tabelkop"
+
+msgid "Cell"
+msgstr "Cel"
+
+msgid "Logo"
+msgstr "Logo"
+
+msgid "Current logo"
+msgstr "Huidig logo"
+
+msgid "No logo yet: a neutral placeholder is shown."
+msgstr "Nog geen logo: er staat een neutraal standaardlogo."
+
+#, python-format
+msgid "PNG or WebP, at most %(kb)s KB"
+msgstr "PNG of WebP, maximaal %(kb)s KB"
+
+msgid "The favicon is made from the logo. SVG is not supported."
+msgstr "Het favicon wordt van het logo gemaakt. SVG wordt niet ondersteund."
+
+msgid "Upload logo"
+msgstr "Logo uploaden"
+
+msgid "Remove logo"
+msgstr "Logo verwijderen"
+
+msgid "Default house style"
+msgstr "Standaardhuisstijl"
+
+msgid "Back to default"
+msgstr "Terug naar standaard"
+
 msgid "Removed."
 msgstr "Verwijderd."
 
@@ -640,9 +818,6 @@ msgstr "IP-bereiken"
 
 msgid "One range per line, or separated by commas."
 msgstr "Eén bereik per regel, of gescheiden door komma's."
-
-msgid "Save"
-msgstr "Opslaan"
 
 msgid "No presets yet."
 msgstr "Nog geen presets."
@@ -663,9 +838,6 @@ msgstr "Deze link wordt maar één keer getoond."
 
 msgid "Back to users"
 msgstr "Terug naar gebruikers"
-
-msgid "Check the marked fields."
-msgstr "Controleer de gemarkeerde velden."
 
 msgid "Retention"
 msgstr "Bewaartermijn"
