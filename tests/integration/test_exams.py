@@ -94,7 +94,7 @@ def other_client(
 def create_exam(tclient: TestClient, **overrides: Any) -> Exam:
     response = post(tclient, "/docent/examens/nieuw", form(**overrides))
     assert response.status_code == 303, response.text
-    exam_id = uuid.UUID(response.headers["location"].rsplit("/", 1)[1])
+    exam_id = uuid.UUID(response.headers["location"].split("/")[3])
     db: Session = tclient.app.state.sessionmaker()  # type: ignore[attr-defined]
     with db:
         exam = db.get(Exam, exam_id)
@@ -211,6 +211,7 @@ def test_second_reviewer_can_view_but_not_edit(
     rclient = TestClient(tclient.app)
     login(rclient, "tweede@school.nl")
     assert rclient.get(f"/docent/examens/{exam.id}").status_code == 200
+    assert rclient.get(f"/docent/examens/{exam.id}/instellingen").status_code == 200
     assert "Examen Linux P3" in rclient.get("/docent/gedeeld").text
     assert rclient.get(f"/docent/examens/{exam.id}/bewerken").status_code == 403
     assert post(rclient, f"/docent/examens/{exam.id}/code").status_code == 403
@@ -482,7 +483,7 @@ def test_save_as_template_and_create_from_it(tclient: TestClient, db: Session) -
         form(name="Linux P3 herkansing", access_code_enabled="", allow_unlisted="",
              source_template_id=str(template.id)),
     )  # fmt: skip
-    new_id = uuid.UUID(response.headers["location"].rsplit("/", 1)[1])
+    new_id = uuid.UUID(response.headers["location"].split("/")[3])
     new_exam = db.get(Exam, new_id)
     assert new_exam is not None
     assert new_exam.expected_files[0].template_file is not None
@@ -565,7 +566,7 @@ def test_extensions(
 
     grant = events(db, "exam.extension_granted", str(exam.id))[0]
     assert grant.details["student_number"] == "123456"
-    page = tclient.get(f"/docent/examens/{exam.id}")
+    page = tclient.get(f"/docent/examens/{exam.id}/instellingen")
     grant_id = extract(r"/verlengingen/([0-9a-f-]{36})/verwijderen", page.text)
     post(tclient, f"/docent/examens/{exam.id}/verlengingen/{grant_id}/verwijderen")
     assert services.exams.effective_end(db, fresh) == fresh.ends_at
