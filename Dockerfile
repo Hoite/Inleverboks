@@ -1,13 +1,11 @@
 # syntax=docker/dockerfile:1.19
 # Inleverboks container image: multi-stage build with uv, non-root, read-only root filesystem.
 
-ARG PYTHON_IMAGE=python:3.15.2-slim-trixie@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
-ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.13.8@sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85
-
-FROM ${UV_IMAGE} AS uv
+# Base images are pinned on tag and digest directly in FROM, so Dependabot can update them.
+FROM ghcr.io/astral-sh/uv:0.13.8@sha256:5cc1805e2426484abca4ad46ea783bab281fdb225fd82d8ce6d66a81254bac85 AS uv
 
 # ---------------------------------------------------------------------------
-FROM ${PYTHON_IMAGE} AS build
+FROM python:3.15.2-slim-trixie@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS build
 COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -27,18 +25,23 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 
 # ---------------------------------------------------------------------------
-FROM ${PYTHON_IMAGE} AS runtime
+FROM python:3.15.2-slim-trixie@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS runtime
 
 LABEL org.opencontainers.image.title="Inleverboks" \
       org.opencontainers.image.description="Digitaal examenwerk inleveren" \
       org.opencontainers.image.source="https://github.com/hoite/Inleverboks" \
       org.opencontainers.image.licenses="EUPL-1.2"
 
-# System libraries for WeasyPrint (Pango/HarfBuzz) and a basic font set.
+# Security updates of the base image, system libraries for WeasyPrint (Pango/HarfBuzz) and
+# a basic font set. pip is not needed at runtime: removing it (and the ensurepip wheels)
+# also removes the packages it vendors from the image and its vulnerability scans.
 RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
  && apt-get install -y --no-install-recommends \
       libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
  && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/python3.15/site-packages/pip /usr/local/lib/python3.15/site-packages/pip-* \
+      /usr/local/lib/python3.15/ensurepip/_bundled /usr/local/bin/pip* \
  && groupadd --gid 10001 inleverboks \
  && useradd --uid 10001 --gid 10001 --home-dir /tmp --no-create-home \
       --shell /usr/sbin/nologin inleverboks \
