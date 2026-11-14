@@ -40,3 +40,17 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   - verlengingen per student, eigendomsoverdracht door de admin, en de dashboardtabbladen;
   - de publieke statuspagina onder `/{slug}`; htmx meegeleverd met checksum; cache-busting
     voor statische bestanden.
+- Studentflow (fase 4):
+  - de stappen toegangscode (met rate limiting), studentnummer (met de verkorte naam van de
+    klassenlijst en "Ja, dat ben ik") en naam bij niet-vermelde studenten; de IP-whitelist
+    met vertrouwde proxy's; geweigerde pogingen per minuut samengevoegd in het auditlog;
+  - bestanden kiezen of slepen, automatisch toewijzen op de verwachte naam, verplaatsen;
+    SHA-256 in de browser (Web Crypto), gegroepeerd per 8 tekens, met een kopieerknop;
+  - een preview in een sandboxed iframe: PDF (pdf.js), docx (docx-preview), xlsx (SheetJS),
+    afbeeldingen, tekst/code en de inhoud van een zip (JSZip);
+  - blokkerende controles en waarschuwingen (leeg sjabloon, tijdelijk bestand, leeg bestand,
+    dubbel bestand, afwijkende naam, afwijkend aantal), met één extra bevestiging;
+  - een gestreamde upload met voortgangsbalk, controle van de hash op de server, atomaire
+    opslag, een idempotency key en maximaal één actieve inlevering per student;
+  - het ontvangstbewijs (scherm, afdrukken, PDF via een eenmalige token) en het resetten
+    voor gedeelde computers (geen cache, geen browseropslag, automatische reset).

@@ -199,5 +199,32 @@ bestanden kan opvragen.
 
 ## Studentflow
 
-*(volgt in fase 4: sequence-diagram van openen → code → studentnummer → bestanden →
-controle → upload → ontvangstbewijs.)*
+```mermaid
+sequenceDiagram
+  participant S as Student (browser)
+  participant A as App
+  participant O as Opslag
+  S->>A: GET /{slug}
+  A-->>S: status (concept / gepland / gesloten / IP geweigerd) of codestap
+  S->>A: POST /{slug}/code
+  A-->>S: cookie ib_student (stage=number)
+  S->>A: POST /{slug}/student
+  A-->>S: klassenlijst: "Jan de V." → "Ja, dat ben ik" / anders: naam invullen
+  Note over S: bestanden kiezen, SHA-256 (Web Crypto),<br/>controles, preview (sandboxed iframe),<br/>verklaring, extra bevestiging
+  S->>A: POST /{slug}/inleveren (multipart, manifest + bestanden, X-CSRF-Token)
+  A->>A: inlevermoment = servertijd bij de start; streamen naar /tmp, hashen, groottes afdwingen
+  A->>A: prepare: hashes vergelijken, alle controles opnieuw, venster en verlenging
+  A->>O: put tmp/… → move {exam}/{submission}/{uuid}
+  A->>A: commit (één actieve per student; idempotency key)
+  A-->>S: ontvangstbewijs (HTML), cookie gewist
+  S->>A: POST /ontvangstbewijs (token + verificatiecode) → PDF (eenmalig, 15 min)
+```
+
+- **Atomair:** mislukt iets na het opslaan (bijvoorbeeld een tweede apparaat dat net eerder
+  inleverde), dan worden de opgeslagen objecten weer verwijderd. Er bestaan dus geen halve
+  inleveringen.
+- **Gedeelde computers:** `Cache-Control: no-store`, geen browseropslag, het ontvangstbewijs
+  staat alleen in de DOM, en na 5 minuten volgt een automatische reset.
+- **Preview:** de hoofdpagina heeft een strikte CSP. Het iframe `/static/preview/frame.html` is
+  gesandboxed (opaque origin) en heeft een eigen CSP die inline stijlen toestaat voor
+  docx-preview en SheetJS. Het bestand gaat via `postMessage` als ArrayBuffer naar het frame.

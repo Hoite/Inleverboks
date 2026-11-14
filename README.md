@@ -69,6 +69,16 @@ Het nieuwe wachtwoord wordt eenmalig getoond, en `--reset` wist ook TOTP. Let op
 TOTP-geheim is versleuteld met een sleutel die is afgeleid van `SECRET_KEY`. Wijzig je
 `SECRET_KEY`, dan moet iedereen TOTP opnieuw instellen. Daarnaast vervallen alle sessies.
 
+## Inleveren (studenten)
+
+Studenten openen de inleverlink (of scannen de QR-code), vullen de toegangscode en hun
+studentnummer in, kiezen hun bestanden, controleren ze (naam, vakje, grootte, SHA-256 en een
+voorbeeld) en leveren in. Ze krijgen een ontvangstbewijs met een inlevercode en een
+verificatiecode. Ingeleverde bestanden zijn voor studenten nooit meer in te zien.
+
+**HTTPS is nodig.** De browser berekent de SHA-256 met de Web Crypto API, en die werkt alleen in
+een beveiligde context (HTTPS, of `localhost` tijdens het ontwikkelen).
+
 ## Auditlog
 
 Alles wat ertoe doet (logins, uitnodigingen, rolwijzigingen, wijzigingen in de whitelist en de
@@ -110,10 +120,13 @@ Alle instellingen komen uit omgevingsvariabelen (of een K8s Secret/ConfigMap). Z
 
 ## Aandachtspunten voor de ingress
 
-*(volgt in fase 7)* In het kort: de maximale request-grootte moet passen bij
-`MAX_SUBMISSION_MB`, er zijn ruime timeouts nodig voor uploads en zip-downloads, de ingress
-moet forwarded headers doorgeven en TLS regelen, en `TRUSTED_PROXIES` moet op het pod-bereik
-van de ingress-controller staan.
+*(volgt uitgebreider in fase 7)* In het kort: de maximale request-grootte moet passen bij
+`MAX_SUBMISSION_MB` (plus ongeveer 1 MB voor de multipart-overhead), er zijn ruime timeouts
+nodig voor uploads en zip-downloads, de ingress moet forwarded headers doorgeven en TLS
+regelen, en `TRUSTED_PROXIES` moet op het pod-bereik van de ingress-controller staan. Zonder
+die instelling ziet de app alleen het IP-adres van de ingress, en werkt de IP-whitelist van
+examens niet goed. Zet request-buffering bij voorkeur uit, zodat uploads direct naar de app
+streamen.
 
 ## Back-up en herstel
 
@@ -137,7 +150,8 @@ ongeveer 3 keer zo hoog. Redis hiervoor staat op de roadmap.
 
 ## Ontwikkelen
 
-Je hebt [uv](https://docs.astral.sh/uv/) en Docker nodig.
+Je hebt [uv](https://docs.astral.sh/uv/) en Docker nodig. Voor PDF's (WeasyPrint) lokaal ook
+Pango: `brew install pango` op macOS.
 
 ```bash
 uv sync

@@ -35,6 +35,9 @@ docker build -t inleverboks:dev .
 docker compose up --build
 ```
 
+WeasyPrint (PDF) heeft Pango nodig. Lokaal op macOS: `brew install pango`. Zonder Pango slaan de
+PDF-render-tests zichzelf over; in CI en Docker draaien ze wel.
+
 Docker staat op deze machine in `~/.docker/bin`. Zet in een niet-login-shell eerst
 `export PATH="$PATH:$HOME/.docker/bin"`.
 
@@ -87,6 +90,17 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - **Formulieren zonder JS:** knoppen met `name="action"` (bijvoorbeeld `add_slot`) renderen het
   formulier opnieuw zonder op te slaan. Zet bovenaan een verborgen standaardknop, zodat Enter
   altijd "opslaan" (of "controleren") doet.
+- **Studentflow:** de stappen (code → studentnummer → bevestigen/naam) zijn gewone formulieren;
+  de voortgang staat in de ondertekende cookie `ib_student`. Het kiezen, hashen, controleren,
+  bekijken en uploaden gebeurt in `static/js/student/`. **`checks.js` is een spiegel van
+  `services/checks.py`.** Wijzig ze altijd samen; de E2E-test vergelijkt de uitkomsten.
+- **Upload:** `web/upload.py` streamt multipart naar tijdelijke bestanden (hasht onderweg en
+  dwingt de groottes af tijdens het lezen). Daarna volgen `SubmissionService.prepare` (alles
+  opnieuw controleren), opslaan (eerst `tmp/…`, dan de definitieve key) en `commit` (één
+  transactie; bij een conflict worden de bestanden weer verwijderd). Er is géén route die een
+  ingeleverd bestand aan een student teruggeeft; een test controleert dat.
+- **Teksten in JavaScript** komen uit `client_texts()` (server-side vertaald) via de
+  configuratie in `data-config`. Zet nooit losse teksten in JS.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of
   `style=""` in templates. Previews met inline styles draaien in een sandboxed iframe met een
   eigen CSP.
@@ -99,8 +113,8 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - Tests staan in `tests/unit`, `tests/integration` en `tests/e2e` (marker `e2e`, standaard
   uitgesloten). De database-afhankelijke tests moeten slagen op zowel SQLite als PostgreSQL.
 - Commits volgen Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `ci:`).
-  Git-commando's voert de eigenaar zelf uit. Per fase staan de voorgestelde commits in
-  `docs/commits/`.
+  Claude maakt de commits per fase (op verzoek van de eigenaar, sinds 14-11-2026). Pushen doet
+  de eigenaar, na akkoord.
 - Logs: JSON naar stdout, nooit de inhoud van bestanden, en ID's in plaats van namen.
 - Er komen geen geheimen, logo's of merkbestanden van de school in de repo.
 
@@ -109,7 +123,7 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - [x] Fase 1: fundament
 - [x] Fase 2: kern (datamodel, auth, audit, S3-backend)
 - [x] Fase 3: examens
-- [ ] Fase 4: studentflow
+- [x] Fase 4: studentflow
 - [ ] Fase 5: docentkant
 - [ ] Fase 6: levenscyclus
 - [ ] Fase 7: afronding
