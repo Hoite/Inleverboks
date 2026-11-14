@@ -5,8 +5,7 @@ via een link en een toegangscode. Docenten maken examens aan, volgen de inleveri
 exporteren alles (zip, CSV, proces-verbaal). Ingeleverde bestanden zijn voor studenten nooit
 meer in te zien. Alles wat ertoe doet, komt in een auditlog dat niet te wijzigen is.
 
-> **Status:** in ontwikkeling. Fase 1 (fundament), fase 2 (accounts, auth, auditlog) en fase 3
-> (examens) zijn klaar. Zie `PLAN.md` voor de fasering.
+> **Status:** alle fasen uit `PLAN.md` zijn gebouwd. Zie `CHANGELOG.md` voor wat erin zit.
 
 ## Snelstart
 
@@ -87,6 +86,37 @@ verklaren (met een reden), alles downloaden als zip (met `manifest.csv` en een
 integriteitscontrole), het overzicht als CSV exporteren, een proces-verbaal (PDF) maken en een
 ontvangstbewijs van een student controleren. Elke download en export komt in het auditlog.
 
+## Huisstijl
+
+Onder *Admin → Huisstijl* stelt de admin de naam van de app, het lettertype (Poppins of het
+systeemlettertype), de kleuren en het logo in. Een live voorbeeld en een contrastcontrole
+(WCAG AA: 4,5:1 voor tekst, 3:1 voor accentlijnen) laten direct zien of alles leesbaar blijft.
+Bij te weinig contrast verschijnt een waarschuwing; opslaan kan dan nog wel. Met **Terug naar
+standaard** zet je naam, kleuren en lettertype terug (het logo blijft staan).
+
+Het logo is een PNG of WebP van maximaal 1 MB. De app leest het in, verkleint het tot maximaal
+512 × 512 pixels en slaat het opnieuw op als PNG. Zo blijven er geen metadata of verborgen
+inhoud achter. Het favicon wordt van het logo afgeleid. SVG wordt niet ondersteund. De repo
+bevat geen logo's of merkbestanden van de school, alleen een neutraal standaardlogo.
+
+De standaardkleuren komen uit de brandguide van Alfa-college (zie `PLAN.md` §2a). Poppins
+(SIL Open Font License) wordt door de app zelf geleverd, zonder Google Fonts of CDN. Met
+meerdere replicas zien de andere pods een wijziging binnen 30 seconden.
+
+## Demo
+
+Met `DEMO_MODE=true` toont de app een duidelijke demobanner, en vult `demo-seed` een lege
+installatie met voorbeelden: een demodocent (`docent@demo.test`), een gesloten, een open, een
+gepland en een conceptexamen, en een paar fictieve inleveringen met signalen. Het wachtwoord
+van de demodocent wordt eenmalig getoond.
+
+```bash
+docker exec inleverboks inleverboks demo-seed
+```
+
+Zonder `DEMO_MODE=true` weigert het commando. Gebruik een demo-installatie nooit voor echte
+examens.
+
 ## Auditlog
 
 Alles wat ertoe doet (logins, uitnodigingen, rolwijzigingen, wijzigingen in de whitelist en de
@@ -124,17 +154,54 @@ Alle instellingen komen uit omgevingsvariabelen (of een K8s Secret/ConfigMap). Z
 
 ## Kubernetes
 
-*(volgt in fase 7: Kustomize-manifests in `deploy/k8s/`, geschikt voor Flux.)*
+In `deploy/k8s/` staan Kustomize-manifesten die ook met Flux werken:
+
+```
+deploy/k8s/
+  base/                 Deployment (1 replica, Recreate), Service, PVC (10Gi), ConfigMap
+  overlays/test/        namespace, image-tag, config-patch en secretGenerator
+```
+
+De pod draait als UID 10001 met een read-only root filesystem, zonder capabilities en met
+seccomp `RuntimeDefault`, en voldoet daarmee aan de Pod Security Standard *restricted* (de
+namespace van het overlay dwingt dat af). Een initContainer voert de migraties uit;
+`/tmp` (waar uploads tijdelijk staan) is een `emptyDir` van maximaal 2Gi. Resources: requests
+100m/256Mi, limits 1 CPU/512Mi (WeasyPrint heeft geheugen nodig voor PDF's).
+
+```bash
+cd deploy/k8s/overlays/test
+cp secret.env.example secret.env     # SECRET_KEY, ADMIN_EMAIL, ADMIN_PASSWORD (gitignored)
+# pas in kustomization.yaml de hostnaam (APP_BASE_URL), TRUSTED_PROXIES en de image-tag aan
+kubectl apply -k .
+```
+
+Met Flux maak je het secret liever met SOPS of een Sealed Secret aan, in plaats van
+`secret.env`. Er zit bewust geen Ingress-manifest bij; zie hieronder wat de ingress moet regelen.
+
+### Images
+
+Elke push naar `main` publiceert `ghcr.io/hoite/inleverboks:edge` en `:sha-<commit>`; een tag
+`v1.2.3` publiceert `:1.2.3` en `:1.2`. De images zijn multi-arch (amd64 en arm64) en hebben een
+SBOM en provenance. Trivy scant elk image vóór het pushen: bij een CRITICAL kwetsbaarheid wordt
+er niets gepubliceerd, en de resultaten staan onder *Security → Code scanning*. Pin in productie
+een versie of een `sha-…`-tag in plaats van `edge`.
 
 ## Aandachtspunten voor de ingress
 
-*(volgt uitgebreider in fase 7)* In het kort: de maximale request-grootte moet passen bij
-`MAX_SUBMISSION_MB` (plus ongeveer 1 MB voor de multipart-overhead), er zijn ruime timeouts
-nodig voor uploads en zip-downloads, de ingress moet forwarded headers doorgeven en TLS
-regelen, en `TRUSTED_PROXIES` moet op het pod-bereik van de ingress-controller staan. Zonder
-die instelling ziet de app alleen het IP-adres van de ingress, en werkt de IP-whitelist van
-examens niet goed. Zet request-buffering bij voorkeur uit, zodat uploads direct naar de app
-streamen.
+- **Request-grootte:** minimaal `MAX_SUBMISSION_MB` plus ongeveer 1 MB voor de
+  multipart-overhead. Bij ingress-nginx: `nginx.ingress.kubernetes.io/proxy-body-size: "101m"`.
+  De app weigert zelf alles wat groter is.
+- **Timeouts:** ruim, voor trage uploads en grote zip-downloads, bijvoorbeeld 600 seconden
+  (`proxy-read-timeout` en `proxy-send-timeout`).
+- **Buffering:** zet request-buffering uit (`proxy-request-buffering: "off"`), zodat uploads
+  direct naar de app streamen. Response-buffering mag ook uit, voor de gestreamde zip.
+- **Forwarded headers:** de ingress moet `X-Forwarded-For` en `X-Forwarded-Proto` doorgeven, en
+  `TRUSTED_PROXIES` moet het pod-bereik van de ingress-controller bevatten (bijvoorbeeld
+  `10.42.0.0/16`). Zonder die instelling ziet de app alleen het IP-adres van de ingress, en werkt
+  de IP-whitelist van examens niet. Komt het verkeer via nog een proxy of load balancer, zet die
+  dan ook in de lijst.
+- **TLS:** verplicht. De browser berekent de hashes alleen in een beveiligde context, en
+  cookies zijn standaard `Secure`. Zet daarna `HSTS_ENABLED=true`.
 
 ## Bewaartermijn en afronden
 
@@ -216,10 +283,24 @@ docker run --rm -v inleverboks-data:/data --env-file .env ghcr.io/hoite/inleverb
 
 ## Opschalen
 
-*(volgt in fase 7)* Opschalen gaat met PostgreSQL, S3, `replicas > 1` en
-`strategy: RollingUpdate`. Let op: de rate limiting (login, TOTP, links, toegangscode, upload)
-staat in het geheugen en geldt dus **per pod**. Met 3 replicas is het effectieve maximum
-ongeveer 3 keer zo hoog. Redis hiervoor staat op de roadmap.
+Voor meer dan één replica:
+
+1. **PostgreSQL** in plaats van SQLite (`DATABASE_URL=postgresql://…`).
+2. **S3** (bijvoorbeeld MinIO) in plaats van lokale opslag (`STORAGE_BACKEND=s3`), en geen PVC
+   meer voor `/data`.
+3. `replicas > 1` en `strategy: RollingUpdate` in een overlay.
+
+De sessies staan in de database, en de achtergrondtaken gebruiken een lock in de database,
+zodat ze maar op één pod tegelijk draaien. Kanttekeningen:
+
+- De **rate limiting** (login, TOTP, links, toegangscode, upload) staat in het geheugen en geldt
+  dus **per pod**. Met 3 replicas is het effectieve maximum ongeveer 3 keer zo hoog. Redis
+  hiervoor staat op de roadmap.
+- Een wijziging in de **huisstijl** is op de andere pods binnen 30 seconden zichtbaar.
+- De ingebouwde **back-up** bevat bij PostgreSQL alleen de bestanden; maak daarnaast een
+  `pg_dump`.
+
+`compose.scale.yaml` start PostgreSQL en MinIO om deze opzet lokaal te testen.
 
 ## Ontwikkelen
 

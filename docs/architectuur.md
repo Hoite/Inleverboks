@@ -9,7 +9,8 @@ flowchart TB
     mw["Middleware: proxy headers → body-limiet → CSRF-cookie → security headers"]
     web["web/: routes, templates, deps (sessie, rol), CSRF-check"]
     policy["policy.py: autorisatiematrix"]
-    services["services/: auth, users, audit, settings, whitelist, totp, ..."]
+    services["services/: auth, users, audit, exams, submissions, review, lifecycle, branding, ..."]
+    jobs["services/scheduler.py: APScheduler + lock in de database"]
     adapters["adapters/: StorageBackend · AuthProvider · Mailer · FileScanner · RateLimiter · Clock"]
   end
   db[("SQLite (WAL) / PostgreSQL")]
@@ -17,6 +18,7 @@ flowchart TB
   browser --> mw --> web
   web --> policy
   web --> services
+  jobs --> services
   services --> adapters
   services --> db
   adapters --> store
@@ -228,3 +230,40 @@ sequenceDiagram
 - **Preview:** de hoofdpagina heeft een strikte CSP. Het iframe `/static/preview/frame.html` is
   gesandboxed (opaque origin) en heeft een eigen CSP die inline stijlen toestaat voor
   docx-preview en SheetJS. Het bestand gaat via `postMessage` als ArrayBuffer naar het frame.
+
+## Levenscyclus en achtergrondtaken
+
+```mermaid
+stateDiagram-v2
+  [*] --> concept
+  concept --> gepland: publiceren
+  gepland --> concept: terug naar concept (zonder inleveringen)
+  gepland --> open: starttijd
+  open --> gesloten: eindtijd (en laatste verlenging)
+  gesloten --> afgerond: bewaartermijn verstreken\n(definitief PV → bestanden weg)
+  gesloten --> gesloten: bewaren-vlag
+  afgerond --> [*]: definitief verwijderen (admin)
+```
+
+- `services/scheduler.py` start in elke pod een `BackgroundScheduler` (als `SCHEDULER_ENABLED`):
+  de bewaartermijn elk kwartier, opruimen elk uur en de back-up volgens `BACKUP_SCHEDULE`. Elke
+  taak neemt eerst een lease-lock in de tabel `job_lock` (30 minuten), zodat hij bij meerdere
+  replicas op één pod tegelijk draait. De CLI (`retention run`, `cleanup run`, `backup`)
+  gebruikt dezelfde code.
+- `services/lifecycle.py` berekent de verwijderdatum in kalenderdagen in `APP_TIMEZONE` en
+  rondt een examen af: eerst een definitief proces-verbaal met integriteitscontrole, daarna
+  het verwijderen van alle bestanden en de klassenlijst. Mislukt het proces-verbaal, dan wordt
+  er niets verwijderd.
+- `services/maintenance.py` ruimt verweesde objecten (ouder dan 1 uur), verlopen tokens,
+  sessies en uitnodigingen op, en controleert de hashes van alle opgeslagen bestanden.
+
+## Huisstijl
+
+De admin slaat de huisstijl op in de instelling `branding` (naam, kleuren, lettertype, hash van
+het logo). Elke pagina laadt `/huisstijl/stijl.css?v=<versie>`, een kleine stylesheet met de
+CSS-variabelen. Zo is er geen inline stijl nodig en blijft de CSP strikt. De versie is een hash
+van de instelling, dus de URL verandert bij elke wijziging en mag een jaar gecachet worden.
+`BrandingService.current()` houdt de instelling 30 seconden in het geheugen; bij een
+databasefout valt hij terug op de standaard, zodat geen enkele pagina daardoor stukgaat.
+De contrastcontrole (`CONTRAST_PAIRS`) staat in `services/branding.py`; het live voorbeeld in
+`static/js/admin/branding.js` rekent hetzelfde uit, maar de server blijft leidend.

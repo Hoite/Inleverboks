@@ -15,7 +15,7 @@ nooit van een CDN geladen. De versie, de bron-URL en de SHA-256 per bestand staa
 | docx-preview | 0.4.1 | Apache-2.0 | npm: `dist/docx-preview.min.js` |
 | JSZip | 3.10.2 | MIT (dubbel gelicentieerd MIT of GPL-3.0; gebruikt onder MIT) | npm: `dist/jszip.min.js` |
 | SheetJS Community Edition | 0.20.3 | Apache-2.0 | `https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js` (officiële distributie) |
-| *(volgt in fase 7: Poppins)* | | | |
+| Poppins (`@fontsource/poppins`), latin, 400/600/700 | 5.3.0 | SIL Open Font License 1.1 | npm: `files/poppins-latin-{400,600,700}-normal.woff2`; licentietekst in `static/vendor/poppins/LICENSE` |
 
 Bijwerken of controleren gaat met `uv run python scripts/vendor.py`. Een test controleert dat
 elk bestand overeenkomt met de vastgelegde SHA-256.
@@ -25,7 +25,7 @@ elk bestand overeenkomt met de vastgelegde SHA-256.
 De Python-pakketten worden geïnstalleerd vanuit PyPI en zijn vastgepind in `uv.lock`. De
 belangrijkste zijn: FastAPI (MIT), Starlette (BSD-3), Uvicorn (BSD-3), Jinja2 (BSD-3),
 SQLAlchemy (MIT), Alembic (MIT), Pydantic (MIT), argon2-cffi (MIT), pyotp (MIT),
-segno (BSD-3), WeasyPrint (BSD-3), zipstream-ng (LGPL-3.0), Typer (MIT), cryptography
+segno (BSD-3), Pillow (MIT-CMU), WeasyPrint (BSD-3), zipstream-ng (LGPL-3.0), Typer (MIT), cryptography
 (Apache-2.0/BSD), psycopg (LGPL-3.0), boto3 (Apache-2.0), APScheduler (MIT), structlog
 (MIT/Apache-2.0), Babel (BSD-3) en charset-normalizer (MIT).
 

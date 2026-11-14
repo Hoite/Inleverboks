@@ -32,6 +32,8 @@ uv run python -I scripts/vendor.py        # meegeleverde JS ophalen/controleren 
 TEST_S3_ENDPOINT=http://127.0.0.1:9000 uv run pytest tests/integration/test_storage_contract.py
 uv run uvicorn inleverboks.asgi:app --reload --port 8080   # lokaal draaien (.env nodig)
 docker build -t inleverboks:dev .
+DEMO_MODE=true uv run inleverboks demo-seed        # voorbeelddata (lege demo-installatie)
+kubectl kustomize deploy/k8s/overlays/test         # manifesten renderen (secret.env nodig)
 docker compose up --build
 ```
 
@@ -115,6 +117,12 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   scheduler gebruiken dezelfde `Jobs`. In tests staat `scheduler_enabled` uit; roep de
   services direct aan met de `FrozenClock`. Async opslag vanuit sync code gaat via
   `services/asyncutil.call_async` (werkt zowel in een worker-thread als daarbuiten).
+- **Huisstijl:** templates krijgen `brand` en `app_name` uit de context (`request.app.state.brand()`);
+  zet nooit kleuren of de appnaam vast in een template. Nieuwe kleurcombinaties in `app.css`
+  horen ook in `CONTRAST_PAIRS` (`services/branding.py`) en in de controle in
+  `static/js/admin/branding.js`. PDF's krijgen `brand` via `PdfRenderer`.
+- **Toegankelijkheid:** `tests/integration/test_accessibility.py` loopt alle paginatypen af
+  (taal, één `h1`, labels, alt, knopnamen). Voeg een nieuwe pagina daar aan toe.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of
   `style=""` in templates. Previews met inline styles draaien in een sandboxed iframe met een
   eigen CSP.
@@ -140,4 +148,4 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - [x] Fase 4: studentflow
 - [x] Fase 5: docentkant
 - [x] Fase 6: levenscyclus
-- [ ] Fase 7: afronding
+- [x] Fase 7: afronding

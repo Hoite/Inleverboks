@@ -78,3 +78,20 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   - opruimtaken voor verweesde objecten, verlopen tokens, sessies en uitnodigingen;
   - `inleverboks retention run [--dry-run]`, `cleanup run`, `backup --to`, `restore --yes` en
     `integrity check [--exam]`.
+- Afronding (fase 7):
+  - een huisstijlscherm voor de admin: naam, lettertype (Poppins of systeem), kleuren met live
+    voorbeeld en contrastcontrole (WCAG AA), logo (PNG/WebP, opnieuw ingelezen) met afgeleid
+    favicon, en terug naar standaard; de appnaam en kleuren ook in de PDF's;
+  - Poppins zelf gehost (SIL OFL);
+  - `inleverboks demo-seed` (alleen met `DEMO_MODE=true`);
+  - Kustomize-manifesten (`deploy/k8s`, base en test-overlay) voor Flux;
+  - `release.yml`: multi-arch image naar `ghcr.io/hoite/inleverboks` met SBOM en provenance,
+    met eerst een Trivy-scan (geen push bij CRITICAL, SARIF naar code scanning);
+  - `dependabot.yml` voor uv, GitHub Actions, Docker en Compose;
+  - een automatische toegankelijkheidscontrole van alle paginatypen.
+
+### Gewijzigd
+
+- De focusring is tweekleurig en invoervelden hebben een donkerdere rand (contrast ≥ 3:1).
+- Het image bevat geen pip meer en neemt de Debian-beveiligingsupdates mee bij het bouwen.
+- De knoppen in de dialogen van de studentpagina hebben hun tekst al in de HTML.
