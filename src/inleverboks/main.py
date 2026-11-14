@@ -33,7 +33,16 @@ from inleverboks.web.middleware import (
     SecurityHeadersMiddleware,
 )
 from inleverboks.web.pdf import PdfRenderer
-from inleverboks.web.routes import admin, auth, classlists, exams, health, public, student
+from inleverboks.web.routes import (
+    admin,
+    auth,
+    classlists,
+    exams,
+    health,
+    public,
+    review,
+    student,
+)
 from inleverboks.web.templating import build_templates, render
 
 STATIC_DIR = Path(__file__).parent / "web" / "static"
@@ -88,7 +97,7 @@ def create_app(
 
     app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
     # The student page at /{slug} is a catch-all and must come last.
-    for module in (health, public, auth, exams, classlists, admin, student):
+    for module in (health, public, auth, exams, review, classlists, admin, student):
         app.include_router(module.router)
 
     @app.exception_handler(RedirectError)

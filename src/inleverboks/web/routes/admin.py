@@ -20,6 +20,7 @@ from inleverboks.services.system_settings import SettingsValidationError, parse_
 from inleverboks.services.whitelist import WhitelistError
 from inleverboks.web.deps import Admin, Db, Svc, client_ip
 from inleverboks.web.messages import describe
+from inleverboks.web.routes.review import audit_export
 from inleverboks.web.templating import render
 
 router = APIRouter(prefix="/admin")
@@ -319,8 +320,26 @@ def settings_save(
 
 @router.get("/auditlog")
 def system_audit(
-    request: Request, ctx: Admin, db: Db, services: Svc, event: str | None = None
+    request: Request,
+    ctx: Admin,
+    db: Db,
+    services: Svc,
+    event: str | None = None,
+    format: str | None = None,
 ) -> Response:
+    if format in {"csv", "pdf"}:
+        services.audit.append(
+            db, "export.audit", actor=Actor.for_user(ctx.user), ip=client_ip(request),
+            details={"format": format, "chain": SYSTEM_CHAIN},
+        )  # fmt: skip
+        db.commit()
+        query = select(AuditEvent).where(AuditEvent.chain == SYSTEM_CHAIN)
+        if event:
+            query = query.where(AuditEvent.event.startswith(event))
+        events = list(db.scalars(query.order_by(AuditEvent.seq)))
+        return audit_export(
+            request, db, services, SYSTEM_CHAIN, _("System log"), "systeemlog", format, events
+        )
     query = select(AuditEvent).where(AuditEvent.chain == SYSTEM_CHAIN)
     if event:
         query = query.where(AuditEvent.event.startswith(event))

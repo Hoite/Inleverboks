@@ -46,6 +46,9 @@ def error_messages() -> dict[str, str]:
         "class_list_not_found": _("Class list not found."),
         "template_not_found": _("Exam template not found."),
         "exam_not_found": _("Exam not found."),
+        "not_active": _("Only an active hand-in can be undone or declared invalid."),
+        "reason_required": _("Enter a reason."),
+        "reason_too_long": _("The reason is too long."),
         "datetime_invalid": _("Enter a valid date and time."),
         "datetime_nonexistent": _(
             "This time does not exist (the clock moves forward for summer time)."
