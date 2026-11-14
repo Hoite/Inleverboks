@@ -17,7 +17,7 @@ def test_defaults(tmp_path: Path) -> None:
     assert s.max_files_per_submission == 20
     assert s.app_timezone == "Europe/Amsterdam"
     assert s.trusted_proxies == []
-    assert s.scheduler_enabled is True
+    assert Settings.model_fields["scheduler_enabled"].default is True  # tests turn it off
     assert s.backup_keep_days == 7
     assert s.hsts_enabled is False
     assert s.demo_mode is False
