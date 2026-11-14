@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 10:59+0100\n"
+"POT-Creation-Date: 2026-11-14 13:56+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -185,6 +185,9 @@ msgstr "Vul een reden in."
 
 msgid "The reason is too long."
 msgstr "De reden is te lang."
+
+msgid "Only a finalized exam can be deleted permanently."
+msgstr "Alleen een afgerond examen kan definitief worden verwijderd."
 
 #, python-format
 msgid "Use at least %(n)s characters."
@@ -1241,8 +1244,15 @@ msgstr "Nog geen klassenlijsten."
 msgid "New exam"
 msgstr "Nieuw examen"
 
+msgid "The exam has been deleted permanently."
+msgstr "Het examen is definitief verwijderd."
+
 msgid "Link"
 msgstr "Link"
+
+#, python-format
+msgid "Files are deleted on %(d)s"
+msgstr "Bestanden worden verwijderd op %(d)s"
 
 msgid "No exams yet."
 msgstr "Nog geen examens."
@@ -1345,6 +1355,24 @@ msgstr "Presentatiemodus"
 msgid "Link and QR code"
 msgstr "Link en QR-code"
 
+msgid "The retention hold is set. Files will not be deleted."
+msgstr "De bewaren-vlag staat aan. De bestanden worden niet verwijderd."
+
+msgid "The retention hold has been removed."
+msgstr "De bewaren-vlag is weggehaald."
+
+#, python-format
+msgid ""
+"This exam is finalized: the handed-in files were deleted on %(d)s. The proces-verbaal and the "
+"audit log remain."
+msgstr ""
+"Dit examen is afgerond: de ingeleverde bestanden zijn verwijderd op %(d)s. Het proces-verbaal en "
+"het auditlog blijven bewaard."
+
+#, python-format
+msgid "The handed-in files will be deleted on %(d)s."
+msgstr "De ingeleverde bestanden worden verwijderd op %(d)s."
+
 msgid "Counters"
 msgstr "Tellers"
 
@@ -1392,6 +1420,37 @@ msgstr "Alles downloaden (zip)"
 
 msgid "Proces-verbaal (PDF)"
 msgstr "Proces-verbaal (PDF)"
+
+msgid "Proces-verbalen"
+msgstr "Proces-verbalen"
+
+msgid "final"
+msgstr "definitief"
+
+#, python-format
+msgid "Files deleted on %(d)s."
+msgstr "Bestanden verwijderd op %(d)s."
+
+msgid "The retention period starts when the exam is published and closed."
+msgstr "De bewaartermijn begint als het examen gepubliceerd en gesloten is."
+
+msgid "Reason"
+msgstr "Reden"
+
+msgid "e.g. objection or appeal"
+msgstr "bijv. bezwaar of beroep"
+
+msgid "Remove retention hold"
+msgstr "Bewaren-vlag weghalen"
+
+msgid "Set retention hold"
+msgstr "Bewaren-vlag zetten"
+
+msgid "Reason for permanent deletion"
+msgstr "Reden voor definitief verwijderen"
+
+msgid "Delete exam permanently"
+msgstr "Examen definitief verwijderen"
 
 msgid "Edit"
 msgstr "Bewerken"
@@ -1561,9 +1620,6 @@ msgstr "De inlevering is ongeldig verklaard."
 
 msgid "On class list"
 msgstr "Op klassenlijst"
-
-msgid "Reason"
-msgstr "Reden"
 
 msgid "May hand in again"
 msgstr "Mag opnieuw inleveren"

@@ -57,6 +57,7 @@ def _rows(db: Session, services: Services, exams: list[Exam]) -> list[dict[str, 
             "exam": exam,
             "status": services.exams.status(db, exam),
             "submissions": services.exams.submission_count(db, exam),
+            "retention": services.lifecycle.retention(db, exam),
         }
         for exam in exams
     ]
@@ -84,6 +85,7 @@ def _dashboard(request: Request, tab: str, rows: list[dict[str, Any]], **extra: 
         tab=tab,
         rows=rows,
         status_labels=status_labels(),
+        now=request.app.state.services.clock.now(),
         **extra,
     )
 
@@ -102,9 +104,11 @@ def shared(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
 
 
 @router.get("/afgerond")
-def finalized(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
+def finalized(
+    request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None
+) -> Response:
     return _dashboard(
-        request, "finalized", _rows(db, services, services.exams.finalized(db, ctx.user))
+        request, "finalized", _rows(db, services, services.exams.finalized(db, ctx.user)), ok=ok
     )
 
 

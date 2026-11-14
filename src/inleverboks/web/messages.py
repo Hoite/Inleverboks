@@ -49,6 +49,7 @@ def error_messages() -> dict[str, str]:
         "not_active": _("Only an active hand-in can be undone or declared invalid."),
         "reason_required": _("Enter a reason."),
         "reason_too_long": _("The reason is too long."),
+        "not_finalized": _("Only a finalized exam can be deleted permanently."),
         "datetime_invalid": _("Enter a valid date and time."),
         "datetime_nonexistent": _(
             "This time does not exist (the clock moves forward for summer time)."

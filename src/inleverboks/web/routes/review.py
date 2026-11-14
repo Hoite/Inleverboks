@@ -3,19 +3,17 @@ receipt verification and the exam audit log (spec §6, §7, §8)."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 import uuid
 from collections.abc import Iterator
 from typing import Annotated, Any
 
-from anyio import from_thread
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from inleverboks.db.models import AuditEvent, Exam, Submission, SubmissionFile, User
+from inleverboks.db.models import AuditEvent, Exam, ProcesVerbaal, Submission, SubmissionFile, User
 from inleverboks.i18n import gettext as _
 from inleverboks.policy import ExamAction, ExamRef, can_exam
 from inleverboks.services.audit import Actor
@@ -25,7 +23,6 @@ from inleverboks.services.exams import ExamStatus
 from inleverboks.services.exports import (
     IntegrityReport,
     build_zip,
-    check_integrity,
     local,
     plan_zip,
     write_csv,
@@ -37,7 +34,7 @@ from inleverboks.services.overview import (
     filter_and_sort,
     load_submissions,
 )
-from inleverboks.services.pv import new_document_id
+from inleverboks.services.pv import RenderPv, generate
 from inleverboks.web.deps import Db, Svc, Teacher, client_ip, is_background_poll
 from inleverboks.web.downloads import bytes_download, download_headers, stream_download
 from inleverboks.web.messages import describe
@@ -112,6 +109,7 @@ def overview(
     desc: bool = False,
     fragment: bool = False,
     ok: str | None = None,
+    error: str | None = None,
 ) -> Response:
     exam = services.exams.get_for(db, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
     data = build_overview(db, exam)
@@ -130,6 +128,16 @@ def overview(
         "polling": exam_status is ExamStatus.OPEN,
         "perms": {a.value: can_exam(ctx.user, a, _ref(exam)) for a in ExamAction},
         "ok": ok,
+        "error": [describe(DomainError(error))[0]] if error else [],
+        "retention": services.lifecycle.retention(db, exam),
+        "now": services.clock.now(),
+        "proces_verbalen": list(
+            db.scalars(
+                select(ProcesVerbaal)
+                .where(ProcesVerbaal.exam_id == exam.id)
+                .order_by(ProcesVerbaal.generated_at.desc())
+            )
+        ),
     }
     if fragment or is_background_poll(request):
         return render(request, "teacher/_overview_table.html.j2", **context)
@@ -440,43 +448,36 @@ def overview_csv(
     )
 
 
+def render_pv_factory(pdf_renderer: Any) -> RenderPv:
+    """Render a proces-verbaal with the translated labels of the web layer."""
+
+    def render(context: dict[str, Any]) -> bytes:
+        context = {
+            **context,
+            "signal_labels": signal_labels(),
+            "row_status_labels": row_status_labels(),
+            "warning_labels": warning_labels(),
+        }
+        pdf: bytes = pdf_renderer.render("pdf/proces_verbaal.html.j2", context)
+        return pdf
+
+    return render
+
+
 def generate_pv(
     request: Request, db: Session, services: Services, exam: Exam, user: User | None, *, final: bool
 ) -> tuple[bytes, str]:
-    """Run the integrity check, render, store and record a proces-verbaal."""
-    files = [f for s in load_submissions(db, exam) for f in s.files]
-    report = from_thread.run(check_integrity, services.storage, files, services.clock.now())
-    document_id = new_document_id(services.clock.now())
-    context = services.pv.context(
-        db, exam, generated_by=user, report=report, document_id=document_id, final=final
-    )
-    context["signal_labels"] = signal_labels()
-    context["row_status_labels"] = row_status_labels()
-    context["warning_labels"] = warning_labels()
-    pdf: bytes = request.app.state.pdf.render("pdf/proces_verbaal.html.j2", context)
-    sha = hashlib.sha256(pdf).hexdigest()
-    key = f"pv/{exam.id}/{document_id}.pdf"
-
-    async def store() -> None:
-        async def chunks() -> Any:
-            yield pdf
-
-        await services.storage.put(key, chunks())
-
-    from_thread.run(store)
-    services.pv.record(
+    pdf, pv = generate(
         db,
+        services.pv,
+        services.storage,
+        render_pv_factory(request.app.state.pdf),
         exam,
-        user=user,
-        document_id=document_id,
-        storage_key=key,
-        sha256=sha,
-        audit_head_hash=context["audit_head_hash"],
-        report=report,
+        user,
         final=final,
         ip=client_ip(request),
     )
-    return pdf, document_id
+    return pdf, pv.document_id
 
 
 @router.post("/examens/{exam_id}/proces-verbaal")
@@ -486,6 +487,65 @@ def proces_verbaal(
     exam = services.exams.get_for(db, ctx.user, exam_id, ExamAction.EXPORT)
     pdf, document_id = generate_pv(request, db, services, exam, ctx.user, final=False)
     return bytes_download(pdf, f"{exam.slug}_{document_id}.pdf", "application/pdf")
+
+
+@router.get("/examens/{exam_id}/proces-verbalen/{pv_id}")
+def download_pv(
+    request: Request, exam_id: uuid.UUID, pv_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    exam = services.exams.get_for(db, ctx.user, exam_id, ExamAction.EXPORT)
+    pv = db.get(ProcesVerbaal, pv_id)
+    if pv is None or pv.exam_id != exam.id:
+        raise NotFoundError()
+    _audit(services, db, ctx.user, exam, "download.pv", request, document_id=pv.document_id)
+    return stream_download(
+        services.storage.open(pv.storage_key), f"{exam.slug}_{pv.document_id}.pdf"
+    )
+
+
+# Hold flag and permanent deletion ------------------------------------------------------
+
+
+@router.post("/examens/{exam_id}/bewaren")
+def set_hold(
+    request: Request,
+    exam_id: uuid.UUID,
+    ctx: Teacher,
+    db: Db,
+    services: Svc,
+    reason: Annotated[str, Form(max_length=2000)] = "",
+    remove: Annotated[bool, Form()] = False,
+) -> Response:
+    exam = services.exams.get_for(db, ctx.user, exam_id, ExamAction.SET_HOLD)
+    try:
+        if remove:
+            services.lifecycle.remove_hold(db, ctx.user, exam, reason, ip=client_ip(request))
+        else:
+            services.lifecycle.set_hold(db, ctx.user, exam, reason, ip=client_ip(request))
+    except DomainError as exc:
+        db.rollback()
+        return _redirect(f"/docent/examens/{exam.id}?error={exc.code}#bewaartermijn")
+    return _redirect(
+        f"/docent/examens/{exam.id}?ok={'hold_removed' if remove else 'hold_set'}#bewaartermijn"
+    )
+
+
+@router.post("/examens/{exam_id}/definitief-verwijderen")
+def delete_permanently(
+    request: Request,
+    exam_id: uuid.UUID,
+    ctx: Teacher,
+    db: Db,
+    services: Svc,
+    reason: Annotated[str, Form(max_length=2000)] = "",
+) -> Response:
+    exam = services.exams.get_for(db, ctx.user, exam_id, ExamAction.DELETE_FINALIZED)
+    try:
+        services.lifecycle.delete_permanently(db, ctx.user, exam, reason, ip=client_ip(request))
+    except DomainError as exc:
+        db.rollback()
+        return _redirect(f"/docent/examens/{exam.id}?error={exc.code}")
+    return _redirect("/docent/afgerond?ok=deleted")
 
 
 # Receipt verification ----------------------------------------------------------------
