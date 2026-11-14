@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: inleverboks
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

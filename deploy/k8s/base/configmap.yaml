@@ -1,0 +1,24 @@
+# Non-secret settings. SECRET_KEY and the admin bootstrap come from the Secret
+# "inleverboks-secret" (see the overlay's secretGenerator).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inleverboks-config
+data:
+  APP_BASE_URL: "https://inleverboks.example.org"
+  APP_TIMEZONE: "Europe/Amsterdam"
+  DATABASE_URL: "sqlite:////data/inleverboks.db"
+  STORAGE_BACKEND: "local"
+  STORAGE_PATH: "/data/files"
+  # The initContainer runs the migrations.
+  RUN_MIGRATIONS_ON_START: "false"
+  SCHEDULER_ENABLED: "true"
+  # Set to the pod CIDR of the ingress controller, otherwise the app only sees its IP.
+  TRUSTED_PROXIES: ""
+  MAX_FILE_MB: "25"
+  MAX_SUBMISSION_MB: "100"
+  MAX_FILES_PER_SUBMISSION: "20"
+  SESSION_COOKIE_SECURE: "true"
+  HSTS_ENABLED: "true"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"

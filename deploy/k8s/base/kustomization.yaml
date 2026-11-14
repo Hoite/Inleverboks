@@ -1,0 +1,20 @@
+# Inleverboks base: one replica with SQLite and local storage on a ReadWriteOnce volume.
+# Use an overlay (see overlays/test) for the namespace, the image tag, the config and the secret.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: inleverboks
+      app.kubernetes.io/part-of: inleverboks
+    includeSelectors: true
+
+resources:
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+
+images:
+  - name: ghcr.io/hoite/inleverboks
+    newTag: edge

@@ -1,0 +1,31 @@
+# Test environment. Before use: cp secret.env.example secret.env and fill it in
+# (secret.env is gitignored), and set the hostname and the ingress pod CIDR below.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: inleverboks-test
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+images:
+  - name: ghcr.io/hoite/inleverboks
+    newTag: edge  # pin a release (for example 1.0.0) or a sha-… tag here
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: inleverboks-config
+    patch: |-
+      - op: replace
+        path: /data/APP_BASE_URL
+        value: https://inleverboks-test.example.org
+      - op: replace
+        path: /data/TRUSTED_PROXIES
+        value: 10.42.0.0/16
+
+secretGenerator:
+  - name: inleverboks-secret
+    envs:
+      - secret.env
