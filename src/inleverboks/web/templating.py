@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoes
 
 from inleverboks.config import Settings
 from inleverboks.i18n import DEFAULT_LOCALE, get_translations
+from inleverboks.services.branding import Branding
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 STATIC_DIR = Path(__file__).parent / "static"
@@ -33,7 +34,10 @@ def asset(path: str) -> str:
 
 def _context(request: Request) -> dict[str, Any]:
     auth = getattr(request.state, "auth", None)
+    brand: Branding = request.app.state.brand()
     return {
+        "brand": brand,
+        "app_name": brand.app_name,
         "csrf_token": getattr(request.state, "csrf_token", ""),
         "auth": auth,
         "current_user": auth.user if auth else None,

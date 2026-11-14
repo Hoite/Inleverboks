@@ -98,6 +98,42 @@
       "member": null,
       "dest": "sheetjs/LICENSE",
       "sha256": "4d2a38ac35cda06a555c84074a819d413339cd3691b822cae50f8f322fe01f64"
+    },
+    {
+      "name": "Poppins 400",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "url": "https://registry.npmjs.org/@fontsource/poppins/-/poppins-5.3.0.tgz",
+      "member": "package/files/poppins-latin-400-normal.woff2",
+      "dest": "poppins/poppins-latin-400-normal.woff2",
+      "sha256": "7d93459d86585bfcdbb7e0376056226adb25821ee54b96236fe2123e9560929f"
+    },
+    {
+      "name": "Poppins 600",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "url": "https://registry.npmjs.org/@fontsource/poppins/-/poppins-5.3.0.tgz",
+      "member": "package/files/poppins-latin-600-normal.woff2",
+      "dest": "poppins/poppins-latin-600-normal.woff2",
+      "sha256": "f4e80d9dfd374d02989b87a27b5ed4cb78fbb177c27f1478e9a8b0afb7513149"
+    },
+    {
+      "name": "Poppins 700",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "url": "https://registry.npmjs.org/@fontsource/poppins/-/poppins-5.3.0.tgz",
+      "member": "package/files/poppins-latin-700-normal.woff2",
+      "dest": "poppins/poppins-latin-700-normal.woff2",
+      "sha256": "9338e65fc077355c7a87ae0d64cc101e23b9bf8ad78ae65f0f319c857311b526"
+    },
+    {
+      "name": "Poppins (license)",
+      "version": "5.3.0",
+      "license": "OFL-1.1",
+      "url": "https://registry.npmjs.org/@fontsource/poppins/-/poppins-5.3.0.tgz",
+      "member": "package/LICENSE",
+      "dest": "poppins/LICENSE",
+      "sha256": "5c4a92c8f8ce0ab211f4c72889d82383c9644546115d9ba39a4f2d5b8f37014b"
     }
   ]
 }

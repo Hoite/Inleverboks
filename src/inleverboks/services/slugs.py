@@ -21,8 +21,8 @@ GENERATED_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"
 RESERVED = frozenset(
     {
         "account", "admin", "api", "assets", "docent", "docenten", "examen", "examens",
-        "favicon-ico", "health", "healthz", "help", "i", "inleveren", "inloggen", "login",
-        "logout", "metrics", "ontvangstbewijs", "over", "presentatie", "privacy", "qr",
+        "favicon-ico", "health", "healthz", "help", "huisstijl", "i", "inleveren", "inloggen",
+        "login", "logout", "metrics", "ontvangstbewijs", "over", "presentatie", "privacy", "qr",
         "readyz", "reset", "robots-txt", "s", "static", "status", "student", "uitloggen",
         "uitnodiging", "vendor", "well-known", "www",
     }

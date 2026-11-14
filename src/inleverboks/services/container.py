@@ -15,6 +15,7 @@ from inleverboks.adapters.storage import StorageBackend
 from inleverboks.config import Settings
 from inleverboks.services.audit import AuditService
 from inleverboks.services.auth import AuthService
+from inleverboks.services.branding import BrandingService
 from inleverboks.services.classlists import ClassListService
 from inleverboks.services.exams import ExamService
 from inleverboks.services.lifecycle import LifecycleService
@@ -49,6 +50,7 @@ class Services:
     pv: ProcesVerbaalService
     lifecycle: LifecycleService
     maintenance: MaintenanceService
+    branding: BrandingService
     mailer: Mailer = field(default_factory=NullMailer)
     scanner: FileScanner = field(default_factory=NoopScanner)
     # Rate-limit delays; tests replace this with a no-op.
@@ -114,4 +116,5 @@ def build_services(
             tz=env.timezone,
         ),
         maintenance=MaintenanceService(clock=clock, audit=audit, storage=storage, flow=flow),
+        branding=BrandingService(clock, audit, storage),
     )

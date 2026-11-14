@@ -50,6 +50,10 @@ def error_messages() -> dict[str, str]:
         "reason_required": _("Enter a reason."),
         "reason_too_long": _("The reason is too long."),
         "not_finalized": _("Only a finalized exam can be deleted permanently."),
+        "logo_missing": _("Choose a logo file."),
+        "logo_too_large": _("The logo is too large (at most 1 MB and 4 megapixels)."),
+        "logo_format": _("The logo must be a PNG or WebP file."),
+        "logo_invalid": _("This image cannot be read."),
         "datetime_invalid": _("Enter a valid date and time."),
         "datetime_nonexistent": _(
             "This time does not exist (the clock moves forward for summer time)."

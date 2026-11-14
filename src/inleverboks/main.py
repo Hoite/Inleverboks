@@ -37,6 +37,7 @@ from inleverboks.web.pdf import PdfRenderer
 from inleverboks.web.routes import (
     admin,
     auth,
+    branding,
     classlists,
     exams,
     health,
@@ -101,14 +102,16 @@ def create_app(
     app.state.services = build_services(settings, storage, clock=clock, limiter=limiter)
     app.state.templates = build_templates(settings)
     app.state.student_codec = StateCodec(settings.secret_key.get_secret_value())
-    app.state.pdf = PdfRenderer(app.state.templates.env)
+    services = app.state.services
+    app.state.brand = lambda: services.branding.current(app.state.sessionmaker)
+    app.state.pdf = PdfRenderer(app.state.templates.env, app.state.brand)
     app.state.jobs = Jobs(
         app.state.services, app.state.sessionmaker, render_pv_factory(app.state.pdf)
     )
 
     app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
     # The student page at /{slug} is a catch-all and must come last.
-    for module in (health, public, auth, exams, review, classlists, admin, student):
+    for module in (health, public, branding, auth, exams, review, classlists, admin, student):
         app.include_router(module.router)
 
     @app.exception_handler(RedirectError)
