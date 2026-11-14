@@ -6,6 +6,7 @@
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
   <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
+  {% block head_extra %}{% endblock %}
   {% if current_user %}
   <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
   <script src="{{ asset('vendor/htmx/htmx.min.js') }}" defer></script>

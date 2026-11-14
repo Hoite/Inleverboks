@@ -1,0 +1,71 @@
+{% extends "student/_layout.html.j2" %}
+{% from "_macros.html.j2" import csrf with context %}
+{# Inactivity is handled by the script (warning with countdown), not by a meta refresh. #}
+{% block refresh %}{% endblock %}
+{% block head_extra %}
+{{ super() }}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script type="module" src="{{ asset('js/student/app.js') }}"></script>
+{% endblock %}
+{% block head_more %} · {{ _("Time remaining") }}: <span class="mono" id="time-left">–</span>{% endblock %}
+{% block student %}
+<div id="student-app" data-config="{{ config_json }}">
+  <p class="identity-line">{{ state.display_name }} · <span class="mono">{{ state.student_number }}</span>
+    · <a href="/{{ exam.slug }}/opnieuw">{{ _("Not you? Start again") }}</a></p>
+
+  <noscript>
+    <div class="alert alert-error"><span class="alert-icon" aria-hidden="true">!</span>
+      <div><p>{{ _("Handing in requires JavaScript. Use another browser or report to the teacher.") }}</p></div></div>
+  </noscript>
+
+  <section aria-labelledby="files-title">
+    <h2 id="files-title">{{ _("Choose files") }}</h2>
+    <div class="dropzone" id="dropzone">
+      <label class="button button-secondary" for="pick-any">{{ _("Choose files") }}</label>
+      <input id="pick-any" type="file" multiple class="visually-hidden">
+      <span class="muted">{{ _("or drag files here. Files with the expected name go to the right place automatically.") }}</span>
+    </div>
+    <div id="slots" class="slot-list"></div>
+  </section>
+
+  <form id="submit-form" class="stack top-gap" novalidate>
+    {{ csrf() }}
+    <div id="blocking" class="alert alert-error" role="alert" hidden><span class="alert-icon" aria-hidden="true">!</span><div><ul id="blocking-list"></ul></div></div>
+    <label class="checkbox declaration">
+      <input type="checkbox" id="declaration" required>
+      {{ _("I declare that this is my own work and that my hand-in is complete.") }}
+    </label>
+    <button type="submit" class="button button-large" id="submit-button">{{ _("Hand in") }}</button>
+    <div id="progress-wrap" hidden>
+      <label for="progress">{{ _("Uploading…") }}</label>
+      <progress id="progress" max="100" value="0"></progress>
+    </div>
+    <p id="status" class="status-line" role="status" aria-live="polite"></p>
+  </form>
+</div>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+  <h2 id="confirm-title"></h2>
+  <p id="confirm-intro"></p>
+  <ul id="confirm-list"></ul>
+  <div class="button-row">
+    <button type="button" class="button" id="confirm-yes"></button>
+    <button type="button" class="button button-secondary" id="confirm-no"></button>
+  </div>
+</dialog>
+
+<dialog id="preview-dialog" class="preview-dialog" aria-labelledby="preview-title">
+  <div class="preview-head">
+    <h2 id="preview-title"></h2>
+    <button type="button" class="button button-secondary button-small" id="preview-close"></button>
+  </div>
+  <p class="hint" id="preview-note"></p>
+  <iframe id="preview-frame" title="{{ _('Preview') }}" sandbox="allow-scripts"></iframe>
+</dialog>
+
+<dialog id="inactive-dialog" aria-labelledby="inactive-title">
+  <h2 id="inactive-title"></h2>
+  <p id="inactive-body"></p>
+  <button type="button" class="button" id="inactive-stay"></button>
+</dialog>
+{% endblock %}

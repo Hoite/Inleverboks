@@ -1,0 +1,39 @@
+<section class="receipt" aria-labelledby="receipt-title" tabindex="-1" id="receipt">
+  <div class="alert alert-success" role="status"><span class="alert-icon" aria-hidden="true">✓</span>
+    <div><p><strong>{{ _("Handed in.") }}</strong> {{ _("Keep this receipt. You cannot request it again later.") }}</p></div></div>
+  <h2 id="receipt-title">{{ _("Receipt") }}</h2>
+  <dl class="details receipt-details">
+    <dt>{{ _("Hand-in code") }}</dt><dd class="mono receipt-code">{{ receipt_code }}</dd>
+    {% if verification_code %}<dt>{{ _("Verification code") }}</dt><dd class="mono receipt-code">{{ verification_code }}</dd>{% endif %}
+    <dt>{{ _("Exam") }}</dt><dd>{{ exam_name }}</dd>
+    <dt>{{ _("Name") }}</dt><dd>{{ student_name }}</dd>
+    <dt>{{ _("Student number") }}</dt><dd class="mono">{{ student_number }}</dd>
+    <dt>{{ _("Handed in at") }}</dt><dd>{{ started_at|localtime("%d-%m-%Y %H:%M:%S") }} ({{ _("server time") }})</dd>
+  </dl>
+  <h3>{{ _("Files") }}</h3>
+  <ul class="receipt-files">
+  {% for f in files %}
+    <li>
+      <strong>{{ f.name }}</strong>
+      <span class="muted">· {{ f.slot or _("Extra file") }} · {{ "{:,}".format(f.size).replace(",", ".") }} bytes</span>
+      <div class="mono hash">SHA-256: {% for i in range(0, 64, 8) %}{{ f.sha256[i:i+8] }} {% endfor %}</div>
+    </li>
+  {% endfor %}
+  </ul>
+  {% if warnings %}
+  <h3>{{ _("Confirmed warnings") }}</h3>
+  <ul>{% for w in warnings %}<li>{{ warning_labels.get(w.code, w.code) }}{% if w.get('file') %}: {{ w.file }}{% endif %}{% if w.get('slot') %}: {{ w.slot }}{% endif %}{% if w.get('expected') %} ({{ w.actual }} / {{ w.expected }}){% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  <p>✓ {{ _("I declare that this is my own work and that my hand-in is complete.") }}</p>
+  <div class="button-row no-print">
+    <form method="post" action="/ontvangstbewijs" id="receipt-pdf" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="token" value="{{ token }}">
+      <input type="hidden" name="verification_code" value="{{ verification_code or '' }}">
+      <button type="submit" class="button button-secondary">{{ _("Download PDF") }}</button>
+    </form>
+    <button type="button" class="button button-secondary" data-action="print">{{ _("Print") }}</button>
+    <a class="button" href="/{{ exam_slug }}/opnieuw">{{ _("Done") }}</a>
+  </div>
+  <p class="hint no-print">{{ _("This page is cleared automatically after %(m)s minutes.", m=receipt_reset_seconds // 60) }}</p>
+</section>

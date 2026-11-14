@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 08:46+0100\n"
+"POT-Creation-Date: 2026-11-14 10:25+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -299,6 +299,189 @@ msgstr "Gesloten"
 msgid "Finalized"
 msgstr "Afgerond"
 
+msgid "The access code is incorrect."
+msgstr "De toegangscode klopt niet."
+
+msgid "Too many attempts. Wait a moment and try again."
+msgstr "Te veel pogingen. Wacht even en probeer het opnieuw."
+
+msgid "This student number is not valid."
+msgstr "Dit studentnummer is niet geldig."
+
+msgid "You have already handed in. Report to the teacher."
+msgstr "Je hebt al ingeleverd. Meld je bij de docent."
+
+msgid "Check your student number or report to the teacher."
+msgstr "Controleer je studentnummer of meld je bij de docent."
+
+msgid "Enter your first name and last name."
+msgstr "Vul je voornaam en achternaam in."
+
+msgid "Upload failed, try again."
+msgstr "Upload mislukt, probeer het opnieuw."
+
+msgid "Your session has expired. Start again."
+msgstr "Je sessie is verlopen. Begin opnieuw."
+
+msgid "Confirm the declaration first."
+msgstr "Bevestig eerst de verklaring."
+
+msgid "Confirm the warnings first."
+msgstr "Bevestig eerst de waarschuwingen."
+
+msgid "Choose at least one file."
+msgstr "Kies minimaal één bestand."
+
+msgid "Too many files."
+msgstr "Te veel bestanden."
+
+msgid "A file is too large."
+msgstr "Een bestand is te groot."
+
+msgid "The files are too large together."
+msgstr "De bestanden zijn samen te groot."
+
+msgid "A file type is not allowed."
+msgstr "Een bestandstype is niet toegestaan."
+
+msgid "Extra files are not allowed."
+msgstr "Extra bestanden zijn niet toegestaan."
+
+msgid "Each expected file can hold one file."
+msgstr "Elk verwacht bestand kan één bestand bevatten."
+
+msgid "Identical to the empty template"
+msgstr "Identiek aan het lege sjabloon"
+
+msgid "Temporary or lock file of Office"
+msgstr "Tijdelijk bestand of lockbestand van Office"
+
+msgid "The file is empty (0 bytes)"
+msgstr "Het bestand is leeg (0 bytes)"
+
+msgid "The same file is chosen twice"
+msgstr "Hetzelfde bestand is twee keer gekozen"
+
+msgid "The file name differs from the expected name"
+msgstr "De bestandsnaam wijkt af van de verwachte naam"
+
+msgid "Number of files differs from the expected number"
+msgstr "Het aantal bestanden wijkt af van het verwachte aantal"
+
+msgid "No file for expected file"
+msgstr "Geen bestand voor verwacht bestand"
+
+msgid "Expected file"
+msgstr "Verwacht bestand"
+
+msgid "Extra file"
+msgstr "Extra bestand"
+
+msgid "Expected name"
+msgstr "Verwachte naam"
+
+msgid "Choose file"
+msgstr "Bestand kiezen"
+
+msgid "Choose files"
+msgstr "Bestanden kiezen"
+
+msgid "or drag files here"
+msgstr "of sleep bestanden hierheen"
+
+msgid "Remove"
+msgstr "Verwijderen"
+
+msgid "Preview"
+msgstr "Voorbeeld"
+
+msgid "Copy"
+msgstr "Kopiëren"
+
+msgid "Copied"
+msgstr "Gekopieerd"
+
+msgid "Size"
+msgstr "Grootte"
+
+msgid "Calculating SHA-256…"
+msgstr "SHA-256 berekenen…"
+
+msgid "Preview may differ from the layout in Office."
+msgstr "Voorbeeld kan afwijken van de opmaak in Office."
+
+msgid "No preview available for this file type."
+msgstr "Geen voorbeeld beschikbaar voor dit bestandstype."
+
+msgid "The content of a zip file is not checked."
+msgstr "De inhoud van een zip wordt niet gecontroleerd."
+
+msgid "Close"
+msgstr "Sluiten"
+
+msgid "Hand in"
+msgstr "Inleveren"
+
+msgid "Uploading…"
+msgstr "Bezig met uploaden…"
+
+msgid "Are you sure?"
+msgstr "Weet je het zeker?"
+
+msgid "Your hand-in differs from what is expected:"
+msgstr "Je inlevering wijkt af van wat er verwacht wordt:"
+
+msgid "Yes, hand in anyway"
+msgstr "Ja, toch inleveren"
+
+msgid "No, go back"
+msgstr "Nee, terug"
+
+msgid "Are you still there?"
+msgstr "Ben je er nog?"
+
+#, python-format
+msgid "The page is reset in %s seconds."
+msgstr "De pagina wordt over %s seconden leeggemaakt."
+
+msgid "Continue"
+msgstr "Verder"
+
+msgid "Time remaining"
+msgstr "Resterende tijd"
+
+#, python-format
+msgid "You hand in %s files; %s are expected"
+msgstr "Je levert %s bestanden in; er worden er %s verwacht"
+
+#, python-format
+msgid "No file chosen for: %s"
+msgstr "Geen bestand gekozen voor: %s"
+
+msgid "This file type is not allowed"
+msgstr "Dit bestandstype is niet toegestaan"
+
+msgid "The file is too large"
+msgstr "Het bestand is te groot"
+
+msgid "The files are too large together"
+msgstr "De bestanden zijn samen te groot"
+
+msgid "Too many files"
+msgstr "Te veel bestanden"
+
+msgid "This expected file already has a file"
+msgstr "Dit verwachte bestand heeft al een bestand"
+
+msgid "Extra files are not allowed"
+msgstr "Extra bestanden zijn niet toegestaan"
+
+msgid "Handed in."
+msgstr "Ingeleverd."
+
+msgid "Hand-in code"
+msgstr "Inlevercode"
+
 msgid "Skip to content"
 msgstr "Naar de inhoud"
 
@@ -391,9 +574,6 @@ msgstr "Eén bereik per regel, of gescheiden door komma's."
 
 msgid "Save"
 msgstr "Opslaan"
-
-msgid "Remove"
-msgstr "Verwijderen"
 
 msgid "No presets yet."
 msgstr "Nog geen presets."
@@ -630,9 +810,6 @@ msgstr "Herstelcodes"
 msgid "Store these codes in a safe place. Each code works once. They are shown only now."
 msgstr "Bewaar deze codes op een veilige plek. Elke code werkt één keer. Ze worden alleen nu getoond."
 
-msgid "Continue"
-msgstr "Verder"
-
 msgid "Scan the QR code with an authenticator app (for example Microsoft Authenticator)."
 msgstr "Scan de QR-code met een authenticator-app (bijvoorbeeld Microsoft Authenticator)."
 
@@ -651,8 +828,66 @@ msgstr "Code"
 msgid "Enable"
 msgstr "Aanzetten"
 
+msgid "Receipt"
+msgstr "Ontvangstbewijs"
+
+msgid "Verification code"
+msgstr "Verificatiecode"
+
+msgid "Exam"
+msgstr "Examen"
+
+msgid "Handed in at"
+msgstr "Ingeleverd om"
+
+msgid "server time"
+msgstr "servertijd"
+
+msgid "Files"
+msgstr "Bestanden"
+
+msgid "Confirmed warnings"
+msgstr "Bevestigde waarschuwingen"
+
+msgid "I declare that this is my own work and that my hand-in is complete."
+msgstr "Ik verklaar dat dit mijn eigen werk is en dat mijn inlevering compleet is."
+
+msgid "Keep this receipt. You cannot request it again later."
+msgstr "Bewaar dit ontvangstbewijs. Je kunt het later niet opnieuw opvragen."
+
 msgid "Server time"
 msgstr "Servertijd"
+
+msgid "Download PDF"
+msgstr "PDF downloaden"
+
+msgid "Print"
+msgstr "Afdrukken"
+
+msgid "Done"
+msgstr "Klaar"
+
+#, python-format
+msgid "This page is cleared automatically after %(m)s minutes."
+msgstr "Deze pagina wordt na %(m)s minuten automatisch leeggemaakt."
+
+msgid "Access code"
+msgstr "Toegangscode"
+
+msgid "The teacher shows the code on the screen."
+msgstr "De docent laat de code zien op het scherm."
+
+msgid "Next"
+msgstr "Volgende"
+
+msgid "Yes, that is me"
+msgstr "Ja, dat ben ik"
+
+msgid "Infix (optional)"
+msgstr "Tussenvoegsel (optioneel)"
+
+msgid "Start again"
+msgstr "Opnieuw beginnen"
 
 msgid "This hand-in link has not been opened yet by the teacher."
 msgstr "Deze inleverlink is nog niet opengezet door de docent."
@@ -661,11 +896,17 @@ msgstr "Deze inleverlink is nog niet opengezet door de docent."
 msgid "Not opened yet (opens at %(t)s)."
 msgstr "Nog niet geopend (opent om %(t)s)."
 
-msgid "Time remaining"
-msgstr "Resterende tijd"
+msgid "You cannot hand in from this network. Use a school computer or report to the teacher."
+msgstr "Je kunt niet inleveren vanaf dit netwerk. Gebruik een schoolcomputer of meld je bij de docent."
 
-msgid "Handing in opens here."
-msgstr "Hier kun je straks inleveren."
+msgid "Not you? Start again"
+msgstr "Niet jij? Opnieuw beginnen"
+
+msgid "Handing in requires JavaScript. Use another browser or report to the teacher."
+msgstr "Voor het inleveren is JavaScript nodig. Gebruik een andere browser of meld je bij de docent."
+
+msgid "or drag files here. Files with the expected name go to the right place automatically."
+msgstr "of sleep bestanden hierheen. Bestanden met de verwachte naam komen vanzelf op de juiste plek."
 
 #, python-format
 msgid "%(a)s of %(b)s handed in"
@@ -733,9 +974,6 @@ msgstr "%(n)s rijen bevatten fouten. Herstel het bestand en importeer het opnieu
 msgid "Row %(r)s"
 msgstr "Rij %(r)s"
 
-msgid "Preview"
-msgstr "Voorbeeld"
-
 #, python-format
 msgid "%(n)s valid rows."
 msgstr "%(n)s geldige rijen."
@@ -755,9 +993,6 @@ msgstr "CSV-bestand"
 msgid "Separated by ; or , in UTF-8 or Windows-1252. You choose the columns in the next step."
 msgstr "Gescheiden door ; of , in UTF-8 of Windows-1252. In de volgende stap kies je de kolommen."
 
-msgid "Next"
-msgstr "Volgende"
-
 msgid "Imported"
 msgstr "Geïmporteerd"
 
@@ -766,9 +1001,6 @@ msgstr "Nog geen klassenlijsten."
 
 msgid "New exam"
 msgstr "Nieuw examen"
-
-msgid "Exam"
-msgstr "Examen"
 
 msgid "Start"
 msgstr "Start"
@@ -845,9 +1077,6 @@ msgstr "QR downloaden (PNG)"
 
 msgid "Download QR (SVG)"
 msgstr "QR downloaden (SVG)"
-
-msgid "Access code"
-msgstr "Toegangscode"
 
 msgid "Generate new code"
 msgstr "Nieuwe code maken"

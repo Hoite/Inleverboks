@@ -1,0 +1,15 @@
+{% extends "student/_layout.html.j2" %}
+{% from "_macros.html.j2" import csrf with context %}
+{% from "student/_steps.html.j2" import error_box, remaining_text %}
+{% block head_more %} · {{ _("Time remaining") }}: <span class="mono">{{ remaining_text(remaining) }}</span>{% endblock %}
+{% block student %}
+{{ error_box(error) }}
+<form method="post" action="/{{ exam.slug }}/student" class="stack" autocomplete="off">
+  {{ csrf() }}
+  <div class="field">
+    <label for="student_number">{{ _("Student number") }}</label>
+    <input id="student_number" name="student_number" type="text" inputmode="numeric" class="code-input" required maxlength="32" autofocus>
+  </div>
+  <button type="submit" class="button">{{ _("Next") }}</button>
+</form>
+{% endblock %}

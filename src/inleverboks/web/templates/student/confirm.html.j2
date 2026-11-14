@@ -1,0 +1,15 @@
+{% extends "student/_layout.html.j2" %}
+{% from "_macros.html.j2" import csrf with context %}
+{% from "student/_steps.html.j2" import error_box, remaining_text %}
+{% block head_more %} · {{ _("Time remaining") }}: <span class="mono">{{ remaining_text(remaining) }}</span>{% endblock %}
+{% block student %}
+{{ error_box(error) }}
+<form method="post" action="/{{ exam.slug }}/bevestigen" class="stack">
+  {{ csrf() }}
+  <p class="identity">{{ _("Student number") }} <strong class="mono">{{ state.student_number }}</strong>:<br><strong class="identity-name">{{ short_name }}</strong></p>
+  <div class="button-row">
+    <button type="submit" name="answer" value="yes" class="button">{{ _("Yes, that is me") }}</button>
+    <button type="submit" name="answer" value="no" class="button button-secondary">{{ _("No") }}</button>
+  </div>
+</form>
+{% endblock %}

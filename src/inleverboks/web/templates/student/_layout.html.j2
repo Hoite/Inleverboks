@@ -1,0 +1,15 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ exam.name }} · {{ app_name }}{% endblock %}
+{% block header_nav %}{% endblock %}
+{% block head_extra %}
+{% block refresh %}<meta http-equiv="refresh" content="{{ inactivity_seconds }};url=/{{ exam.slug }}/opnieuw">{% endblock %}
+{% endblock %}
+{% block content %}
+<div class="student">
+  <header class="student-head">
+    <h1>{{ exam.name }}</h1>
+    <p class="muted">{{ _("Server time") }}: <span class="mono">{{ now|localtime("%H:%M") }}</span>{% block head_more %}{% endblock %}</p>
+  </header>
+  {% block student %}{% endblock %}
+</div>
+{% endblock %}
