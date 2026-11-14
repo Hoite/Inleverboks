@@ -1,7 +1,7 @@
 """Command line interface: ``inleverboks <command>``.
 
 Available: version, migrate, create-admin, audit verify, retention run, cleanup run,
-backup, restore and integrity check. ``demo-seed`` follows in phase 7.
+backup, restore, integrity check and demo-seed.
 """
 
 from __future__ import annotations
@@ -50,13 +50,14 @@ def _open() -> tuple[Settings, Services, Session]:
     return settings, services, db
 
 
-def _render_pv(settings: Settings) -> RenderPv:
+def _render_pv(settings: Settings, services: Services, db: Session) -> RenderPv:
     # Imported here: the web layer (templates, WeasyPrint) is only needed for these commands.
     from inleverboks.web.pdf import PdfRenderer  # noqa: PLC0415
     from inleverboks.web.routes.review import render_pv_factory  # noqa: PLC0415
     from inleverboks.web.templating import build_templates  # noqa: PLC0415
 
-    return render_pv_factory(PdfRenderer(build_templates(settings).env))
+    env = build_templates(settings).env
+    return render_pv_factory(PdfRenderer(env, lambda: services.branding.load(db)))
 
 
 @app.command()
@@ -170,7 +171,7 @@ def retention_run(
         if dry_run:
             typer.echo(f"{len(due)} exam(s) due.")
             return
-        result = services.lifecycle.run(db, _render_pv(settings))
+        result = services.lifecycle.run(db, _render_pv(settings, services, db))
     typer.echo(f"Finalized {len(result.finalized)} exam(s), {len(result.failed)} failed.")
     if result.failed:
         raise typer.Exit(code=1)
@@ -238,3 +239,25 @@ def integrity_check(
 
 if __name__ == "__main__":  # pragma: no cover
     app()
+
+
+@app.command("demo-seed")
+def demo_seed() -> None:
+    """Fill a demo installation with example exams and hand-ins (DEMO_MODE=true only)."""
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from inleverboks.services.demo import seed  # noqa: PLC0415
+
+    settings = get_settings()
+    if not settings.demo_mode:
+        typer.echo("Refused: demo-seed only runs with DEMO_MODE=true.", err=True)
+        raise typer.Exit(code=2)
+    make_session = build_sessionmaker(build_engine(settings.database_url))
+    result = seed(settings, build_storage(settings), make_session, datetime.now(UTC))
+    if not result.created:
+        typer.echo("Demo data is already present; nothing changed.")
+        return
+    typer.echo(f"Demo teacher: {result.email}")
+    typer.echo(f"Password (shown once): {result.password}")
+    for name, slug, code in result.exams:
+        typer.echo(f"  {name}: {settings.app_base_url}/{slug}  code {code or '-'}")
