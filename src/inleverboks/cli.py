@@ -1,13 +1,14 @@
 """Command line interface: ``inleverboks <command>``.
 
-Available: version, migrate, create-admin, audit verify. The remaining commands from
-the spec (retention run, backup, restore, integrity check, demo-seed) are added in the
-phase that implements their domain logic.
+Available: version, migrate, create-admin, audit verify, retention run, cleanup run,
+backup, restore and integrity check. ``demo-seed`` follows in phase 7.
 """
 
 from __future__ import annotations
 
 import secrets
+import uuid
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -20,8 +21,10 @@ from inleverboks.db import migrate as db_migrate
 from inleverboks.db.models import User
 from inleverboks.db.session import build_engine, build_sessionmaker
 from inleverboks.services.audit import Actor
+from inleverboks.services.backup import create_backup, prune_backups, restore_backup
 from inleverboks.services.container import Services, build_services
 from inleverboks.services.passwords import hash_password
+from inleverboks.services.pv import RenderPv
 from inleverboks.services.whitelist import is_valid_email, normalize_email
 
 app = typer.Typer(
@@ -32,6 +35,12 @@ app = typer.Typer(
 )
 audit_app = typer.Typer(help="Audit log tools.", no_args_is_help=True)
 app.add_typer(audit_app, name="audit")
+retention_app = typer.Typer(help="Retention period.", no_args_is_help=True)
+app.add_typer(retention_app, name="retention")
+cleanup_app = typer.Typer(help="Housekeeping.", no_args_is_help=True)
+app.add_typer(cleanup_app, name="cleanup")
+integrity_app = typer.Typer(help="Integrity of stored files.", no_args_is_help=True)
+app.add_typer(integrity_app, name="integrity")
 
 
 def _open() -> tuple[Settings, Services, Session]:
@@ -39,6 +48,15 @@ def _open() -> tuple[Settings, Services, Session]:
     services = build_services(settings, build_storage(settings))
     db = build_sessionmaker(build_engine(settings.database_url))()
     return settings, services, db
+
+
+def _render_pv(settings: Settings) -> RenderPv:
+    # Imported here: the web layer (templates, WeasyPrint) is only needed for these commands.
+    from inleverboks.web.pdf import PdfRenderer  # noqa: PLC0415
+    from inleverboks.web.routes.review import render_pv_factory  # noqa: PLC0415
+    from inleverboks.web.templating import build_templates  # noqa: PLC0415
+
+    return render_pv_factory(PdfRenderer(build_templates(settings).env))
 
 
 @app.command()
@@ -137,6 +155,85 @@ def audit_verify(
         typer.echo(f"{checked} events checked, {len(issues)} broken chain(s).")
         raise typer.Exit(code=1)
     typer.echo(f"OK: {checked} events checked, all chains intact.")
+
+
+@retention_app.command("run")
+def retention_run(
+    dry_run: Annotated[bool, typer.Option("--dry-run", help="Only list due exams.")] = False,
+) -> None:
+    """Finalize exams whose retention period has passed (final PV, then delete files)."""
+    settings, services, db = _open()
+    with db:
+        due = services.lifecycle.due_exams(db)
+        for exam in due:
+            typer.echo(f"due: {exam.slug} ({exam.id})")
+        if dry_run:
+            typer.echo(f"{len(due)} exam(s) due.")
+            return
+        result = services.lifecycle.run(db, _render_pv(settings))
+    typer.echo(f"Finalized {len(result.finalized)} exam(s), {len(result.failed)} failed.")
+    if result.failed:
+        raise typer.Exit(code=1)
+
+
+@cleanup_app.command("run")
+def cleanup_run() -> None:
+    """Delete orphaned objects and expired tokens."""
+    _settings, services, db = _open()
+    with db:
+        result = services.maintenance.cleanup(db)
+    typer.echo(
+        f"Deleted {len(result.deleted_objects)} orphaned object(s) and {result.deleted_tokens} "
+        f"expired token(s)."
+    )
+
+
+@app.command()
+def backup(
+    to: Annotated[Path, typer.Option("--to", help="Directory for the backup archive.")],
+    keep_days: Annotated[int | None, typer.Option(help="Delete older backups.")] = None,
+) -> None:
+    """Back up the database (SQLite) and all stored files into a tar.gz."""
+    settings, services, _db = _open()
+    now = services.clock.now()
+    result = create_backup(settings.database_url, services.storage, to, now)
+    typer.echo(f"Backup written: {result.path} ({result.objects} files)")
+    if not result.database_included:
+        typer.echo("PostgreSQL: back up the database separately with pg_dump (see README).")
+    removed = prune_backups(to, now, keep_days or settings.backup_keep_days)
+    if removed:
+        typer.echo(f"Deleted {len(removed)} old backup(s).")
+
+
+@app.command()
+def restore(
+    archive: Annotated[Path, typer.Argument(help="Backup archive (.tar.gz).")],
+    yes: Annotated[bool, typer.Option("--yes", help="Confirm: the app is stopped.")] = False,
+) -> None:
+    """Restore a backup. Stop the application first."""
+    if not yes:
+        typer.echo("Stop the application, then run again with --yes.", err=True)
+        raise typer.Exit(code=2)
+    settings, services, _db = _open()
+    result = restore_backup(archive, settings.database_url, services.storage)
+    typer.echo(f"Restored {result.objects} files; database restored: {result.database_restored}.")
+    if not result.database_restored:
+        typer.echo("PostgreSQL: restore the database with pg_restore (see README).")
+
+
+@integrity_app.command("check")
+def integrity_check(
+    exam: Annotated[str | None, typer.Option(help="Only this exam (id).")] = None,
+) -> None:
+    """Re-hash all stored files and compare with the stored SHA-256."""
+    _settings, services, db = _open()
+    with db:
+        report = services.maintenance.integrity_check(db, uuid.UUID(exam) if exam else None)
+    for check in report.mismatches:
+        typer.echo(f"MISMATCH {check.file.id} {check.file.original_name}")
+    typer.echo(f"{report.checked} files checked, {len(report.mismatches)} mismatch(es).")
+    if report.mismatches:
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":  # pragma: no cover

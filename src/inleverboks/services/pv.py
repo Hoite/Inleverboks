@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import uuid
+from collections.abc import AsyncIterator, Callable
 from datetime import datetime
 from typing import Any
 
@@ -10,10 +12,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import Clock
+from inleverboks.adapters.storage import StorageBackend
 from inleverboks.db.models import Exam, ExtensionGrant, ProcesVerbaal, Submission, User
+from inleverboks.services.asyncutil import call_async
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.exams import ExamService
-from inleverboks.services.exports import IntegrityReport
+from inleverboks.services.exports import IntegrityReport, check_integrity
 from inleverboks.services.overview import RowStatus, build_overview, load_submissions
 from inleverboks.services.security import human_code
 
@@ -203,3 +207,49 @@ class ProcesVerbaalService:
         )  # fmt: skip
         db.commit()
         return pv
+
+
+RenderPv = Callable[[dict[str, Any]], bytes]
+
+
+def generate(
+    db: Session,
+    service: ProcesVerbaalService,
+    storage: StorageBackend,
+    render_pv: RenderPv,
+    exam: Exam,
+    user: User | None,
+    *,
+    final: bool,
+    ip: str | None,
+) -> tuple[bytes, ProcesVerbaal]:
+    """Run the integrity check, render, store and record a proces-verbaal."""
+    files = [f for s in load_submissions(db, exam) for f in s.files]
+    report = call_async(check_integrity, storage, files, service.clock.now())
+    document_id = new_document_id(service.clock.now())
+    context = service.context(
+        db, exam, generated_by=user, report=report, document_id=document_id, final=final
+    )
+    pdf = render_pv(context)
+    key = f"pv/{exam.id}/{document_id}.pdf"
+
+    async def store() -> None:
+        async def chunks() -> AsyncIterator[bytes]:
+            yield pdf
+
+        await storage.put(key, chunks())
+
+    call_async(store)
+    pv = service.record(
+        db,
+        exam,
+        user=user,
+        document_id=document_id,
+        storage_key=key,
+        sha256=hashlib.sha256(pdf).hexdigest(),
+        audit_head_hash=context["audit_head_hash"],
+        report=report,
+        final=final,
+        ip=ip,
+    )
+    return pdf, pv

@@ -47,6 +47,7 @@ def make_settings(tmp_path: Path, **overrides: object) -> Settings:
         "session_cookie_secure": False,
         "log_format": "console",
         "log_level": "warning",
+        "scheduler_enabled": False,
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)  # type: ignore[arg-type]

@@ -24,6 +24,7 @@ from inleverboks.i18n import gettext as _
 from inleverboks.log import configure_logging
 from inleverboks.services.container import Services, build_services
 from inleverboks.services.errors import NotFoundError, PermissionDeniedError
+from inleverboks.services.scheduler import AppScheduler, Jobs
 from inleverboks.services.student_flow import StateCodec
 from inleverboks.web.csrf import CsrfCookieMiddleware, verify_csrf
 from inleverboks.web.deps import ForbiddenError, RedirectError
@@ -43,6 +44,7 @@ from inleverboks.web.routes import (
     review,
     student,
 )
+from inleverboks.web.routes.review import render_pv_factory
 from inleverboks.web.templating import build_templates, render
 
 STATIC_DIR = Path(__file__).parent / "web" / "static"
@@ -72,8 +74,14 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await to_thread.run_sync(_bootstrap, app)
+        scheduler = None
+        if settings.scheduler_enabled:
+            scheduler = AppScheduler(app.state.jobs)
+            scheduler.start()
         log.info("app.started", version=__version__, storage=settings.storage_backend)
         yield
+        if scheduler is not None:
+            scheduler.shutdown()
         app.state.engine.dispose()
 
     app = FastAPI(
@@ -94,6 +102,9 @@ def create_app(
     app.state.templates = build_templates(settings)
     app.state.student_codec = StateCodec(settings.secret_key.get_secret_value())
     app.state.pdf = PdfRenderer(app.state.templates.env)
+    app.state.jobs = Jobs(
+        app.state.services, app.state.sessionmaker, render_pv_factory(app.state.pdf)
+    )
 
     app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
     # The student page at /{slug} is a catch-all and must come last.
