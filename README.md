@@ -151,7 +151,8 @@ ongeveer 3 keer zo hoog. Redis hiervoor staat op de roadmap.
 ## Ontwikkelen
 
 Je hebt [uv](https://docs.astral.sh/uv/) en Docker nodig. Voor PDF's (WeasyPrint) lokaal ook
-Pango: `brew install pango` op macOS.
+Pango: `brew install pango` op macOS, plus `export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib`
+(bijvoorbeeld in `~/.zprofile`), zodat Python de bibliotheken vindt.
 
 ```bash
 uv sync

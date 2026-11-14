@@ -35,8 +35,10 @@ docker build -t inleverboks:dev .
 docker compose up --build
 ```
 
-WeasyPrint (PDF) heeft Pango nodig. Lokaal op macOS: `brew install pango`. Zonder Pango slaan de
-PDF-render-tests zichzelf over; in CI en Docker draaien ze wel.
+WeasyPrint (PDF) heeft Pango nodig. Lokaal op macOS: `brew install pango`, en zorg dat Python
+de Homebrew-bibliotheken vindt: `export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` (bijvoorbeeld
+in `~/.zprofile`). Zonder Pango slaan de PDF-render-tests zichzelf over; in CI en Docker draaien
+ze wel.
 
 Docker staat op deze machine in `~/.docker/bin`. Zet in een niet-login-shell eerst
 `export PATH="$PATH:$HOME/.docker/bin"`.
