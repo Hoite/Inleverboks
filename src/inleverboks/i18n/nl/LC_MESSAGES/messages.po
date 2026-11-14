@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 10:25+0100\n"
+"POT-Creation-Date: 2026-11-14 10:59+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -177,6 +177,15 @@ msgstr "Examensjabloon niet gevonden."
 msgid "Exam not found."
 msgstr "Examen niet gevonden."
 
+msgid "Only an active hand-in can be undone or declared invalid."
+msgstr "Alleen een actieve inlevering kan ongedaan gemaakt of ongeldig verklaard worden."
+
+msgid "Enter a reason."
+msgstr "Vul een reden in."
+
+msgid "The reason is too long."
+msgstr "De reden is te lang."
+
 #, python-format
 msgid "Use at least %(n)s characters."
 msgstr "Gebruik minimaal %(n)s tekens."
@@ -207,6 +216,9 @@ msgstr "Dit is geen geldige reguliere expressie."
 
 msgid "Enter extensions such as docx, pdf, py."
 msgstr "Vul extensies in zoals docx, pdf, py."
+
+msgid "System log"
+msgstr "Systeemlog"
 
 msgid "Enter a name."
 msgstr "Vul een naam in."
@@ -298,6 +310,54 @@ msgstr "Gesloten"
 
 msgid "Finalized"
 msgstr "Afgerond"
+
+msgid "Empty template"
+msgstr "Leeg sjabloon"
+
+msgid "Lock file"
+msgstr "Lockbestand"
+
+msgid "Empty file"
+msgstr "Leeg bestand"
+
+msgid "Name differs"
+msgstr "Naam wijkt af"
+
+msgid "Same file twice"
+msgstr "Dubbel bestand"
+
+msgid "Identical to another student"
+msgstr "Identiek aan andere student"
+
+msgid "Not on list"
+msgstr "Niet op lijst"
+
+msgid "Extension"
+msgstr "Verlenging"
+
+msgid "Zip"
+msgstr "Zip"
+
+msgid "Number differs"
+msgstr "Aantal wijkt af"
+
+msgid "Handed in"
+msgstr "Ingeleverd"
+
+msgid "Cancelled"
+msgstr "Geannuleerd"
+
+msgid "Invalid"
+msgstr "Ongeldig"
+
+msgid "Not handed in yet"
+msgstr "Nog niet ingeleverd"
+
+msgid "No hand-in found with this combination of codes."
+msgstr "Geen inlevering gevonden met deze combinatie van codes."
+
+msgid "Audit log"
+msgstr "Auditlog"
 
 msgid "The access code is incorrect."
 msgstr "De toegangscode klopt niet."
@@ -494,6 +554,9 @@ msgstr "Hoofdmenu"
 msgid "Exams"
 msgstr "Examens"
 
+msgid "Check receipt"
+msgstr "Ontvangstbewijs controleren"
+
 msgid "Admin"
 msgstr "Admin"
 
@@ -524,14 +587,17 @@ msgstr "IP-presets"
 msgid "Settings"
 msgstr "Instellingen"
 
-msgid "System log"
-msgstr "Systeemlog"
-
 msgid "Filter on event"
 msgstr "Filteren op gebeurtenis"
 
 msgid "Filter"
 msgstr "Filteren"
+
+msgid "Export CSV"
+msgstr "CSV exporteren"
+
+msgid "Export PDF"
+msgstr "PDF exporteren"
 
 msgid "Time"
 msgstr "Tijdstip"
@@ -828,23 +894,183 @@ msgstr "Code"
 msgid "Enable"
 msgstr "Aanzetten"
 
+msgid "Generated"
+msgstr "Gegenereerd"
+
+msgid "Audit log hash"
+msgstr "Hash auditlog"
+
+msgid "The hash chain is broken."
+msgstr "De hash-keten is verbroken."
+
+#, python-format
+msgid "Hash chain intact: %(n)s events checked."
+msgstr "Hash-keten intact: %(n)s gebeurtenissen gecontroleerd."
+
+msgid "Official report of digital hand-in"
+msgstr "Proces-verbaal digitale inlevering"
+
+msgid "by"
+msgstr "door"
+
+msgid "Document ID"
+msgstr "Document-ID"
+
+msgid "Final version, made before the files were deleted."
+msgstr "Definitieve versie, gemaakt vóór het verwijderen van de bestanden."
+
+msgid "Exam"
+msgstr "Examen"
+
+msgid "Description"
+msgstr "Omschrijving"
+
+msgid "Examiner (owner)"
+msgstr "Examinator (eigenaar)"
+
+msgid "Second reviewer"
+msgstr "Tweede beoordelaar"
+
+msgid "None"
+msgstr "Geen"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "End"
+msgstr "Einde"
+
+#, python-format
+msgid "last extension until %(t)s"
+msgstr "laatste verlenging tot %(t)s"
+
+msgid "Access code used"
+msgstr "Toegangscode gebruikt"
+
+msgid "IP restriction"
+msgstr "IP-beperking"
+
+msgid "Expected files"
+msgstr "Verwachte bestanden"
+
+msgid "Label"
+msgstr "Label"
+
+msgid "Expected file name"
+msgstr "Verwachte bestandsnaam"
+
+msgid "Extensions"
+msgstr "Extensies"
+
+msgid "Template SHA-256"
+msgstr "SHA-256 sjabloon"
+
+msgid "No expected files."
+msgstr "Geen verwachte bestanden."
+
+msgid "Summary"
+msgstr "Samenvatting"
+
+msgid "Not handed in"
+msgstr "Niet ingeleverd"
+
+msgid "On the class list"
+msgstr "Op de klassenlijst"
+
+msgid "Per student"
+msgstr "Per student"
+
+msgid "Started"
+msgstr "Gestart"
+
+msgid "Completed"
+msgstr "Voltooid"
+
+msgid "Files"
+msgstr "Bestanden"
+
+msgid "File"
+msgstr "Bestand"
+
+msgid "Warnings"
+msgstr "Waarschuwingen"
+
+msgid "integrity check failed"
+msgstr "integriteitscontrole mislukt"
+
+#, python-format
+msgid "Attempt %(n)s"
+msgstr "Poging %(n)s"
+
+msgid "files"
+msgstr "bestanden"
+
+#, python-format
+msgid "Extension until %(t)s"
+msgstr "Verlenging tot %(t)s"
+
+msgid "No hand-ins."
+msgstr "Geen inleveringen."
+
+msgid "Particulars"
+msgstr "Bijzonderheden"
+
+msgid "Student"
+msgstr "Student"
+
+msgid "By"
+msgstr "Door"
+
+msgid "Undone"
+msgstr "Ongedaan gemaakt"
+
+msgid "Declared invalid"
+msgstr "Ongeldig verklaard"
+
+msgid "Retention hold"
+msgstr "Bewaren-vlag"
+
+#, python-format
+msgid "until %(t)s"
+msgstr "tot %(t)s"
+
+msgid "may hand in again"
+msgstr "mag opnieuw inleveren"
+
+msgid "may not hand in again"
+msgstr "mag niet opnieuw inleveren"
+
+msgid "None."
+msgstr "Geen."
+
+msgid "Integrity check"
+msgstr "Integriteitscontrole"
+
+#, python-format
+msgid "Checked at %(t)s: %(n)s files."
+msgstr "Gecontroleerd op %(t)s: %(n)s bestanden."
+
+#, python-format
+msgid "%(n)s deviations:"
+msgstr "%(n)s afwijkingen:"
+
+msgid "No deviations."
+msgstr "Geen afwijkingen."
+
+msgid "Examiner"
+msgstr "Examinator"
+
 msgid "Receipt"
 msgstr "Ontvangstbewijs"
 
 msgid "Verification code"
 msgstr "Verificatiecode"
 
-msgid "Exam"
-msgstr "Examen"
-
 msgid "Handed in at"
 msgstr "Ingeleverd om"
 
 msgid "server time"
 msgstr "servertijd"
-
-msgid "Files"
-msgstr "Bestanden"
 
 msgid "Confirmed warnings"
 msgstr "Bevestigde waarschuwingen"
@@ -918,6 +1144,19 @@ msgstr "%(a)s ingeleverd"
 
 msgid "The link has not been opened yet by the teacher."
 msgstr "De link is nog niet opengezet door de docent."
+
+msgid "Hand-ins"
+msgstr "Inleveringen"
+
+msgid "Signals"
+msgstr "Signalen"
+
+#, python-format
+msgid "%(n)s attempts"
+msgstr "%(n)s pogingen"
+
+msgid "No hand-ins yet."
+msgstr "Nog geen inleveringen."
 
 msgid "My exams"
 msgstr "Mijn examens"
@@ -1002,202 +1241,28 @@ msgstr "Nog geen klassenlijsten."
 msgid "New exam"
 msgstr "Nieuw examen"
 
-msgid "Start"
-msgstr "Start"
-
-msgid "End"
-msgstr "Einde"
-
-msgid "Handed in"
-msgstr "Ingeleverd"
-
 msgid "Link"
 msgstr "Link"
 
 msgid "No exams yet."
 msgstr "Nog geen examens."
 
-msgid "Edit"
-msgstr "Bewerken"
-
-msgid "Presentation mode"
-msgstr "Presentatiemodus"
-
-msgid "Publish"
-msgstr "Publiceren"
-
-msgid "The exam is published."
-msgstr "Het examen is gepubliceerd."
-
-msgid "The exam is a concept again."
-msgstr "Het examen is weer een concept."
-
-msgid "A new access code has been generated."
-msgstr "Er is een nieuwe toegangscode gemaakt."
-
-msgid "Saved as exam template."
-msgstr "Opgeslagen als examensjabloon."
-
-msgid "Class list updated."
-msgstr "Klassenlijst bijgewerkt."
-
-msgid "Extension saved."
-msgstr "Verlenging opgeslagen."
-
-msgid "Extension removed."
-msgstr "Verlenging verwijderd."
-
-msgid "Ownership transferred."
-msgstr "Eigendom overgedragen."
-
-msgid "Template file uploaded."
-msgstr "Sjabloonbestand geüpload."
-
-msgid "Template file removed."
-msgstr "Sjabloonbestand verwijderd."
-
-msgid ""
-"This exam is a concept. Students see that the link has not been opened yet. Publish the exam to "
-"open it at the start time."
-msgstr ""
-"Dit examen is een concept. Studenten zien dat de link nog niet is opengezet. Publiceer het examen"
-" om het op de starttijd te openen."
-
-msgid "Hand-in link"
-msgstr "Inleverlink"
-
-msgid "Link for students"
-msgstr "Link voor studenten"
-
-msgid "QR code of the hand-in link"
-msgstr "QR-code van de inleverlink"
-
-msgid "Download QR (PNG)"
-msgstr "QR downloaden (PNG)"
-
-msgid "Download QR (SVG)"
-msgstr "QR downloaden (SVG)"
-
-msgid "Generate new code"
-msgstr "Nieuwe code maken"
-
-msgid "No access code."
-msgstr "Geen toegangscode."
+msgid "Hash chain intact"
+msgstr "Hash-keten intact"
 
 #, python-format
-msgid "last extension until %(t)s"
-msgstr "laatste verlenging tot %(t)s"
+msgid "%(n)s events"
+msgstr "%(n)s gebeurtenissen"
 
-msgid "Owner"
-msgstr "Eigenaar"
+msgid "The hash chain of this log is broken. Report this to the admin."
+msgstr "De hash-keten van dit log is verbroken. Meld dit bij de admin."
 
-msgid "Second reviewer"
-msgstr "Tweede beoordelaar"
-
-msgid "None"
-msgstr "Geen"
-
-msgid "IP restriction"
-msgstr "IP-beperking"
-
-msgid "Extensions"
-msgstr "Extensies"
-
-msgid "Maximum size"
-msgstr "Maximale grootte"
+msgid "Filter on actor"
+msgstr "Filteren op actor"
 
 #, python-format
-msgid "%(f)s MB per file, %(s)s MB per submission"
-msgstr "%(f)s MB per bestand, %(s)s MB per inlevering"
-
-msgid "Extra files"
-msgstr "Extra bestanden"
-
-msgid "Allowed"
-msgstr "Toegestaan"
-
-msgid "Not allowed"
-msgstr "Niet toegestaan"
-
-msgid "Expected files"
-msgstr "Verwachte bestanden"
-
-msgid "Label"
-msgstr "Label"
-
-msgid "Expected file name"
-msgstr "Verwachte bestandsnaam"
-
-msgid "Template file"
-msgstr "Sjabloonbestand"
-
-#, python-format
-msgid "Template file for %(label)s"
-msgstr "Sjabloonbestand voor %(label)s"
-
-msgid "Upload"
-msgstr "Uploaden"
-
-msgid "No expected files; students hand in extra files only."
-msgstr "Geen verwachte bestanden; studenten leveren alleen extra bestanden in."
-
-msgid "Class list"
-msgstr "Klassenlijst"
-
-#, python-format
-msgid "%(n)s students on the class list."
-msgstr "%(n)s studenten op de klassenlijst."
-
-msgid "Students who are not on the list cannot hand in."
-msgstr "Studenten die niet op de lijst staan, kunnen niet inleveren."
-
-msgid "Show class list"
-msgstr "Klassenlijst tonen"
-
-msgid "No class list. Students enter their name and student number themselves."
-msgstr "Geen klassenlijst. Studenten vullen zelf hun naam en studentnummer in."
-
-msgid "Use class list"
-msgstr "Klassenlijst gebruiken"
-
-msgid "No class list"
-msgstr "Geen klassenlijst"
-
-msgid "Apply"
-msgstr "Toepassen"
-
-msgid "New end time"
-msgstr "Nieuwe eindtijd"
-
-msgid "No extensions."
-msgstr "Geen verlengingen."
-
-msgid "Grant extension"
-msgstr "Verlenging geven"
-
-msgid "More"
-msgstr "Meer"
-
-msgid "Duplicate"
-msgstr "Dupliceren"
-
-msgid "Back to concept"
-msgstr "Terug naar concept"
-
-msgid "Delete concept"
-msgstr "Concept verwijderen"
-
-msgid "Save as exam template"
-msgstr "Opslaan als examensjabloon"
-
-msgid "Save as template"
-msgstr "Opslaan als sjabloon"
-
-msgid "Transfer ownership to"
-msgstr "Eigendom overdragen aan"
-
-msgid "Transfer"
-msgstr "Overdragen"
+msgid "Showing the latest %(n)s events. Export for the complete log."
+msgstr "De laatste %(n)s gebeurtenissen worden getoond. Exporteer voor het volledige log."
 
 msgid "Edit exam"
 msgstr "Examen bewerken"
@@ -1265,11 +1330,216 @@ msgstr "Andere IP-bereiken"
 msgid "Class list (optional)"
 msgstr "Klassenlijst (optioneel)"
 
+msgid "No class list"
+msgstr "Geen klassenlijst"
+
 msgid "Allow students who are not on the class list"
 msgstr "Studenten toestaan die niet op de klassenlijst staan"
 
 msgid "Cancel"
 msgstr "Annuleren"
+
+msgid "Presentation mode"
+msgstr "Presentatiemodus"
+
+msgid "Link and QR code"
+msgstr "Link en QR-code"
+
+msgid "Counters"
+msgstr "Tellers"
+
+msgid "handed in"
+msgstr "ingeleverd"
+
+msgid "not handed in yet"
+msgstr "nog niet ingeleverd"
+
+msgid "cancelled"
+msgstr "geannuleerd"
+
+msgid "invalid"
+msgstr "ongeldig"
+
+msgid "not on list"
+msgstr "niet op lijst"
+
+msgid "Show"
+msgstr "Tonen"
+
+msgid "All"
+msgstr "Alle"
+
+msgid "Sort by"
+msgstr "Sorteren op"
+
+msgid "Descending"
+msgstr "Aflopend"
+
+msgid "Apply"
+msgstr "Toepassen"
+
+msgid "Downloads and exports"
+msgstr "Downloads en exports"
+
+msgid "Include cancelled attempts"
+msgstr "Geannuleerde pogingen meenemen"
+
+msgid "Include invalid attempts"
+msgstr "Ongeldige pogingen meenemen"
+
+msgid "Download all (zip)"
+msgstr "Alles downloaden (zip)"
+
+msgid "Proces-verbaal (PDF)"
+msgstr "Proces-verbaal (PDF)"
+
+msgid "Edit"
+msgstr "Bewerken"
+
+msgid "Publish"
+msgstr "Publiceren"
+
+msgid "The exam is published."
+msgstr "Het examen is gepubliceerd."
+
+msgid "The exam is a concept again."
+msgstr "Het examen is weer een concept."
+
+msgid "A new access code has been generated."
+msgstr "Er is een nieuwe toegangscode gemaakt."
+
+msgid "Saved as exam template."
+msgstr "Opgeslagen als examensjabloon."
+
+msgid "Class list updated."
+msgstr "Klassenlijst bijgewerkt."
+
+msgid "Extension saved."
+msgstr "Verlenging opgeslagen."
+
+msgid "Extension removed."
+msgstr "Verlenging verwijderd."
+
+msgid "Ownership transferred."
+msgstr "Eigendom overgedragen."
+
+msgid "Template file uploaded."
+msgstr "Sjabloonbestand geüpload."
+
+msgid "Template file removed."
+msgstr "Sjabloonbestand verwijderd."
+
+msgid ""
+"This exam is a concept. Students see that the link has not been opened yet. Publish the exam to "
+"open it at the start time."
+msgstr ""
+"Dit examen is een concept. Studenten zien dat de link nog niet is opengezet. Publiceer het examen"
+" om het op de starttijd te openen."
+
+msgid "Hand-in link"
+msgstr "Inleverlink"
+
+msgid "Link for students"
+msgstr "Link voor studenten"
+
+msgid "QR code of the hand-in link"
+msgstr "QR-code van de inleverlink"
+
+msgid "Download QR (PNG)"
+msgstr "QR downloaden (PNG)"
+
+msgid "Download QR (SVG)"
+msgstr "QR downloaden (SVG)"
+
+msgid "Generate new code"
+msgstr "Nieuwe code maken"
+
+msgid "No access code."
+msgstr "Geen toegangscode."
+
+msgid "Owner"
+msgstr "Eigenaar"
+
+msgid "Maximum size"
+msgstr "Maximale grootte"
+
+#, python-format
+msgid "%(f)s MB per file, %(s)s MB per submission"
+msgstr "%(f)s MB per bestand, %(s)s MB per inlevering"
+
+msgid "Extra files"
+msgstr "Extra bestanden"
+
+msgid "Allowed"
+msgstr "Toegestaan"
+
+msgid "Not allowed"
+msgstr "Niet toegestaan"
+
+msgid "Template file"
+msgstr "Sjabloonbestand"
+
+#, python-format
+msgid "Template file for %(label)s"
+msgstr "Sjabloonbestand voor %(label)s"
+
+msgid "Upload"
+msgstr "Uploaden"
+
+msgid "No expected files; students hand in extra files only."
+msgstr "Geen verwachte bestanden; studenten leveren alleen extra bestanden in."
+
+msgid "Class list"
+msgstr "Klassenlijst"
+
+#, python-format
+msgid "%(n)s students on the class list."
+msgstr "%(n)s studenten op de klassenlijst."
+
+msgid "Students who are not on the list cannot hand in."
+msgstr "Studenten die niet op de lijst staan, kunnen niet inleveren."
+
+msgid "Show class list"
+msgstr "Klassenlijst tonen"
+
+msgid "No class list. Students enter their name and student number themselves."
+msgstr "Geen klassenlijst. Studenten vullen zelf hun naam en studentnummer in."
+
+msgid "Use class list"
+msgstr "Klassenlijst gebruiken"
+
+msgid "New end time"
+msgstr "Nieuwe eindtijd"
+
+msgid "No extensions."
+msgstr "Geen verlengingen."
+
+msgid "Grant extension"
+msgstr "Verlenging geven"
+
+msgid "More"
+msgstr "Meer"
+
+msgid "Duplicate"
+msgstr "Dupliceren"
+
+msgid "Back to concept"
+msgstr "Terug naar concept"
+
+msgid "Delete concept"
+msgstr "Concept verwijderen"
+
+msgid "Save as exam template"
+msgstr "Opslaan als examensjabloon"
+
+msgid "Save as template"
+msgstr "Opslaan als sjabloon"
+
+msgid "Transfer ownership to"
+msgstr "Eigendom overdragen aan"
+
+msgid "Transfer"
+msgstr "Overdragen"
 
 msgid "Go to"
 msgstr "Ga naar"
@@ -1280,6 +1550,45 @@ msgstr "Opent over"
 msgid "Leave presentation mode"
 msgstr "Presentatiemodus verlaten"
 
+msgid "Download student (zip)"
+msgstr "Student downloaden (zip)"
+
+msgid "The hand-in has been undone. The student can hand in again."
+msgstr "De inlevering is ongedaan gemaakt. De student kan opnieuw inleveren."
+
+msgid "The hand-in has been declared invalid."
+msgstr "De inlevering is ongeldig verklaard."
+
+msgid "On class list"
+msgstr "Op klassenlijst"
+
+msgid "Reason"
+msgstr "Reden"
+
+msgid "May hand in again"
+msgstr "Mag opnieuw inleveren"
+
+msgid "Integrity check failed"
+msgstr "Integriteitscontrole mislukt"
+
+msgid "Undo hand-in"
+msgstr "Inlevering ongedaan maken"
+
+msgid "At the student's request. The files are kept; the student can hand in again."
+msgstr "Op verzoek van de student. De bestanden blijven bewaard; de student kan opnieuw inleveren."
+
+msgid "Declare invalid"
+msgstr "Ongeldig verklaren"
+
+msgid "The files are kept as a separate invalid hand-in."
+msgstr "De bestanden blijven bewaard als aparte ongeldige inzending."
+
+msgid "Student may hand in again"
+msgstr "Student mag opnieuw inleveren"
+
+msgid "This student has not handed in yet."
+msgstr "Deze student heeft nog niet ingeleverd."
+
 msgid "Created"
 msgstr "Aangemaakt"
 
@@ -1288,4 +1597,10 @@ msgstr "Nieuw examen met dit sjabloon"
 
 msgid "No exam templates yet. Save an exam as template from its page."
 msgstr "Nog geen examensjablonen. Sla een examen op als sjabloon via de examenpagina."
+
+msgid "Compare a printed or shown receipt with what was stored."
+msgstr "Vergelijk een geprint of getoond ontvangstbewijs met wat is opgeslagen."
+
+msgid "The codes match a stored hand-in."
+msgstr "De codes horen bij een opgeslagen inlevering."
 

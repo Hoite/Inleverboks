@@ -1,0 +1,81 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ student_number }} · {{ exam.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent/examens/{{ exam.id }}">{{ exam.name }}</a></p>
+<div class="page-head">
+  <div>
+    <h1>{% if row %}{{ row.display_name }}{% elif roster %}{{ roster.last_name }}, {{ roster.first_name }}{% endif %}</h1>
+    <p><span class="mono">{{ student_number }}</span>{% if row %} · {{ row_status_labels[row.status] }}{% endif %}{% if roster and roster.class_name %} · {{ roster.class_name }}{% endif %}</p>
+  </div>
+  {% if perms.download_files and attempts %}
+  <a class="button" href="/docent/examens/{{ exam.id }}/studenten/{{ student_number }}/zip">{{ _("Download student (zip)") }}</a>
+  {% endif %}
+</div>
+{% if ok == "cancelled" %}{{ ok_box(_("The hand-in has been undone. The student can hand in again.")) }}{% endif %}
+{% if ok == "invalidated" %}{{ ok_box(_("The hand-in has been declared invalid.")) }}{% endif %}
+{{ errors_box(errors) }}
+{% if extension != exam.ends_at %}<p>{{ _("Extension until %(t)s", t=extension|localtime) }}</p>{% endif %}
+{% if row and row.signals %}<p>{% for signal in row.signals %}<span class="signal"><span aria-hidden="true">!</span> {{ signal_labels[signal] }}</span> {% endfor %}</p>{% endif %}
+
+{% for s in attempts %}
+<section class="card attempt attempt-{{ s.status }}">
+  <h2>{{ _("Attempt %(n)s", n=s.attempt) }} · {{ row_status_labels[s.status] }}</h2>
+  <dl class="details">
+    <dt>{{ _("Hand-in code") }}</dt><dd class="mono">{{ s.receipt_code }}</dd>
+    <dt>{{ _("Started") }}</dt><dd>{{ s.started_at|localtime("%d-%m-%Y %H:%M:%S") }}</dd>
+    <dt>{{ _("Completed") }}</dt><dd>{{ s.completed_at|localtime("%d-%m-%Y %H:%M:%S") }}</dd>
+    <dt>{{ _("On class list") }}</dt><dd>{{ _("Yes") if s.on_roster else _("No") }}</dd>
+    {% if s.status != "active" %}
+    <dt>{{ _("Reason") }}</dt><dd>{{ s.status_reason }}</dd>
+    <dt>{{ _("By") }}</dt><dd>{{ users[s.status_changed_by_id].name if s.status_changed_by_id in users else "" }} · {{ s.status_changed_at|localtime }}</dd>
+    {% if s.status == "invalid" %}<dt>{{ _("May hand in again") }}</dt><dd>{{ _("Yes") if s.may_resubmit else _("No") }}</dd>{% endif %}
+    {% endif %}
+  </dl>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ _("File") }}</th><th scope="col">{{ _("Expected file") }}</th><th scope="col">{{ _("Size") }}</th><th scope="col">SHA-256</th><th scope="col">{{ _("Warnings") }}</th></tr></thead>
+    <tbody>
+    {% for f in s.files|sort(attribute="position") %}
+      <tr>
+        <td>{% if perms.download_files and f.storage_key %}<a href="/docent/examens/{{ exam.id }}/bestanden/{{ f.id }}">{{ f.original_name }}</a>{% else %}{{ f.original_name }}{% endif %}
+          {% if f.integrity_ok == false %}<br><span class="signal"><span aria-hidden="true">✕</span> {{ _("Integrity check failed") }}</span>{% endif %}</td>
+        <td>{{ slot_labels.get(f.expected_file_id, _("Extra file")) if f.expected_file_id else _("Extra file") }}</td>
+        <td>{{ f.size }} B</td>
+        <td class="mono small hash-cell">{{ f.sha256 }}</td>
+        <td>{% for w in f.warnings or [] %}{{ warning_labels.get(w, w) }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if s.status == "active" and perms.manage_submissions %}
+  <div class="grid-2 top-gap">
+    <form method="post" action="/docent/examens/{{ exam.id }}/inleveringen/{{ s.id }}/annuleren" class="stack review-form">
+      {{ csrf() }}
+      <h3>{{ _("Undo hand-in") }}</h3>
+      <p class="hint">{{ _("At the student's request. The files are kept; the student can hand in again.") }}</p>
+      <div class="field">
+        <label for="cancel-reason-{{ s.id }}">{{ _("Reason") }}</label>
+        <textarea id="cancel-reason-{{ s.id }}" name="reason" rows="2" required maxlength="1000"></textarea>
+      </div>
+      <button type="submit" class="button button-secondary">{{ _("Undo hand-in") }}</button>
+    </form>
+    <form method="post" action="/docent/examens/{{ exam.id }}/inleveringen/{{ s.id }}/ongeldig" class="stack review-form">
+      {{ csrf() }}
+      <h3>{{ _("Declare invalid") }}</h3>
+      <p class="hint">{{ _("The files are kept as a separate invalid hand-in.") }}</p>
+      <div class="field">
+        <label for="invalid-reason-{{ s.id }}">{{ _("Reason") }}</label>
+        <textarea id="invalid-reason-{{ s.id }}" name="reason" rows="2" required maxlength="1000"></textarea>
+      </div>
+      <label class="checkbox"><input type="checkbox" name="may_resubmit" value="true"> {{ _("Student may hand in again") }}</label>
+      <button type="submit" class="button button-danger">{{ _("Declare invalid") }}</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% else %}
+<p class="muted">{{ _("This student has not handed in yet.") }}</p>
+{% endfor %}
+{% endblock %}

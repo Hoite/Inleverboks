@@ -163,7 +163,7 @@
 
   <div class="form-actions">
     <button type="submit" name="action" value="save" class="button">{{ _("Save") }}</button>
-    <a class="button button-secondary" href="{{ '/docent/examens/%s'|format(exam.id) if exam else '/docent' }}">{{ _("Cancel") }}</a>
+    <a class="button button-secondary" href="{{ '/docent/examens/%s/instellingen'|format(exam.id) if exam else '/docent' }}">{{ _("Cancel") }}</a>
   </div>
 </form>
 {% endblock %}

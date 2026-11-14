@@ -26,6 +26,7 @@
     {% if current_user and auth.stage == "full" %}
     <nav class="header-nav" aria-label="{{ _('Main menu') }}">
       <a href="/docent"{% if current_path.startswith('/docent') %} aria-current="page"{% endif %}>{{ _("Exams") }}</a>
+      <a href="/docent/ontvangstbewijs"{% if current_path.startswith('/docent/ontvangstbewijs') %} aria-current="page"{% endif %}>{{ _("Check receipt") }}</a>
       {% if current_user.is_admin %}
       <a href="/admin/gebruikers"{% if current_path.startswith('/admin') %} aria-current="page"{% endif %}>{{ _("Admin") }}</a>
       {% endif %}

@@ -1,0 +1,41 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box with context %}
+{% block title %}{{ _("Check receipt") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Check receipt") }}</h1>
+<p class="muted">{{ _("Compare a printed or shown receipt with what was stored.") }}</p>
+{{ errors_box(errors) }}
+<form method="post" action="/docent/ontvangstbewijs" class="row-form" autocomplete="off">
+  {{ csrf() }}
+  <div class="field">
+    <label for="receipt_code">{{ _("Hand-in code") }}</label>
+    <input id="receipt_code" name="receipt_code" type="text" class="mono" required maxlength="32" value="{{ code }}" placeholder="IB-XXXX-XXXX">
+  </div>
+  <div class="field">
+    <label for="verification_code">{{ _("Verification code") }}</label>
+    <input id="verification_code" name="verification_code" type="text" class="mono" required maxlength="32" placeholder="XXXX-XXXX">
+  </div>
+  <button type="submit" class="button">{{ _("Check") }}</button>
+</form>
+{% if result %}
+<section class="card top-gap">
+  <div class="alert alert-success" role="status"><span class="alert-icon" aria-hidden="true">✓</span>
+    <div><p>{{ _("The codes match a stored hand-in.") }}</p></div></div>
+  <dl class="details">
+    <dt>{{ _("Hand-in code") }}</dt><dd class="mono">{{ result.receipt_code }}</dd>
+    <dt>{{ _("Exam") }}</dt><dd><a href="/docent/examens/{{ exam.id }}">{{ exam.name }}</a></dd>
+    <dt>{{ _("Name") }}</dt><dd>{{ result.last_name }}, {{ result.first_name }}{% if result.infix %} {{ result.infix }}{% endif %}</dd>
+    <dt>{{ _("Student number") }}</dt><dd class="mono">{{ result.student_number }}</dd>
+    <dt>{{ _("Handed in at") }}</dt><dd>{{ result.started_at|localtime("%d-%m-%Y %H:%M:%S") }}</dd>
+    <dt>{{ _("Status") }}</dt><dd>{{ status_label }}</dd>
+  </dl>
+  <h2>{{ _("Files") }}</h2>
+  <ul class="receipt-files">
+  {% for f in files %}
+    <li><strong>{{ f.name }}</strong> <span class="muted">· {{ f.slot or _("Extra file") }} · {{ f.size }} bytes</span>
+      <div class="mono hash">SHA-256: {% for i in range(0, 64, 8) %}{{ f.sha256[i:i+8] }} {% endfor %}</div></li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

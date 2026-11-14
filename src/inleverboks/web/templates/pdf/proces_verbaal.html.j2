@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>{{ _("Official report of digital hand-in") }} · {{ exam.name }}</title>
+{% include "pdf/_pdf_style.html.j2" %}
+</head>
+<body>
+<div class="footer">
+  {{ _("Generated") }} {{ generated_at|localtime("%d-%m-%Y %H:%M:%S") }} {{ _("by") }} {{ generated_by }} ·
+  {{ _("Document ID") }} {{ document_id }} ·
+  {{ _("Audit log hash") }} <span class="mono">{{ audit_head_hash }}</span>
+</div>
+
+<div class="brand">{{ app_name }}</div>
+<h1>{{ _("Official report of digital hand-in") }}</h1>
+{% if final %}<p><strong>{{ _("Final version, made before the files were deleted.") }}</strong></p>{% endif %}
+
+<h2>{{ _("Exam") }}</h2>
+<dl>
+  <dt>{{ _("Name") }}</dt><dd>{{ exam.name }}</dd>
+  {% if exam.description %}<dt>{{ _("Description") }}</dt><dd>{{ exam.description }}</dd>{% endif %}
+  <dt>{{ _("Examiner (owner)") }}</dt><dd>{{ owner.name if owner else "" }}</dd>
+  <dt>{{ _("Second reviewer") }}</dt><dd>{{ reviewer.name if reviewer else _("None") }}</dd>
+  <dt>{{ _("Start") }}</dt><dd>{{ exam.starts_at|localtime("%d-%m-%Y %H:%M") }}</dd>
+  <dt>{{ _("End") }}</dt><dd>{{ exam.ends_at|localtime("%d-%m-%Y %H:%M") }}{% if effective_end != exam.ends_at %} ({{ _("last extension until %(t)s", t=effective_end|localtime("%d-%m-%Y %H:%M")) }}){% endif %}</dd>
+  <dt>{{ _("Access code used") }}</dt><dd>{{ _("Yes") if exam.access_code_enabled else _("No") }}</dd>
+  <dt>{{ _("IP restriction") }}</dt><dd>{% if exam.ip_restriction_enabled %}{{ _("Yes") }}: <span class="mono">{{ exam.ip_cidrs|join(", ") }}</span>{% else %}{{ _("No") }}{% endif %}</dd>
+</dl>
+<h3>{{ _("Expected files") }}</h3>
+<table>
+  <thead><tr><th>#</th><th>{{ _("Label") }}</th><th>{{ _("Expected file name") }}</th><th>{{ _("Extensions") }}</th><th>{{ _("Template SHA-256") }}</th></tr></thead>
+  <tbody>
+  {% for slot in expected_files %}
+    <tr><td>{{ slot.position }}</td><td>{{ slot.label }}</td><td class="mono">{{ slot.expected_name_pattern or "" }}</td>
+      <td>{{ (slot.extensions or exam.extensions)|join(", ") }}</td>
+      <td class="mono">{{ slot.template_file.sha256 if slot.template_file else "" }}</td></tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">{{ _("No expected files.") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>{{ _("Summary") }}</h2>
+<dl>
+  <dt>{{ _("Handed in") }}</dt><dd>{{ counts.active }}</dd>
+  {% if has_roster %}<dt>{{ _("Not handed in") }}</dt><dd>{{ counts.missing }}</dd>{% endif %}
+  <dt>{{ _("Cancelled") }}</dt><dd>{{ counts.cancelled }}</dd>
+  <dt>{{ _("Invalid") }}</dt><dd>{{ counts.invalid }}</dd>
+  {% if has_roster %}<dt>{{ _("Not on list") }}</dt><dd>{{ counts.not_on_list }}</dd>
+  <dt>{{ _("On the class list") }}</dt><dd>{{ counts.roster }}</dd>{% endif %}
+</dl>
+
+<h2>{{ _("Per student") }}</h2>
+{% for s in students %}
+<div class="student">
+  <h3>{{ s.row.display_name }} · <span class="mono">{{ s.row.student_number }}</span> · {{ row_status_labels[s.row.status] }}</h3>
+  {% if s.current %}
+  <p>{{ _("Started") }} {{ s.current.started_at|localtime("%d-%m-%Y %H:%M:%S") }} · {{ _("Completed") }} {{ s.current.completed_at|localtime("%H:%M:%S") }} ·
+    {{ _("Files") }} {{ s.files|length }}/{{ expected_files|length }} · {{ _("Hand-in code") }} <span class="mono">{{ s.current.receipt_code }}</span></p>
+  <table>
+    <thead><tr><th>{{ _("File") }}</th><th>{{ _("Expected file") }}</th><th>{{ _("Size") }}</th><th>SHA-256</th><th>{{ _("Warnings") }}</th></tr></thead>
+    <tbody>
+    {% for f in s.files %}
+      <tr><td>{{ f.name }}{% if f.integrity_ok == false %} <span class="bad">({{ _("integrity check failed") }})</span>{% endif %}</td>
+        <td>{{ f.slot or _("Extra file") }}</td><td>{{ f.size }} B{% if f.size >= 1024 %} ({{ f.size_human }}){% endif %}</td>
+        <td class="mono">{{ f.sha256 }}</td>
+        <td class="warn">{% for w in f.warnings %}{{ warning_labels.get(w, w) }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% for e in s.earlier %}
+  <p class="muted">{{ _("Attempt %(n)s", n=e.submission.attempt) }} · {{ row_status_labels[e.submission.status] }} · {{ e.submission.status_changed_at|localtime("%d-%m-%Y %H:%M") }} {{ _("by") }} {{ e.changed_by.name if e.changed_by else "" }}: {{ e.submission.status_reason }}
+    ({{ e.files|length }} {{ _("files") }}: {% for f in e.files %}{{ f.name }} <span class="mono">{{ f.sha256[:16] }}…</span>{% if not loop.last %}, {% endif %}{% endfor %})</p>
+  {% endfor %}
+  {% if s.row.extension_until %}<p>{{ _("Extension until %(t)s", t=s.row.extension_until|localtime("%d-%m-%Y %H:%M")) }}</p>{% endif %}
+</div>
+{% else %}
+<p class="muted">{{ _("No hand-ins.") }}</p>
+{% endfor %}
+
+<h2>{{ _("Particulars") }}</h2>
+{% if particulars %}
+<table>
+  <thead><tr><th>{{ _("Time") }}</th><th>{{ _("Type") }}</th><th>{{ _("Student") }}</th><th>{{ _("Details") }}</th><th>{{ _("By") }}</th></tr></thead>
+  <tbody>
+  {% set kinds = {"cancelled": _("Undone"), "invalid": _("Declared invalid"), "extension": _("Extension"), "hold": _("Retention hold")} %}
+  {% for p in particulars %}
+    <tr><td>{{ p.at|localtime("%d-%m-%Y %H:%M") if p.at else "" }}</td><td>{{ kinds[p.kind] }}</td><td>{{ p.student }}</td>
+      <td>{% if p.kind == "extension" %}{{ _("until %(t)s", t=p.detail|localtime("%d-%m-%Y %H:%M")) }}{% else %}{{ p.detail }}{% endif %}{% if p.kind == "invalid" %} ({{ _("may hand in again") if p.may_resubmit else _("may not hand in again") }}){% endif %}</td>
+      <td>{{ p.by }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">{{ _("None.") }}</p>
+{% endif %}
+<h3>{{ _("Integrity check") }}</h3>
+<p>{{ _("Checked at %(t)s: %(n)s files.", t=integrity.checked_at|localtime("%d-%m-%Y %H:%M:%S"), n=integrity.checked) }}
+  {% if integrity.mismatches %}<span class="bad">{{ _("%(n)s deviations:", n=integrity.mismatches|length) }}</span>
+  {% for m in integrity.mismatches %}{{ m.file.original_name }}{% if not loop.last %}, {% endif %}{% endfor %}
+  {% else %}{{ _("No deviations.") }}{% endif %}</p>
+
+<div class="signatures">
+  <div><div class="signature">{{ _("Examiner") }}: {{ owner.name if owner else "" }}</div></div>
+  <div><div class="signature">{{ _("Second reviewer") }}: {{ reviewer.name if reviewer else "" }}</div></div>
+</div>
+</body>
+</html>

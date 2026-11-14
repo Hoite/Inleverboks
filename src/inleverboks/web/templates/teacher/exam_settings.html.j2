@@ -20,6 +20,8 @@
   </div>
 </div>
 
+{% set exam_tab = "settings" %}{% include "teacher/_exam_tabs.html.j2" %}
+
 {% set ok_messages = {
   "saved": _("Saved."), "published": _("The exam is published."),
   "unpublished": _("The exam is a concept again."), "code": _("A new access code has been generated."),
@@ -36,7 +38,7 @@
 {% endif %}
 
 <div class="grid-2 detail-grid">
-  <section class="card">
+  <section class="card" id="link">
     <h2>{{ _("Hand-in link") }}</h2>
     <div class="field">
       <label for="url">{{ _("Link for students") }}</label>

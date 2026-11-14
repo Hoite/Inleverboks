@@ -1,0 +1,72 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, ok_box with context %}
+{% from "teacher/_status.html.j2" import status_badge %}
+{% block title %}{{ exam.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent">{{ _("Exams") }}</a></p>
+<div class="page-head">
+  <div>
+    <h1>{{ exam.name }}</h1>
+    <p>{{ status_badge(exam_status, status_labels) }} <span class="muted">{{ exam.starts_at|localtime }} – {{ exam.ends_at|localtime("%H:%M") }}</span></p>
+  </div>
+  <div class="button-row">
+    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/presentatie">{{ _("Presentation mode") }}</a>
+    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/instellingen#link">{{ _("Link and QR code") }}</a>
+  </div>
+</div>
+{% set exam_tab = "overview" %}{% include "teacher/_exam_tabs.html.j2" %}
+
+<ul class="counters" aria-label="{{ _('Counters') }}">
+  <li><span class="counter-value">{{ data.counters.active }}</span> {{ _("handed in") }}</li>
+  {% if data.has_roster %}<li><span class="counter-value">{{ data.counters.missing }}</span> {{ _("not handed in yet") }}</li>{% endif %}
+  <li><span class="counter-value">{{ data.counters.cancelled }}</span> {{ _("cancelled") }}</li>
+  <li><span class="counter-value">{{ data.counters.invalid }}</span> {{ _("invalid") }}</li>
+  {% if data.has_roster %}<li><span class="counter-value">{{ data.counters.not_on_list }}</span> {{ _("not on list") }}</li>{% endif %}
+</ul>
+
+<form method="get" action="/docent/examens/{{ exam.id }}" class="row-form filter-form">
+  <div class="field">
+    <label for="status">{{ _("Show") }}</label>
+    <select id="status" name="status">
+      <option value="">{{ _("All") }}</option>
+      {% for value, label in [("active", _("Handed in")), ("missing", _("Not handed in yet")), ("cancelled", _("Cancelled")), ("invalid", _("Invalid")), ("not_on_list", _("Not on list"))] %}
+      {% if data.has_roster or value not in ("missing", "not_on_list") %}
+      <option value="{{ value }}"{% if status_filter == value %} selected{% endif %}>{{ label }}</option>
+      {% endif %}
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="sort">{{ _("Sort by") }}</label>
+    <select id="sort" name="sort">
+      {% for value, label in [("name", _("Name")), ("number", _("Student number")), ("time", _("Handed in at")), ("status", _("Status")), ("size", _("Size"))] %}
+      <option value="{{ value }}"{% if sort == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <label class="checkbox"><input type="checkbox" name="desc" value="true"{% if desc %} checked{% endif %}> {{ _("Descending") }}</label>
+  <button type="submit" class="button button-secondary">{{ _("Apply") }}</button>
+</form>
+
+{% include "teacher/_overview_table.html.j2" %}
+
+<section class="card">
+  <h2>{{ _("Downloads and exports") }}</h2>
+  {% if perms.download_files %}
+  <form method="get" action="/docent/examens/{{ exam.id }}/zip" class="row-form">
+    <label class="checkbox"><input type="checkbox" name="geannuleerd" value="true"> {{ _("Include cancelled attempts") }}</label>
+    <label class="checkbox"><input type="checkbox" name="ongeldig" value="true"> {{ _("Include invalid attempts") }}</label>
+    <button type="submit" class="button">{{ _("Download all (zip)") }}</button>
+  </form>
+  {% endif %}
+  <div class="button-row top-gap">
+    {% if perms.export %}
+    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/overzicht.csv">{{ _("Export CSV") }}</a>
+    <form method="post" action="/docent/examens/{{ exam.id }}/proces-verbaal" class="inline-form">
+      {{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Proces-verbaal (PDF)") }}</button>
+    </form>
+    {% endif %}
+    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/auditlog">{{ _("Audit log") }}</a>
+  </div>
+</section>
+{% endblock %}
