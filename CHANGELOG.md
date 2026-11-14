@@ -65,3 +65,16 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   - CSV-export van het overzicht, het proces-verbaal (PDF) met de verplichte onderdelen en
     handtekeningvelden, de controle van ontvangstbewijzen, en het auditlog per examen en het
     systeemlog bekijken en exporteren (CSV en PDF), met de status van de hash-keten.
+- Levenscyclus (fase 6):
+  - een scheduler in de app (bewaartermijn, opruimen, back-up) met een lock in de database,
+    zodat een taak bij meerdere replicas maar één keer draait;
+  - de bewaartermijn in kalenderdagen in `APP_TIMEZONE`, met een waarschuwing vanaf 7 dagen
+    ervoor; verlengingen schuiven de termijn op;
+  - bij het afronden eerst een definitief proces-verbaal (met integriteitscontrole), daarna
+    het verwijderen van alle bestanden en de klassenlijst; een lijst met proces-verbalen per
+    examen;
+  - een bewaren-vlag met reden (eigenaar en admin), met 7 dagen uitstel na het weghalen;
+    definitief verwijderen van een afgerond examen door de admin;
+  - opruimtaken voor verweesde objecten, verlopen tokens, sessies en uitnodigingen;
+  - `inleverboks retention run [--dry-run]`, `cleanup run`, `backup --to`, `restore --yes` en
+    `integrity check [--exam]`.

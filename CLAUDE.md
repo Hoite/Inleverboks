@@ -109,6 +109,12 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   uploaden) en de fixtures `owner` en `exam` in `tests/integration/conftest.py`.
 - **Teksten in JavaScript** komen uit `client_texts()` (server-side vertaald) via de
   configuratie in `data-config`. Zet nooit losse teksten in JS.
+- **Levenscyclus:** `services/lifecycle.py` (bewaartermijn, bewaren-vlag, afronden, definitief
+  verwijderen), `services/maintenance.py` (opruimen, integriteitscontrole), `services/backup.py`
+  en `services/scheduler.py` (`Jobs` met een lock per taak, `AppScheduler`). De CLI en de
+  scheduler gebruiken dezelfde `Jobs`. In tests staat `scheduler_enabled` uit; roep de
+  services direct aan met de `FrozenClock`. Async opslag vanuit sync code gaat via
+  `services/asyncutil.call_async` (werkt zowel in een worker-thread als daarbuiten).
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of
   `style=""` in templates. Previews met inline styles draaien in een sandboxed iframe met een
   eigen CSP.
@@ -133,5 +139,5 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - [x] Fase 3: examens
 - [x] Fase 4: studentflow
 - [x] Fase 5: docentkant
-- [ ] Fase 6: levenscyclus
+- [x] Fase 6: levenscyclus
 - [ ] Fase 7: afronding

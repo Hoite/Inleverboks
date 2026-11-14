@@ -136,9 +136,74 @@ die instelling ziet de app alleen het IP-adres van de ingress, en werkt de IP-wh
 examens niet goed. Zet request-buffering bij voorkeur uit, zodat uploads direct naar de app
 streamen.
 
+## Bewaartermijn en afronden
+
+Na het einde van een examen (inclusief de laatste verlenging) loopt de bewaartermijn die de
+admin instelt (standaard 60 dagen). Die telt in hele kalenderdagen in `APP_TIMEZONE`. Eindigt
+een examen op vrijdag 13 november 2026, dan worden de bestanden verwijderd op 13 januari 2027
+om 00:00. Vanaf 7 dagen ervoor tonen het dashboard en het overzicht een waarschuwing.
+
+Bij het verwijderen maakt de app eerst een **definitief proces-verbaal**, met een
+integriteitscontrole. Daarna verwijdert hij alle ingeleverde bestanden (ook geannuleerde en
+ongeldige pogingen) en de klassenlijst van het examen. Het examen staat daarna onder
+**Afgerond**. De metadata, de proces-verbalen en het auditlog blijven bewaard.
+
+- **Bewaren-vlag:** de eigenaar of de admin kan de verwijdering met een reden tegenhouden,
+  bijvoorbeeld bij een bezwaar. Wordt de vlag weggehaald terwijl de termijn al verstreken is,
+  dan volgt de verwijdering op zijn vroegst 7 dagen later.
+- **Definitief verwijderen:** alleen de admin kan een afgerond examen helemaal verwijderen, met
+  een reden. Dat komt in het systeemlog, en de link (slug) wordt nooit hergebruikt.
+
+De achtergrondtaken (bewaartermijn elk kwartier, opruimen elk uur, back-up volgens
+`BACKUP_SCHEDULE`) draaien in de app zelf (`SCHEDULER_ENABLED`). Met meerdere replicas
+voorkomt een lock in de database dat een taak dubbel draait. Je kunt ze ook met de hand
+starten:
+
+```bash
+inleverboks retention run --dry-run   # laat zien welke examens aan de beurt zijn
+inleverboks retention run
+inleverboks cleanup run               # verweesde bestanden, verlopen tokens en sessies
+inleverboks integrity check [--exam ID]   # hashes van alle bestanden controleren (exitcode 1 bij een afwijking)
+```
+
 ## Back-up en herstel
 
-*(volgt in fase 6)*
+Met `BACKUP_PATH` maakt de app elke nacht (`BACKUP_SCHEDULE`, in `APP_TIMEZONE`) een archief
+`inleverboks-backup-JJJJMMDD-UUMMSS.tar.gz`. Archieven ouder dan `BACKUP_KEEP_DAYS` worden
+opgeruimd. Het archief bevat:
+
+- `files/…`: alle opgeslagen bestanden (ingeleverde bestanden, sjablonen en proces-verbalen);
+- `database/inleverboks.db`: een consistente kopie van de SQLite-database (via de backup-API
+  van SQLite, dus veilig terwijl de app draait);
+- `backup.json`: de versie en het tijdstip.
+
+**PostgreSQL** zit niet in het archief. Maak daarvoor een eigen back-up met `pg_dump` (of de
+back-upvoorziening van je database). In het archief staat dan alleen een `README.txt` met die
+uitleg. Gebruik je S3, dan kun je in plaats daarvan ook versiebeheer op de bucket gebruiken.
+
+Handmatig:
+
+```bash
+docker exec inleverboks inleverboks backup --to /data/backups --keep-days 7
+```
+
+Herstellen doe je met de app **gestopt**:
+
+```bash
+docker run --rm -v inleverboks-data:/data --env-file .env ghcr.io/hoite/inleverboks:edge \
+  inleverboks restore /data/backups/inleverboks-backup-20270113-020000.tar.gz --yes
+```
+
+De bestaande SQLite-database blijft bewaard als `inleverboks.db.before-restore`. Controleer
+daarna de hash-keten en de bestanden:
+
+```bash
+inleverboks audit verify
+inleverboks integrity check
+```
+
+Een back-up bevat ingeleverd werk en persoonsgegevens. Bewaar hem dus even zorgvuldig als de
+app zelf, en houd bij het bewaren rekening met de bewaartermijn.
 
 ## Upgraden en migraties
 
