@@ -1,0 +1,115 @@
+# CLAUDE.md
+
+Werkafspraken voor Claude Code (en andere ontwikkelaars) in deze repo. De volledige
+specificatie staat in `inleverboks-claude-code-prompt.md`, en de gemaakte keuzes staan in `PLAN.md`.
+Bij een tegenstrijdigheid geldt eerst `PLAN.md` en daarna de specificatie. Twijfel je bij
+beslissingen die lastig terug te draaien zijn (datamodel, auth, opslag)? Vraag het dan.
+
+## Talen
+
+- **Code, identifiers, commentaar en commitberichten:** Engels.
+- **UI:** Nederlands, en **altijd via gettext**. Elke tekst staat in
+  `src/inleverboks/i18n/nl/LC_MESSAGES/messages.po`, met een Engelse msgid. In templates
+  schrijf je `{{ _("...") }}`. Zet nooit losse Nederlandse tekst in een template.
+- **README en `docs/`:** Nederlands.
+
+## Commando's
+
+```bash
+uv sync                                   # dependencies (incl. dev)
+uv run pytest                             # unit- en integratietests (SQLite)
+TEST_DATABASE_URL=postgresql://u:p@127.0.0.1:5432/db uv run pytest   # tegen PostgreSQL
+uv run pytest -m e2e                      # Playwright (eenmalig: uv run playwright install chromium)
+uv run pytest --cov                       # met coverage
+uv run ruff check . && uv run ruff format --check .
+uv run mypy                               # strict, src + tests
+uv run inleverboks migrate                # migraties (gebruikt .env)
+uv run inleverboks db-revision "add x"    # nieuwe migratie autogenereren (controleer het resultaat!)
+uv run python scripts/i18n.py             # nieuwe UI-teksten naar messages.po; daarna vertalen
+uv run python scripts/i18n.py --check     # ontbrekende vertalingen (zit ook in de tests)
+uv run python scripts/i18n_fill.py nl.py  # lege msgstr vullen uit een dict NL = {...} (hulpmiddel)
+uv run python -I scripts/vendor.py        # meegeleverde JS ophalen/controleren (vendor.lock.json)
+TEST_S3_ENDPOINT=http://127.0.0.1:9000 uv run pytest tests/integration/test_storage_contract.py
+uv run uvicorn inleverboks.asgi:app --reload --port 8080   # lokaal draaien (.env nodig)
+docker build -t inleverboks:dev .
+docker compose up --build
+```
+
+Docker staat op deze machine in `~/.docker/bin`. Zet in een niet-login-shell eerst
+`export PATH="$PATH:$HOME/.docker/bin"`.
+
+## Architectuur
+
+```
+web/       routes, templates, middleware (security headers, body limit), templating
+policy.py  de enige autorisatielaag (matrix als data); web/deps.py levert Teacher/Admin
+services/  domeinlogica, zonder HTTP-kennis
+repos/     databasequeries, zonder businesslogica
+adapters/  StorageBackend (local, s3), AuthProvider, Mailer, FileScanner, RateLimiter, Clock
+db/        Base (naming convention), engine/session, migrate-helpers, models/
+migrations/ Alembic (script_location in de code, er is geen alembic.ini)
+```
+
+- **App factory:** `inleverboks.main.create_app(settings)`. Tests geven hun eigen `Settings` mee.
+  `inleverboks.asgi:app` is voor uvicorn.
+- **Container:** `CMD python -m inleverboks.entrypoint`. Die voert optioneel de migraties uit en
+  exect daarna uvicorn. De CLI draait in hetzelfde image: `docker run <img> inleverboks migrate`.
+- **Proxy:** `TRUSTED_PROXIES` wordt op twee plekken gebruikt: in uvicorn (`--forwarded-allow-ips`)
+  en in de app (`ProxyHeadersMiddleware`). Dat is idempotent, en zo test de testsuite hetzelfde
+  pad als productie. Lees het client-IP altijd uit `request.client.host`.
+- **Opslag:** keys zoals `{exam_id}/{submission_id}/{uuid}`. Schrijf eerst naar `tmp/…` en zet het
+  bestand pas na verificatie met `move()` op zijn plek. Ingeleverde bestanden worden nooit
+  statisch of inline geserveerd.
+- **Tijd:** sla alles op in UTC (`DateTime(timezone=True)`) en toon in `APP_TIMEZONE`. Gebruik
+  (vanaf fase 2) de `Clock`-adapter, nooit `datetime.now()` direct.
+- **URL's:** de UI-paden zijn Nederlands (`/docent`, `/account/wachtwoord`, `/admin/gebruikers`,
+  `/uitnodiging/{token}`). Inleverlinks komen in fase 3 direct onder `/` (`/{slug}`). Elk nieuw
+  pad op het hoogste niveau moet dus op de lijst met gereserveerde slugs.
+- **Routes** zijn sync `def` (FastAPI draait ze in een threadpool), omdat SQLAlchemy sync is.
+  Services committen zelf. Bij een `DomainError` doet de route `db.rollback()`.
+- **Fouten:** services gooien `DomainError("code")`, en `web/messages.py` vertaalt de code.
+- **Migraties:** autogenerate en dan **handmatig nalopen**. Vervang `UTCDateTime` door
+  `sa.DateTime(timezone=True)`, zodat migraties los van de app-code blijven werken. Bijzondere
+  DDL (triggers, partial indexes) gaat met `op.execute`.
+- **Tests:** `tests/conftest.py` geeft elke test een vers gemigreerde database (SQLite-kopie, of
+  TRUNCATE op PostgreSQL), een `FrozenClock` en helpers (`create_user`, `login`, `post` met
+  CSRF, `enable_totp`). Gebruik `post(client, url, data)` voor formulieren.
+- **Statische bestanden:** gebruik in templates altijd `{{ asset('css/app.css') }}`, niet
+  `url_for('static', ...)`. `asset()` voegt `?v=<hash>` toe, zodat browsers na een update
+  nooit een verouderde versie gebruiken (lange cache voor URL's met hash).
+- **Routes met de catch-all `/{slug}`** (`web/routes/student.py`) worden als laatste
+  geregistreerd. In tests registreer je extra routes met `add_first_route()`.
+- **Sync routes en async opslag:** in een sync route roep je async code aan met
+  `anyio.from_thread.run(...)`, bijvoorbeeld voor uploads en het verwijderen uit opslag.
+- **Sjabloonbestanden** zijn content-addressed (`templates/{sha256}`). Dupliceren of opslaan als
+  examensjabloon kopieert alleen de databaserij. Het object wordt pas verwijderd als er geen
+  `TemplateFile` meer naar verwijst (`template_files.unreferenced`).
+- **Formulieren zonder JS:** knoppen met `name="action"` (bijvoorbeeld `add_slot`) renderen het
+  formulier opnieuw zonder op te slaan. Zet bovenaan een verborgen standaardknop, zodat Enter
+  altijd "opslaan" (of "controleren") doet.
+- **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of
+  `style=""` in templates. Previews met inline styles draaien in een sandboxed iframe met een
+  eigen CSP.
+
+## Conventies
+
+- Python 3.15, en alles vastgepind: exacte versies in `pyproject.toml`, plus `uv.lock`. Images
+  pin je op tag én digest, GitHub Actions op commit-SHA.
+- ruff (zie `pyproject.toml` voor de regels) en mypy strict, ook voor de tests.
+- Tests staan in `tests/unit`, `tests/integration` en `tests/e2e` (marker `e2e`, standaard
+  uitgesloten). De database-afhankelijke tests moeten slagen op zowel SQLite als PostgreSQL.
+- Commits volgen Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `ci:`).
+  Git-commando's voert de eigenaar zelf uit. Per fase staan de voorgestelde commits in
+  `docs/commits/`.
+- Logs: JSON naar stdout, nooit de inhoud van bestanden, en ID's in plaats van namen.
+- Er komen geen geheimen, logo's of merkbestanden van de school in de repo.
+
+## Stand van zaken
+
+- [x] Fase 1: fundament
+- [x] Fase 2: kern (datamodel, auth, audit, S3-backend)
+- [x] Fase 3: examens
+- [ ] Fase 4: studentflow
+- [ ] Fase 5: docentkant
+- [ ] Fase 6: levenscyclus
+- [ ] Fase 7: afronding
