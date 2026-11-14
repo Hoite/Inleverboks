@@ -1,0 +1,23 @@
+# Inleverboks with SQLite and local storage on a named volume.
+#   cp .env.example .env   # and fill in SECRET_KEY
+#   docker compose up --build
+services:
+  app:
+    build: .
+    image: ghcr.io/hoite/inleverboks:local
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+volumes:
+  data:

@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.13.8"
+  UV_PYTHON: "3.15.2"
+
+jobs:
+  lint:
+    name: Lint and typecheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+
+  test:
+    name: Tests (${{ matrix.database }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgresql]
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:1018733457011bf88d81db98cf43aac6d5150afc18787dbe204771fedf80ff95
+        env:
+          POSTGRES_USER: inleverboks
+          POSTGRES_PASSWORD: inleverboks
+          POSTGRES_DB: inleverboks
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U inleverboks"
+          --health-interval 2s
+          --health-retries 30
+    env:
+      TEST_DATABASE_URL: ${{ matrix.database == 'postgresql' && 'postgresql://inleverboks:inleverboks@127.0.0.1:5432/inleverboks' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: Install WeasyPrint system libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0
+      - run: uv sync --locked
+      - run: uv run pytest --cov --cov-report=term --cov-report=xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-${{ matrix.database }}
+          path: coverage.xml
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run playwright install --with-deps chromium
+      - run: uv run pytest -m e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build image
+        run: docker build -t inleverboks:ci .
+      - name: Smoke test (read-only root filesystem, non-root)
+        run: |
+          docker run -d --name app --read-only --tmpfs /tmp --cap-drop ALL \
+            -e APP_BASE_URL=http://localhost:8080 \
+            -e SECRET_KEY="$(openssl rand -base64 48)" \
+            -p 8080:8080 inleverboks:ci
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:8080/readyz && break; sleep 1; done
+          curl -fs http://127.0.0.1:8080/readyz
+          test "$(docker exec app id -u)" = "10001"
+          docker logs app
