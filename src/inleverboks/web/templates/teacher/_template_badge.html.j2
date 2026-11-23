@@ -1,0 +1,2 @@
+{# A visual marker for exam templates, so a template is never mistaken for an exam. #}
+{% macro template_badge(label) %}<span class="badge badge-template"><svg class="icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M5 1.5h5.5L13 4v8.5H5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 4.5v10h7.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>{{ label }}</span>{% endmacro %}

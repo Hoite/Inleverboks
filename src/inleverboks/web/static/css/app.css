@@ -16,6 +16,9 @@
   --color-error-bg: #fde7ea;
   --color-border: #c9d3da;
   --color-muted: #5b6770;
+  /* Exam templates: a fixed colour of their own, so a template never looks like an exam. */
+  --color-template: #6a3d9a;
+  --color-template-bg: #f3edf9;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -222,7 +225,7 @@ td.actions form, td.actions details { display: inline-block; margin: .1rem .15re
 .details dd { margin: 0; }
 .code-list { columns: 2; padding-left: 1.2rem; font-size: 1.1rem; }
 .qr svg { width: 220px; height: auto; display: block; }
-.secret { word-spacing: .3em; }
+.secret { word-spacing: .3em; display: inline-block; margin-top: .25rem; font-size: 1.05rem; overflow-wrap: anywhere; }
 .steps { padding-left: 1.2rem; }
 
 @media (max-width: 40rem) {
@@ -369,3 +372,31 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .brand-preview .button { cursor: default; }
 .logo-preview { max-height: 64px; width: auto; border: 1px solid var(--color-border); padding: .5rem; background: #fff; }
 .contrast-table td:first-child { min-width: 14rem; }
+
+/* Date plus 24-hour time */
+.datetime-field { border: 0; padding: 0; margin: 0 0 1rem; min-width: 0; }
+.datetime-field legend { font-weight: 600; color: var(--color-text); padding: 0; margin-bottom: .25rem; }
+.datetime-inputs { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; }
+.datetime-inputs .field { margin: 0; }
+.datetime-inputs label { font-weight: 400; font-size: .9rem; }
+.datetime-inputs input[type="date"] { font: inherit; padding: .5rem .6rem; border: 1px solid #7a8793; border-radius: var(--radius); background: #fff; color: var(--color-text); }
+.datetime-inputs .time-input { width: 5.5rem; }
+
+/* Exam templates */
+.badge-template { color: var(--color-template); background: var(--color-template-bg); border: 1px solid var(--color-template); display: inline-flex; align-items: center; gap: .3rem; }
+.badge-template .icon { flex: none; }
+.mode-template .site-header { border-bottom-color: var(--color-template); }
+.template-banner { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: 0 0 1rem; padding: .6rem 1rem; background: var(--color-template-bg); color: var(--color-template); border-left: 6px solid var(--color-template); border-radius: var(--radius); font-weight: 600; }
+.mode-template h1 { color: var(--color-template); }
+.template-picker { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; margin: 0 0 1rem; padding: .75rem 1rem; background: var(--color-template-bg); border: 1px solid var(--color-template); border-radius: var(--radius); }
+.template-picker .grow { flex: 1 1 16rem; margin: 0; }
+.template-source { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; color: var(--color-template); }
+.template-list { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); }
+.template-card { border: 1px solid var(--color-border); border-left: 6px solid var(--color-template); border-radius: var(--radius); padding: .75rem 1rem; background: #fff; }
+.template-card-head { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; }
+.template-card h2 { margin: 0; font-size: 1.15rem; }
+.template-card h2 a { color: var(--color-template); }
+.button.button-template { background: var(--color-template); border-color: var(--color-template); color: #fff; }
+.button.button-template:hover { background: #4f2c74; border-color: #4f2c74; color: #fff; }
+
+.site-footer { max-width: 64rem; margin: 0 auto; padding: 1rem 1rem 2rem; border-top: 1px solid var(--color-border); color: var(--color-muted); font-size: .85rem; }

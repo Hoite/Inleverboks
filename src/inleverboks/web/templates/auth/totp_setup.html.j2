@@ -11,7 +11,8 @@
     <li>{{ _("Enter the six-digit code shown in the app.") }}</li>
   </ol>
   <div class="qr" role="img" aria-label="{{ _('QR code for the authenticator app') }}">{{ qr_svg|safe }}</div>
-  <p>{{ _("Cannot scan? Enter this key:") }} <code class="mono secret">{{ secret }}</code></p>
+  <p class="secret-intro">{{ _("Cannot scan? Enter this key:") }}<br>
+    <code class="mono secret">{{ secret }}</code></p>
   <form method="post" action="/account/tweestaps" class="stack">
     {{ csrf() }}
     <div class="field">

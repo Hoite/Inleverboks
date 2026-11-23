@@ -1,5 +1,5 @@
 {% extends "base.html.j2" %}
-{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box, datetime_input with context %}
 {% from "teacher/_status.html.j2" import status_badge %}
 {% block title %}{{ exam.name }} · {{ app_name }}{% endblock %}
 {% block content %}
@@ -69,7 +69,7 @@
       <dt>{{ _("Owner") }}</dt><dd>{{ owner.name if owner else "" }}</dd>
       <dt>{{ _("Second reviewer") }}</dt><dd>{{ reviewer.name if reviewer else _("None") }}</dd>
       <dt>{{ _("IP restriction") }}</dt><dd>{% if exam.ip_restriction_enabled %}<span class="mono">{{ exam.ip_cidrs|join(", ") }}</span>{% else %}{{ _("No") }}{% endif %}</dd>
-      <dt>{{ _("Extensions") }}</dt><dd class="mono">{{ exam.extensions|join(", ") }}</dd>
+      <dt>{{ _("Allowed extensions") }}</dt><dd><span class="mono">{{ exam.extensions|join(", ") }}</span></dd>
       <dt>{{ _("Maximum size") }}</dt><dd>{{ _("%(f)s MB per file, %(s)s MB per submission", f=exam.max_file_bytes // 1048576, s=exam.max_submission_bytes // 1048576) }}</dd>
       <dt>{{ _("Extra files") }}</dt><dd>{{ _("Allowed") if exam.allow_extra_file else _("Not allowed") }}</dd>
       <dt>{{ _("Handed in") }}</dt><dd>{{ submissions }}</dd>
@@ -89,7 +89,7 @@
         <td>{{ slot.position }}</td>
         <td>{{ slot.label }}</td>
         <td class="mono">{{ slot.expected_name_pattern or "" }}</td>
-        <td class="mono">{{ (slot.extensions or [])|join(", ") }}</td>
+        <td>{% if slot.extensions %}<span class="mono">{{ slot.extensions|join(", ") }}</span>{% else %}<span class="muted">{{ _("All allowed extensions") }}</span>{% endif %}</td>
         <td>
           {% if slot.template_file %}
           <a href="/docent/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon">{{ slot.template_file.original_name }}</a>
@@ -149,7 +149,8 @@
 </section>
 
 <section id="verlengingen">
-  <h2>{{ _("Extensions") }}</h2>
+  <h2>{{ _("Time extensions") }}</h2>
+  <p class="hint">{{ _("Give one student more time, for example because of a later start.") }}</p>
   {% if extensions %}
   <div class="table-wrap">
   <table>
@@ -166,7 +167,7 @@
   </table>
   </div>
   {% else %}
-  <p class="muted">{{ _("No extensions.") }}</p>
+  <p class="muted">{{ _("No time extensions granted yet.") }}</p>
   {% endif %}
   {% if perms.manage_submissions and status != "finalized" %}
   <form method="post" action="/docent/examens/{{ exam.id }}/verlengingen" class="row-form top-gap">
@@ -175,10 +176,7 @@
       <label for="ext-number">{{ _("Student number") }}</label>
       <input id="ext-number" name="student_number" type="text" inputmode="numeric" required maxlength="32" class="mono">
     </div>
-    <div class="field">
-      <label for="ext-end">{{ _("New end time") }}</label>
-      <input id="ext-end" name="ends_at" type="datetime-local" required>
-    </div>
+    {{ datetime_input("ends_at", _("New end time"), extension_default_date, extension_default_time) }}
     <button type="submit" class="button button-secondary">{{ _("Grant extension") }}</button>
   </form>
   {% endif %}
@@ -202,9 +200,10 @@
     {{ csrf() }}
     <div class="field grow">
       <label for="template-name">{{ _("Save as exam template") }}</label>
-      <input id="template-name" name="name" type="text" maxlength="200" value="{{ exam.name }}">
+      <input id="template-name" name="name" type="text" maxlength="200" value="{{ exam.name }}" aria-describedby="template-name-hint">
+      <p class="hint" id="template-name-hint">{{ _("Copies the expected files, template files, extensions, limits and access settings to a new template. You can edit it afterwards under Exam templates.") }}</p>
     </div>
-    <button type="submit" class="button button-secondary">{{ _("Save as template") }}</button>
+    <button type="submit" class="button button-template">{{ _("Save as template") }}</button>
   </form>
   {% endif %}
   {% if perms.transfer_ownership %}

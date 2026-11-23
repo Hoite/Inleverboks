@@ -17,7 +17,7 @@
   <script src="{{ asset('vendor/htmx/htmx.min.js') }}" defer></script>
   {% endif %}
 </head>
-<body>
+<body{% set body_class %}{% block body_class %}{% endblock %}{% endset %}{% if body_class.strip() %} class="{{ body_class.strip() }}"{% endif %}>
   <a class="skip-link" href="#main">{{ _("Skip to content") }}</a>
   {% if demo_mode %}
   <div class="demo-banner" role="status">{{ _("Demo environment: do not use for real exams.") }}</div>
@@ -58,5 +58,8 @@
   <main id="main" class="container{% block container_class %}{% endblock %}">
     {% block content %}{% endblock %}
   </main>
+  <footer class="site-footer">
+    <span>{{ app_name }} <span class="mono" title="{{ _('Version') }}">v{{ app_version }}</span></span>
+  </footer>
 </body>
 </html>

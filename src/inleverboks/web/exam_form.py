@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -17,7 +18,7 @@ from starlette.datastructures import FormData
 from inleverboks.i18n import gettext as _
 from inleverboks.services.errors import DomainError
 from inleverboks.services.exams import ExamInput, SlotInput
-from inleverboks.services.timeutil import format_local, parse_local
+from inleverboks.services.timeutil import combine_local, format_local, parse_local, split_local
 
 
 def field_messages() -> dict[str, str]:
@@ -73,17 +74,49 @@ def _uuid(form: FormData, name: str) -> uuid.UUID | None:
         return None
 
 
-def parse_exam_form(form: FormData, tz: ZoneInfo, fallback: ExamInput) -> ParsedForm:
+def read_datetime(form: FormData | dict[str, str], name: str) -> str:
+    """The local date-time of a field as ``YYYY-MM-DDTHH:MM``.
+
+    The form has a date field (``{name}_date``) and a 24-hour time field (``{name}_time``),
+    because ``datetime-local`` shows AM/PM in an English browser. A single ``{name}`` field
+    (the old form) is still accepted.
+    """
+    get = form.get
+    date = get(f"{name}_date")
+    if isinstance(date, str):
+        time = get(f"{name}_time")
+        return combine_local(date, time if isinstance(time, str) else "")
+    value = get(name)
+    return value if isinstance(value, str) else ""
+
+
+def raw_datetimes(form: FormData, *names: str) -> dict[str, str]:
+    """The date and time fields exactly as typed, to show them again after an error."""
+    raw: dict[str, str] = {}
+    for name in names:
+        date, time = form.get(f"{name}_date"), form.get(f"{name}_time")
+        if isinstance(date, str):
+            raw[f"{name}_date"] = date
+            raw[f"{name}_time"] = time if isinstance(time, str) else ""
+        else:
+            raw[f"{name}_date"], raw[f"{name}_time"] = split_local(read_datetime(form, name))
+    return raw
+
+
+def parse_exam_form(
+    form: FormData, tz: ZoneInfo, fallback: ExamInput, *, with_times: bool = True
+) -> ParsedForm:
     problems: dict[str, str] = {}
     starts_at, ends_at = fallback.starts_at, fallback.ends_at
-    try:
-        starts_at = parse_local(_text(form, "starts_at"), tz)
-    except DomainError as exc:
-        problems["starts_at"] = exc.code
-    try:
-        ends_at = parse_local(_text(form, "ends_at"), tz)
-    except DomainError as exc:
-        problems["ends_at"] = exc.code
+    if with_times:
+        try:
+            starts_at = parse_local(read_datetime(form, "starts_at"), tz)
+        except DomainError as exc:
+            problems["starts_at"] = exc.code
+        try:
+            ends_at = parse_local(read_datetime(form, "ends_at"), tz)
+        except DomainError as exc:
+            problems["ends_at"] = exc.code
 
     count = max(0, min(_int(form, "slot_count"), 100))
     slots: list[SlotInput] = []
@@ -135,11 +168,20 @@ def form_values(data: ExamInput, tz: ZoneInfo, raw: dict[str, str] | None = None
     def joined(value: list[str] | None) -> str:
         return ", ".join(v for v in (value or []) if v)
 
+    def typed(name: str, value: datetime) -> tuple[str, str]:
+        if f"{name}_date" in raw:
+            return raw[f"{name}_date"], raw.get(f"{name}_time", "")
+        return split_local(format_local(value, tz))
+
+    starts = typed("starts_at", data.starts_at)
+    ends = typed("ends_at", data.ends_at)
     return {
         "name": data.name,
         "description": data.description or "",
-        "starts_at": raw.get("starts_at") or format_local(data.starts_at, tz),
-        "ends_at": raw.get("ends_at") or format_local(data.ends_at, tz),
+        "starts_at_date": starts[0],
+        "starts_at_time": starts[1],
+        "ends_at_date": ends[0],
+        "ends_at_time": ends[1],
         "second_reviewer_id": str(data.second_reviewer_id or ""),
         "slug": data.slug,
         "access_code_enabled": data.access_code_enabled,

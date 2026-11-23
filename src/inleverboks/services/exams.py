@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
@@ -130,6 +130,34 @@ def _snapshot(exam: Exam) -> dict[str, Any]:
                 "template_sha256": s.template_file.sha256 if s.template_file else None,
             }
             for s in exam.expected_files
+        ],
+    }
+
+
+TEMPLATE_WINDOW = timedelta(hours=2)
+
+
+def _template_config(data: ExamInput) -> dict[str, Any]:
+    return {
+        "access_code_enabled": data.access_code_enabled,
+        "ip_restriction_enabled": data.ip_restriction_enabled,
+        "ip_cidrs": list(data.ip_cidrs or []),
+        "ip_preset_id": str(data.ip_preset_id) if data.ip_preset_id else None,
+        "allow_unlisted": data.allow_unlisted,
+        "allow_extra_file": data.allow_extra_file,
+        "extensions": list(data.extensions or []),
+        "max_file_mb": max(1, data.max_file_mb),
+        "max_submission_mb": max(1, data.max_submission_mb),
+    }
+
+
+def _template_snapshot(template: ExamTemplate) -> dict[str, Any]:
+    return {
+        "name": template.name,
+        **template.config,
+        "slots": [
+            {"label": s.label, "pattern": s.expected_name_pattern, "extensions": s.extensions}
+            for s in template.slots
         ],
     }
 
@@ -308,6 +336,7 @@ class ExamService:
         self, db: Session, template: ExamTemplate, base: ExamInput
     ) -> ExamInput:
         config = template.config
+        base.name = base.name or template.name
         base.access_code_enabled = bool(config.get("access_code_enabled", True))
         base.ip_restriction_enabled = bool(config.get("ip_restriction_enabled", False))
         base.ip_cidrs = list(config.get("ip_cidrs", []))
@@ -318,8 +347,12 @@ class ExamService:
         base.extensions = list(config.get("extensions", base.extensions))
         base.max_file_mb = int(config.get("max_file_mb", base.max_file_mb))
         base.max_submission_mb = int(config.get("max_submission_mb", base.max_submission_mb))
+        # The template slot ids travel along, so template files follow their slot even
+        # when the teacher adds or removes slots before saving.
         base.slots = [
-            SlotInput(label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions)
+            SlotInput(
+                label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions, id=s.id
+            )
             for s in template.slots
         ]
         base.source_template_id = template.id
@@ -478,6 +511,8 @@ class ExamService:
 
     def create(self, db: Session, owner: User, data: ExamInput, *, ip: str | None) -> Exam:
         data = self.validate(db, owner.id, data)
+        if data.class_list_id is None:
+            data.allow_unlisted = True  # without a class list nobody is "on the list"
         now = self.clock.now()
         exam = Exam(owner_id=owner.id, created_at=now, updated_at=now)
         self._apply(exam, data)
@@ -487,7 +522,12 @@ class ExamService:
         if data.source_template_id is not None:
             template = db.get(ExamTemplate, data.source_template_id)
             if template is not None and template.owner_id == owner.id:
-                self._copy_template_files(db, exam, [s.template_file for s in template.slots])
+                files = {s.id: s.template_file for s in template.slots}
+                if any(slot.id in files for slot in data.slots):
+                    source = [files.get(slot.id) if slot.id else None for slot in data.slots]
+                else:  # a client without slot ids: match by position
+                    source = [s.template_file for s in template.slots]
+                self._copy_template_files(db, exam, source)
         if data.class_list_id is not None:
             self._set_roster(db, exam, db.get(ClassList, data.class_list_id))
         self.audit.append(
@@ -512,6 +552,8 @@ class ExamService:
         if exam.finalized_at is not None:
             raise DomainError("exam_finalized")
         data = self.validate(db, exam.owner_id, data, exam=exam)
+        if self.roster_count(db, exam) == 0:
+            data.allow_unlisted = True  # without a class list nobody is "on the list"
         before = _snapshot(exam)
         locked = self.has_submissions(db, exam)
         if locked:
@@ -730,17 +772,7 @@ class ExamService:
             owner_id=user.id,
             name=name[:200],
             created_at=self.clock.now(),
-            config={
-                "access_code_enabled": exam.access_code_enabled,
-                "ip_restriction_enabled": exam.ip_restriction_enabled,
-                "ip_cidrs": list(exam.ip_cidrs or []),
-                "ip_preset_id": str(exam.ip_preset_id) if exam.ip_preset_id else None,
-                "allow_unlisted": exam.allow_unlisted,
-                "allow_extra_file": exam.allow_extra_file,
-                "extensions": list(exam.extensions or []),
-                "max_file_mb": max(1, exam.max_file_bytes // MB),
-                "max_submission_mb": max(1, exam.max_submission_bytes // MB),
-            },
+            config=_template_config(self.input_from_exam(db, exam)),
         )
         now = self.clock.now()
         for slot in exam.expected_files:
@@ -771,6 +803,153 @@ class ExamService:
         )
         db.commit()
         return template
+
+    def template_input(self, template: ExamTemplate) -> ExamInput:
+        """The template as form input. Times, slug and class list do not apply."""
+        now = self.clock.now()
+        data = ExamInput(
+            name=template.name, description=None, starts_at=now, ends_at=now + TEMPLATE_WINDOW
+        )
+        config = template.config
+        data.access_code_enabled = bool(config.get("access_code_enabled", True))
+        data.ip_restriction_enabled = bool(config.get("ip_restriction_enabled", False))
+        data.ip_cidrs = list(config.get("ip_cidrs", []))
+        preset = config.get("ip_preset_id")
+        data.ip_preset_id = uuid.UUID(preset) if preset else None
+        data.allow_unlisted = bool(config.get("allow_unlisted", True))
+        data.allow_extra_file = bool(config.get("allow_extra_file", True))
+        data.extensions = list(config.get("extensions", []))
+        data.max_file_mb = int(config.get("max_file_mb", 25))
+        data.max_submission_mb = int(config.get("max_submission_mb", 100))
+        data.slots = [
+            SlotInput(
+                label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions, id=s.id
+            )
+            for s in template.slots
+        ]
+        return data
+
+    def validate_template(self, db: Session, data: ExamInput) -> ExamInput:
+        problems: dict[str, str] = {}
+        data.name = data.name.strip()
+        if not data.name:
+            problems["name"] = "required"
+        elif len(data.name) > 200:
+            problems["name"] = "too_long"
+        self._validate_access(db, data, problems)
+        self._validate_limits(data, problems)
+        self._validate_slots(db, data, problems)
+        if problems:
+            raise ExamValidationError(problems)
+        return data
+
+    def create_template(
+        self, db: Session, user: User, data: ExamInput, *, ip: str | None
+    ) -> ExamTemplate:
+        data = self.validate_template(db, data)
+        template = ExamTemplate(
+            owner_id=user.id, name=data.name, config=_template_config(data),
+            created_at=self.clock.now(),
+        )  # fmt: skip
+        for index, slot in enumerate(data.slots, start=1):
+            template.slots.append(
+                ExamTemplateSlot(
+                    position=index, label=slot.label, expected_name_pattern=slot.pattern,
+                    extensions=slot.extensions,
+                )
+            )  # fmt: skip
+        db.add(template)
+        db.flush()
+        self.audit.append(
+            db, "exam_template.created", actor=Actor.for_user(user), ip=ip,
+            details={"template_id": str(template.id), "template": _template_snapshot(template)},
+        )  # fmt: skip
+        db.commit()
+        return template
+
+    def update_template(
+        self, db: Session, user: User, template: ExamTemplate, data: ExamInput, *, ip: str | None
+    ) -> list[str]:
+        """Save the editor; returns storage keys of template files of removed slots."""
+        if template.owner_id != user.id:
+            raise NotFoundError("template_not_found")
+        data = self.validate_template(db, data)
+        before = _template_snapshot(template)
+        template.name = data.name
+        template.config = _template_config(data)
+        existing = {s.id: s for s in template.slots}
+        kept: list[ExamTemplateSlot] = []
+        for slot in data.slots:
+            row = existing.pop(slot.id, None) if slot.id else None
+            if row is None:
+                row = ExamTemplateSlot(template_id=template.id)
+            row.label = slot.label
+            row.expected_name_pattern = slot.pattern
+            row.extensions = slot.extensions
+            kept.append(row)
+        removed_keys = [s.template_file.storage_key for s in existing.values() if s.template_file]
+        for removed in existing.values():
+            template.slots.remove(removed)
+        db.flush()
+        # Positions are unique per template: renumber through a temporary offset.
+        for index, row in enumerate(kept):
+            row.position = 10_000 + index
+        template.slots = kept
+        db.flush()
+        for index, row in enumerate(kept, start=1):
+            row.position = index
+        db.flush()
+        changes = diff(before, _template_snapshot(template))
+        if changes:
+            self.audit.append(
+                db, "exam_template.updated", actor=Actor.for_user(user), ip=ip,
+                details={"template_id": str(template.id), "changes": changes},
+            )  # fmt: skip
+        db.commit()
+        return removed_keys
+
+    def attach_template_slot_file(
+        self, db: Session, user: User, template: ExamTemplate, slot_id: uuid.UUID,
+        stored: StoredTemplate, original_name: str, *, ip: str | None,
+    ) -> str | None:  # fmt: skip
+        """Returns the storage key of a replaced file that may now be unreferenced."""
+        if template.owner_id != user.id:
+            raise NotFoundError("template_not_found")
+        slot = next((s for s in template.slots if s.id == slot_id), None)
+        if slot is None:
+            raise NotFoundError()
+        replaced = slot.template_file.storage_key if slot.template_file else None
+        if slot.template_file is not None:
+            db.delete(slot.template_file)
+            db.flush()
+        slot.template_file = TemplateFile(
+            original_name=original_name[:255], storage_key=stored.storage_key,
+            size=stored.size, sha256=stored.sha256, uploaded_at=self.clock.now(),
+        )  # fmt: skip
+        self.audit.append(
+            db, "exam_template.file_uploaded", actor=Actor.for_user(user), ip=ip,
+            details={"template_id": str(template.id), "slot": slot.label, "sha256": stored.sha256},
+        )  # fmt: skip
+        db.commit()
+        return replaced
+
+    def remove_template_slot_file(
+        self, db: Session, user: User, template: ExamTemplate, slot_id: uuid.UUID,
+        *, ip: str | None,
+    ) -> str | None:  # fmt: skip
+        if template.owner_id != user.id:
+            raise NotFoundError("template_not_found")
+        slot = next((s for s in template.slots if s.id == slot_id), None)
+        if slot is None or slot.template_file is None:
+            return None
+        key = slot.template_file.storage_key
+        self.audit.append(
+            db, "exam_template.file_removed", actor=Actor.for_user(user), ip=ip,
+            details={"template_id": str(template.id), "slot": slot.label},
+        )  # fmt: skip
+        db.delete(slot.template_file)
+        db.commit()
+        return key
 
     def templates(self, db: Session, user: User) -> list[ExamTemplate]:
         return list(

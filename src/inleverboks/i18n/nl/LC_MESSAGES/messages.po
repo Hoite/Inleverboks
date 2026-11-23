@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-14 14:46+0100\n"
+"POT-Creation-Date: 2026-11-23 20:35+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -608,6 +608,12 @@ msgstr "Ingeleverd."
 msgid "Hand-in code"
 msgstr "Inlevercode"
 
+msgid "Date"
+msgstr "Datum"
+
+msgid "Time (24-hour)"
+msgstr "Tijd (uu:mm)"
+
 msgid "Skip to content"
 msgstr "Naar de inhoud"
 
@@ -631,6 +637,9 @@ msgstr "Account"
 
 msgid "Log out"
 msgstr "Uitloggen"
+
+msgid "Version"
+msgstr "Versie"
 
 msgid "Teacher login"
 msgstr "Inloggen docent"
@@ -1446,8 +1455,43 @@ msgstr "Filteren op actor"
 msgid "Showing the latest %(n)s events. Export for the complete log."
 msgstr "De laatste %(n)s gebeurtenissen worden getoond. Exporteer voor het volledige log."
 
+msgid "Edit exam template"
+msgstr "Examensjabloon bewerken"
+
+msgid "New exam template"
+msgstr "Nieuw examensjabloon"
+
 msgid "Edit exam"
 msgstr "Examen bewerken"
+
+msgid "Exam template"
+msgstr "Examensjabloon"
+
+msgid ""
+"You are editing a template, not an exam. Students cannot hand in here; create an exam from the "
+"template for that."
+msgstr ""
+"Je bewerkt een sjabloon, geen examen. Studenten kunnen hier niet inleveren; maak daarvoor een "
+"examen van het sjabloon."
+
+msgid "Start from an exam template"
+msgstr "Beginnen met een examensjabloon"
+
+msgid "No template (empty exam)"
+msgstr "Geen sjabloon (leeg examen)"
+
+msgid "Use template"
+msgstr "Sjabloon gebruiken"
+
+msgid "Template"
+msgstr "Sjabloon"
+
+#, python-format
+msgid "Based on template %(name)s. Times, link name and class list are not part of a template."
+msgstr "Gebaseerd op sjabloon %(name)s. Tijden, linknaam en klassenlijst horen niet bij een sjabloon."
+
+msgid "Template name"
+msgstr "Naam van het sjabloon"
 
 msgid "Description (optional)"
 msgstr "Omschrijving (optioneel)"
@@ -1480,6 +1524,13 @@ msgstr "bestand %(n)s"
 
 msgid "Add expected file"
 msgstr "Verwacht bestand toevoegen"
+
+msgid ""
+"Use * as wildcard in the expected name. Template files can be uploaded on the template page after"
+" saving."
+msgstr ""
+"Gebruik * als jokerteken in de verwachte naam. Sjabloonbestanden upload je na het opslaan op de "
+"pagina van het sjabloon."
 
 msgid ""
 "Use * as wildcard in the expected name. Template files can be uploaded on the exam page after "
@@ -1517,6 +1568,9 @@ msgstr "Geen klassenlijst"
 
 msgid "Allow students who are not on the class list"
 msgstr "Studenten toestaan die niet op de klassenlijst staan"
+
+msgid "Without a class list every student can hand in."
+msgstr "Zonder klassenlijst kan elke student inleveren."
 
 msgid "Cancel"
 msgstr "Annuleren"
@@ -1710,6 +1764,9 @@ msgstr "Niet toegestaan"
 msgid "Template file"
 msgstr "Sjabloonbestand"
 
+msgid "All allowed extensions"
+msgstr "Alle toegestane extensies"
+
 #, python-format
 msgid "Template file for %(label)s"
 msgstr "Sjabloonbestand voor %(label)s"
@@ -1739,11 +1796,17 @@ msgstr "Geen klassenlijst. Studenten vullen zelf hun naam en studentnummer in."
 msgid "Use class list"
 msgstr "Klassenlijst gebruiken"
 
+msgid "Time extensions"
+msgstr "Verlengingen"
+
+msgid "Give one student more time, for example because of a later start."
+msgstr "Geef één student meer tijd, bijvoorbeeld omdat die later begon."
+
 msgid "New end time"
 msgstr "Nieuwe eindtijd"
 
-msgid "No extensions."
-msgstr "Geen verlengingen."
+msgid "No time extensions granted yet."
+msgstr "Nog geen verlengingen gegeven."
 
 msgid "Grant extension"
 msgstr "Verlenging geven"
@@ -1762,6 +1825,13 @@ msgstr "Concept verwijderen"
 
 msgid "Save as exam template"
 msgstr "Opslaan als examensjabloon"
+
+msgid ""
+"Copies the expected files, template files, extensions, limits and access settings to a new "
+"template. You can edit it afterwards under Exam templates."
+msgstr ""
+"Neemt de verwachte bestanden, sjabloonbestanden, extensies, limieten en toegangsinstellingen over"
+" in een nieuw sjabloon. Dat kun je daarna aanpassen onder Examensjablonen."
 
 msgid "Save as template"
 msgstr "Opslaan als sjabloon"
@@ -1817,14 +1887,69 @@ msgstr "Student mag opnieuw inleveren"
 msgid "This student has not handed in yet."
 msgstr "Deze student heeft nog niet ingeleverd."
 
+msgid ""
+"This is a template, not an exam. Students cannot hand in here; create an exam from the template "
+"for that."
+msgstr ""
+"Dit is een sjabloon, geen examen. Studenten kunnen hier niet inleveren; maak daarvoor een examen "
+"van het sjabloon."
+
+msgid "New exam from this template"
+msgstr "Nieuw examen met dit sjabloon"
+
+msgid "Edit template"
+msgstr "Sjabloon bewerken"
+
+msgid "The template has been created. Add template files to the expected files if you want."
+msgstr "Het sjabloon is aangemaakt. Voeg eventueel sjabloonbestanden toe aan de verwachte bestanden."
+
+msgid "The template has been saved."
+msgstr "Het sjabloon is opgeslagen."
+
+msgid "The exam has been saved as a template. You can adjust it here; the exam itself does not change."
+msgstr "Het examen is opgeslagen als sjabloon. Je kunt het hier aanpassen; het examen zelf verandert niet."
+
+msgid "Students not on the class list"
+msgstr "Studenten die niet op de klassenlijst staan"
+
 msgid "Created"
 msgstr "Aangemaakt"
 
-msgid "New exam from template"
-msgstr "Nieuw examen met dit sjabloon"
+msgid "No expected files: students hand in extra files only."
+msgstr "Geen verwachte bestanden: studenten leveren alleen extra bestanden in."
 
-msgid "No exam templates yet. Save an exam as template from its page."
-msgstr "Nog geen examensjablonen. Sla een examen op als sjabloon via de examenpagina."
+msgid "Delete template"
+msgstr "Sjabloon verwijderen"
+
+msgid "Exams made from this template keep their settings and template files."
+msgstr "Examens die met dit sjabloon zijn gemaakt, houden hun instellingen en sjabloonbestanden."
+
+msgid "New template"
+msgstr "Nieuw sjabloon"
+
+msgid "The template has been deleted."
+msgstr "Het sjabloon is verwijderd."
+
+msgid ""
+"A template holds the expected files, template files, extensions, limits and access settings. "
+"Times, link name and class list are chosen per exam."
+msgstr ""
+"Een sjabloon bevat de verwachte bestanden, sjabloonbestanden, extensies, limieten en "
+"toegangsinstellingen. Tijden, linknaam en klassenlijst kies je per examen."
+
+msgid "No expected files"
+msgstr "Geen verwachte bestanden"
+
+#, python-format
+msgid "from %(name)s"
+msgstr "met %(name)s"
+
+msgid ""
+"No exam templates yet. Create one here, or save an existing exam as template from its settings "
+"page."
+msgstr ""
+"Nog geen examensjablonen. Maak er hier een, of sla een bestaand examen op als sjabloon via de "
+"pagina met instellingen."
 
 msgid "Compare a printed or shown receipt with what was stored."
 msgstr "Vergelijk een geprint of getoond ontvangstbewijs met wat is opgeslagen."

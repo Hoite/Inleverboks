@@ -1,32 +1,38 @@
 {% extends "base.html.j2" %}
-{% from "_macros.html.j2" import csrf with context %}
+{% from "_macros.html.j2" import ok_box with context %}
+{% from "teacher/_template_badge.html.j2" import template_badge %}
 {% block title %}{{ _("Exam templates") }} · {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <h1>{{ _("Exams") }}</h1>
-  <a class="button" href="/docent/examens/nieuw">{{ _("New exam") }}</a>
+  <div class="button-row">
+    <a class="button" href="/docent/examens/nieuw">{{ _("New exam") }}</a>
+    <a class="button button-template" href="/docent/sjablonen/nieuw">{{ _("New template") }}</a>
+  </div>
 </div>
 {% include "teacher/_tabs.html.j2" %}
+{% if ok == "deleted" %}{{ ok_box(_("The template has been deleted.")) }}{% endif %}
+<p class="hint">{{ _("A template holds the expected files, template files, extensions, limits and access settings. Times, link name and class list are chosen per exam.") }}</p>
 {% if templates %}
-<div class="table-wrap">
-<table>
-  <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Expected files") }}</th><th scope="col">{{ _("Created") }}</th><th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th></tr></thead>
-  <tbody>
+<ul class="template-list">
   {% for t in templates %}
-    <tr>
-      <td>{{ t.name }}</td>
-      <td>{{ t.slots|map(attribute="label")|join(", ") }}</td>
-      <td>{{ t.created_at|localtime }}</td>
-      <td class="actions">
-        <a class="button button-small" href="/docent/examens/nieuw?sjabloon={{ t.id }}">{{ _("New exam from template") }}</a>
-        <form method="post" action="/docent/sjablonen/{{ t.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button></form>
-      </td>
-    </tr>
+  <li class="template-card">
+    <div class="template-card-head">
+      {{ template_badge(_("Template")) }}
+      <h2><a href="/docent/sjablonen/{{ t.id }}">{{ t.name }}</a></h2>
+    </div>
+    <p class="muted small">
+      {% if t.slots %}{{ t.slots|map(attribute="label")|join(", ") }}{% else %}{{ _("No expected files") }}{% endif %}
+      · <span class="mono">{{ (t.config.get("extensions") or [])|join(", ") }}</span>
+    </p>
+    <div class="button-row">
+      <a class="button button-small" href="/docent/examens/nieuw?sjabloon={{ t.id }}">{{ _("New exam") }}<span class="visually-hidden"> {{ _("from %(name)s", name=t.name) }}</span></a>
+      <a class="button button-small button-secondary" href="/docent/sjablonen/{{ t.id }}/bewerken">{{ _("Edit") }}<span class="visually-hidden"> {{ t.name }}</span></a>
+    </div>
+  </li>
   {% endfor %}
-  </tbody>
-</table>
-</div>
+</ul>
 {% else %}
-<p class="muted">{{ _("No exam templates yet. Save an exam as template from its page.") }}</p>
+<p class="muted">{{ _("No exam templates yet. Create one here, or save an existing exam as template from its settings page.") }}</p>
 {% endif %}
 {% endblock %}

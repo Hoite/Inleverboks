@@ -1,10 +1,42 @@
 {% extends "base.html.j2" %}
-{% from "_macros.html.j2" import csrf with context %}
+{% from "_macros.html.j2" import csrf, datetime_input with context %}
 {% macro err(name) %}{% if problems.get(name) %}<p class="field-error" id="{{ name }}-error"><span aria-hidden="true">!</span> {{ field_messages.get(problems[name], problems[name]) }}</p>{% endif %}{% endmacro %}
 {% macro invalid(name) %}{% if problems.get(name) %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
-{% block title %}{{ _("Edit exam") if exam else _("New exam") }} · {{ app_name }}{% endblock %}
+{% from "teacher/_template_badge.html.j2" import template_badge %}
+{% set is_template = mode == "template" %}
+{% if is_template %}
+  {% set heading = _("Edit exam template") if exam_template else _("New exam template") %}
+  {% set form_action = "/docent/sjablonen/%s/bewerken"|format(exam_template.id) if exam_template else "/docent/sjablonen/nieuw" %}
+  {% set cancel_url = "/docent/sjablonen/%s"|format(exam_template.id) if exam_template else "/docent/sjablonen" %}
+{% else %}
+  {% set heading = _("Edit exam") if exam else _("New exam") %}
+  {% set form_action = "/docent/examens/%s/bewerken"|format(exam.id) if exam else "/docent/examens/nieuw" %}
+  {% set cancel_url = "/docent/examens/%s/instellingen"|format(exam.id) if exam else "/docent" %}
+{% endif %}
+{% block body_class %}{{ "mode-template" if mode == "template" else "" }}{% endblock %}
+{% block title %}{{ heading }} · {{ app_name }}{% endblock %}
+{% block head_extra %}<script type="module" src="{{ asset('js/teacher/exam_form.js') }}"></script>{% endblock %}
 {% block content %}
-<h1>{{ _("Edit exam") if exam else _("New exam") }}</h1>
+{% if is_template %}
+<div class="template-banner" role="note">{{ template_badge(_("Exam template")) }}
+  <span>{{ _("You are editing a template, not an exam. Students cannot hand in here; create an exam from the template for that.") }}</span></div>
+{% endif %}
+<h1>{{ heading }}</h1>
+{% if not is_template and not exam and templates %}
+<form method="get" action="/docent/examens/nieuw" class="template-picker">
+  <div class="field grow">
+    <label for="sjabloon">{{ _("Start from an exam template") }}</label>
+    <select id="sjabloon" name="sjabloon">
+      <option value="">{{ _("No template (empty exam)") }}</option>
+      {% for t in templates %}<option value="{{ t.id }}"{% if values.source_template_id == t.id|string %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="button button-secondary">{{ _("Use template") }}</button>
+</form>
+{% if source_template %}
+<p class="template-source">{{ template_badge(_("Template")) }} {{ _("Based on template %(name)s. Times, link name and class list are not part of a template.", name=source_template.name) }}</p>
+{% endif %}
+{% endif %}
 {% if problems %}
 <div class="alert alert-error" role="alert"><span class="alert-icon" aria-hidden="true">!</span><div><p>{{ _("Check the marked fields.") }}</p></div></div>
 {% endif %}
@@ -13,33 +45,32 @@
   <div><p>{{ _("Students have handed in. The file requirements can no longer be changed.") }}</p></div></div>
 {% endif %}
 
-<form method="post" action="{{ '/docent/examens/%s/bewerken'|format(exam.id) if exam else '/docent/examens/nieuw' }}" class="exam-form" novalidate>
+<form method="post" action="{{ form_action }}" class="exam-form" novalidate>
   {{ csrf() }}
   {# Enter in a text field triggers the first submit button: make that "save". #}
   <button type="submit" name="action" value="save" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ _("Save") }}</button>
-  <input type="hidden" name="source_template_id" value="{{ values.source_template_id }}">
+  {% if not is_template %}<input type="hidden" name="source_template_id" value="{{ values.source_template_id }}">{% endif %}
 
   <fieldset>
-    <legend>{{ _("Exam") }}</legend>
+    <legend>{{ _("Template") if is_template else _("Exam") }}</legend>
     <div class="field">
-      <label for="name">{{ _("Name") }}</label>
+      <label for="name">{{ _("Template name") if is_template else _("Name") }}</label>
       <input id="name" name="name" type="text" required maxlength="200" value="{{ values.name }}"{{ invalid("name") }} autofocus>
       {{ err("name") }}
     </div>
+    {% if not is_template %}
     <div class="field">
       <label for="description">{{ _("Description (optional)") }}</label>
       <input id="description" name="description" type="text" maxlength="500" value="{{ values.description }}"{{ invalid("description") }}>
       {{ err("description") }}
     </div>
     <div class="grid-2">
-      <div class="field">
-        <label for="starts_at">{{ _("Start") }}</label>
-        <input id="starts_at" name="starts_at" type="datetime-local" required value="{{ values.starts_at }}"{{ invalid("starts_at") }}>
+      <div>
+        {{ datetime_input("starts_at", _("Start"), values.starts_at_date, values.starts_at_time, invalid("starts_at")) }}
         {{ err("starts_at") }}
       </div>
-      <div class="field">
-        <label for="ends_at">{{ _("End") }}</label>
-        <input id="ends_at" name="ends_at" type="datetime-local" required value="{{ values.ends_at }}"{{ invalid("ends_at") }}>
+      <div>
+        {{ datetime_input("ends_at", _("End"), values.ends_at_date, values.ends_at_time, invalid("ends_at")) }}
         {{ err("ends_at") }}
       </div>
     </div>
@@ -59,6 +90,7 @@
       <p class="hint" id="slug-hint">{{ _("Leave empty to derive it from the name. a-z, 0-9 and dashes.") }}</p>
       {{ err("slug") }}
     </div>
+    {% endif %}
   </fieldset>
 
   <fieldset{% if locked %} disabled{% endif %}>
@@ -90,7 +122,7 @@
     </div>
     {% endfor %}
     <p><button type="submit" name="action" value="add_slot" class="button button-small button-secondary" formnovalidate>{{ _("Add expected file") }}</button></p>
-    <p class="hint">{{ _("Use * as wildcard in the expected name. Template files can be uploaded on the exam page after saving.") }}</p>
+    <p class="hint">{% if is_template %}{{ _("Use * as wildcard in the expected name. Template files can be uploaded on the template page after saving.") }}{% else %}{{ _("Use * as wildcard in the expected name. Template files can be uploaded on the exam page after saving.") }}{% endif %}</p>
     <label class="checkbox"><input type="checkbox" name="allow_extra_file" value="true"{% if values.allow_extra_file %} checked{% endif %}> {{ _("Allow extra files") }}</label>
     <div class="field">
       <label for="extensions">{{ _("Allowed extensions") }}</label>
@@ -148,7 +180,7 @@
 
   <fieldset>
     <legend>{{ _("Students") }}</legend>
-    {% if not exam %}
+    {% if not exam and not is_template %}
     <div class="field">
       <label for="class_list_id">{{ _("Class list (optional)") }}</label>
       <select id="class_list_id" name="class_list_id"{{ invalid("class_list_id") }}>
@@ -158,12 +190,14 @@
       {{ err("class_list_id") }}
     </div>
     {% endif %}
-    <label class="checkbox"><input type="checkbox" name="allow_unlisted" value="true"{% if values.allow_unlisted %} checked{% endif %}> {{ _("Allow students who are not on the class list") }}</label>
+    {% set no_list = exam and not has_roster and not is_template %}
+    <label class="checkbox"><input type="checkbox" id="allow_unlisted" name="allow_unlisted" value="true" aria-describedby="allow_unlisted-hint"{% if values.allow_unlisted or no_list %} checked{% endif %}{% if no_list %} disabled{% endif %}> {{ _("Allow students who are not on the class list") }}</label>
+    <p class="hint" id="allow_unlisted-hint">{{ _("Without a class list every student can hand in.") }}</p>
   </fieldset>
 
   <div class="form-actions">
     <button type="submit" name="action" value="save" class="button">{{ _("Save") }}</button>
-    <a class="button button-secondary" href="{{ '/docent/examens/%s/instellingen'|format(exam.id) if exam else '/docent' }}">{{ _("Cancel") }}</a>
+    <a class="button button-secondary" href="{{ cancel_url }}">{{ _("Cancel") }}</a>
   </div>
 </form>
 {% endblock %}

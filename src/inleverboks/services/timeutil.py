@@ -1,7 +1,8 @@
-"""Conversion between local wall-clock input (``datetime-local``) and UTC."""
+"""Conversion between local wall-clock input (a date field plus a 24-hour time) and UTC."""
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -29,6 +30,31 @@ def parse_local(value: str, tz: ZoneInfo) -> datetime:
 
 def format_local(value: datetime, tz: ZoneInfo) -> str:
     return value.astimezone(tz).strftime(LOCAL_INPUT_FORMAT)
+
+
+_TIME_RE = re.compile(r"^([01]?\d|2[0-3])[:.]?([0-5]\d)$")
+
+
+def normalize_time(value: str) -> str | None:
+    """24-hour time as typed (``9:00``, ``09.00``, ``0900``) → ``HH:MM``; None if invalid."""
+    match = _TIME_RE.fullmatch(value.strip())
+    if match is None:
+        return None
+    return f"{int(match.group(1)):02d}:{match.group(2)}"
+
+
+def combine_local(date: str, time: str) -> str:
+    """Date (``YYYY-MM-DD``) and 24-hour time fields → ``YYYY-MM-DDTHH:MM`` for parse_local.
+
+    An invalid time yields a string that parse_local rejects with ``datetime_invalid``.
+    """
+    return f"{date.strip()}T{normalize_time(time) or time.strip() or '?'}"
+
+
+def split_local(value: str) -> tuple[str, str]:
+    """``YYYY-MM-DDTHH:MM`` → (date, time); anything else → (value, "")."""
+    date, sep, time = value.partition("T")
+    return (date, time) if sep else (value, "")
 
 
 def round_to_quarter(value: datetime) -> datetime:

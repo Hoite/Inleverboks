@@ -14,17 +14,23 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from inleverboks.db.models import Exam, IpPreset, User
+from inleverboks.db.models import Exam, ExamTemplate, IpPreset, User
 from inleverboks.i18n import gettext as _
 from inleverboks.policy import ExamAction, ExamRef, SystemAction, can, can_exam
 from inleverboks.services.container import Services
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
-from inleverboks.services.exams import ExamInput, ExamStatus, ExamValidationError
+from inleverboks.services.exams import MB, ExamInput, ExamStatus, ExamValidationError
 from inleverboks.services.template_files import store_template, unreferenced
-from inleverboks.services.timeutil import default_window, parse_local
+from inleverboks.services.timeutil import default_window, format_local, parse_local, split_local
 from inleverboks.web.deps import Db, Svc, Teacher, client_ip
 from inleverboks.web.downloads import bytes_download, stream_download
-from inleverboks.web.exam_form import field_messages, form_values, parse_exam_form
+from inleverboks.web.exam_form import (
+    field_messages,
+    form_values,
+    parse_exam_form,
+    raw_datetimes,
+    read_datetime,
+)
 from inleverboks.web.messages import describe
 from inleverboks.web.templating import render
 
@@ -120,9 +126,11 @@ def all_exams(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response
 
 
 @router.get("/sjablonen")
-def exam_templates(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
+def exam_templates(
+    request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None
+) -> Response:
     return render(
-        request, "teacher/templates.html.j2", tab="templates",
+        request, "teacher/templates.html.j2", tab="templates", ok=ok,
         templates=services.exams.templates(db, ctx.user),
     )  # fmt: skip
 
@@ -133,7 +141,140 @@ def delete_exam_template(
 ) -> Response:
     keys = services.exams.delete_template(db, ctx.user, template_id, ip=client_ip(request))
     _delete_unreferenced(db, services, list(keys))
-    return _redirect("/docent/sjablonen")
+    return _redirect("/docent/sjablonen?ok=deleted")
+
+
+@router.get("/sjablonen/nieuw")
+def new_exam_template(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
+    start, end = default_window(services.clock.now(), services.env.timezone)
+    data = services.exams.defaults(db, start, end)
+    data.name = ""
+    return _render_form(request, db, services, ctx.user, data, exam=None, mode="template")
+
+
+@router.post("/sjablonen/nieuw")
+def create_exam_template(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
+    return _handle_template_form(request, db, services, ctx.user, None)
+
+
+@router.get("/sjablonen/{template_id}")
+def exam_template_detail(
+    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    ok: str | None = None, error: str | None = None,
+) -> Response:  # fmt: skip
+    template = services.exams.get_template(db, ctx.user, template_id)
+    preset_id = template.config.get("ip_preset_id")
+    preset = db.get(IpPreset, uuid.UUID(preset_id)) if preset_id else None
+    return render(
+        request, "teacher/template_detail.html.j2", exam_template=template, config=template.config,
+        preset=preset, ok=ok, errors=[describe(DomainError(error))[0]] if error else [],
+    )  # fmt: skip
+
+
+@router.get("/sjablonen/{template_id}/bewerken")
+def edit_exam_template(
+    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    template = services.exams.get_template(db, ctx.user, template_id)
+    data = services.exams.template_input(template)
+    return _render_form(
+        request, db, services, ctx.user, data, exam=None, mode="template", template=template
+    )
+
+
+@router.post("/sjablonen/{template_id}/bewerken")
+def update_exam_template(
+    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    template = services.exams.get_template(db, ctx.user, template_id)
+    return _handle_template_form(request, db, services, ctx.user, template)
+
+
+def _handle_template_form(
+    request: Request, db: Db, services: Svc, user: User, template: ExamTemplate | None
+) -> Response:
+    form = from_thread.run(_form, request)
+    tz = services.env.timezone
+    fallback = (
+        services.exams.template_input(template)
+        if template
+        else services.exams.defaults(db, *default_window(services.clock.now(), tz))
+    )
+    parsed = parse_exam_form(form, tz, fallback, with_times=False)
+    if parsed.action != "save":
+        return _render_form(
+            request, db, services, user, parsed.data, exam=None, mode="template", template=template
+        )
+    try:
+        if template is None:
+            template = services.exams.create_template(db, user, parsed.data, ip=client_ip(request))
+            return _redirect(f"/docent/sjablonen/{template.id}?ok=created")
+        removed = services.exams.update_template(
+            db, user, template, parsed.data, ip=client_ip(request)
+        )
+    except ExamValidationError as exc:
+        db.rollback()
+        return _render_form(
+            request, db, services, user, parsed.data, exam=None, mode="template",
+            template=template, problems=exc.problems, status=400,
+        )  # fmt: skip
+    _delete_unreferenced(db, services, list(removed))
+    return _redirect(f"/docent/sjablonen/{template.id}?ok=saved")
+
+
+@router.post("/sjablonen/{template_id}/vakjes/{slot_id}/sjabloon")
+def upload_template_slot_file(
+    request: Request, template_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db,
+    services: Svc, file: Annotated[UploadFile, File()],
+) -> Response:  # fmt: skip
+    template = services.exams.get_template(db, ctx.user, template_id)
+    back = f"/docent/sjablonen/{template.id}"
+    filename = (file.filename or "sjabloon").replace("\\", "/").rsplit("/", 1)[-1]
+    max_bytes = int(template.config.get("max_file_mb", services.env.max_file_mb)) * MB
+
+    async def chunks() -> AsyncIterator[bytes]:
+        while chunk := await file.read(UPLOAD_CHUNK):
+            yield chunk
+
+    try:
+        stored = from_thread.run(
+            lambda: store_template(services.storage, chunks(), max_bytes=max_bytes)
+        )
+        replaced = services.exams.attach_template_slot_file(
+            db, ctx.user, template, slot_id, stored, filename, ip=client_ip(request)
+        )
+    except DomainError as exc:
+        db.rollback()
+        return _redirect(f"{back}?error={exc.code}")
+    _delete_unreferenced(db, services, [replaced])
+    return _redirect(f"{back}?ok=template_uploaded")
+
+
+@router.post("/sjablonen/{template_id}/vakjes/{slot_id}/sjabloon/verwijderen")
+def remove_template_slot_file(
+    request: Request, template_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db,
+    services: Svc,
+) -> Response:  # fmt: skip
+    template = services.exams.get_template(db, ctx.user, template_id)
+    key = services.exams.remove_template_slot_file(
+        db, ctx.user, template, slot_id, ip=client_ip(request)
+    )
+    _delete_unreferenced(db, services, [key])
+    return _redirect(f"/docent/sjablonen/{template.id}?ok=template_removed")
+
+
+@router.get("/sjablonen/{template_id}/vakjes/{slot_id}/sjabloon")
+def download_template_slot_file(
+    template_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    template = services.exams.get_template(db, ctx.user, template_id)
+    slot = next((s for s in template.slots if s.id == slot_id), None)
+    if slot is None or slot.template_file is None:
+        raise NotFoundError()
+    file = slot.template_file
+    return stream_download(
+        services.storage.open(file.storage_key), file.original_name, size=file.size
+    )
 
 
 # Create / edit -------------------------------------------------------------------
@@ -162,17 +303,26 @@ def _render_form(
     problems: dict[str, str] | None = None,
     raw: dict[str, str] | None = None,
     status: int = 200,
+    mode: str = "exam",
+    template: ExamTemplate | None = None,
 ) -> Response:
     tz = services.env.timezone
     locked = exam is not None and services.exams.has_submissions(db, exam)
+    templates = services.exams.templates(db, user)
+    source = next((t for t in templates if t.id == data.source_template_id), None)
     return render(
         request,
         "teacher/exam_form.html.j2",
         status_code=status,
         exam=exam,
+        mode=mode,
+        exam_template=template,
+        templates=templates,
+        source_template=source,
         values=form_values(data, tz, raw),
         problems=problems or {},
         locked=locked,
+        has_roster=exam is not None and services.exams.roster_count(db, exam) > 0,
         base_url=services.env.app_base_url,
         **_form_context(db, services, user),
     )
@@ -205,7 +355,7 @@ def _handle_form(
         else services.exams.defaults(db, *default_window(services.clock.now(), tz))
     )
     parsed = parse_exam_form(form, tz, fallback)
-    raw = {"starts_at": str(form.get("starts_at") or ""), "ends_at": str(form.get("ends_at") or "")}
+    raw = raw_datetimes(form, "starts_at", "ends_at")
     if parsed.action != "save":
         return _render_form(request, db, services, user, parsed.data, exam=exam, raw=raw)
     problems = dict(parsed.problems)
@@ -281,15 +431,19 @@ def exam_settings(
     url = public_url(services, exam)
     owner = db.get(User, exam.owner_id)
     reviewer = db.get(User, exam.second_reviewer_id) if exam.second_reviewer_id else None
+    effective_end = services.exams.effective_end(db, exam)
+    default_date, default_time = split_local(format_local(effective_end, services.env.timezone))
     return render(
         request,
         "teacher/exam_settings.html.j2",
+        extension_default_date=default_date,
+        extension_default_time=default_time,
         exam=exam,
         owner=owner,
         reviewer=reviewer,
         status=services.exams.status(db, exam),
         status_labels=status_labels(),
-        effective_end=services.exams.effective_end(db, exam),
+        effective_end=effective_end,
         url=url,
         qr_svg=_qr_svg(url, scale=3),
         perms=_perms(ctx.user, exam),
@@ -370,8 +524,8 @@ def save_template(
     name: Annotated[str, Form(max_length=200)] = "",
 ) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.DUPLICATE)
-    services.exams.save_as_template(db, ctx.user, exam, name, ip=client_ip(request))
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=template_saved")
+    template = services.exams.save_as_template(db, ctx.user, exam, name, ip=client_ip(request))
+    return _redirect(f"/docent/sjablonen/{template.id}?ok=saved_from_exam")
 
 
 @router.post("/examens/{exam_id}/verwijderen")
@@ -416,10 +570,15 @@ def grant_extension(
     services: Svc,
     student_number: Annotated[str, Form(max_length=32)] = "",
     ends_at: Annotated[str, Form(max_length=32)] = "",
+    ends_at_date: Annotated[str | None, Form(max_length=16)] = None,
+    ends_at_time: Annotated[str, Form(max_length=16)] = "",
 ) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.MANAGE_SUBMISSIONS)
+    fields = {"ends_at": ends_at, "ends_at_time": ends_at_time}
+    if ends_at_date is not None:
+        fields["ends_at_date"] = ends_at_date
     try:
-        when = parse_local(ends_at, services.env.timezone)
+        when = parse_local(read_datetime(fields, "ends_at"), services.env.timezone)
         services.exams.grant_extension(
             db, ctx.user, exam, student_number, when, ip=client_ip(request)
         )

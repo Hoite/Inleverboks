@@ -13,6 +13,7 @@ from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
+from inleverboks import __version__
 from inleverboks.config import Settings
 from inleverboks.i18n import DEFAULT_LOCALE, get_translations
 from inleverboks.services.branding import Branding
@@ -65,6 +66,7 @@ def build_templates(settings: Settings) -> Jinja2Templates:
     env.filters["localtime"] = localtime
     env.globals.update(
         app_name="Inleverboks",
+        app_version=__version__,
         lang=DEFAULT_LOCALE,
         demo_mode=settings.demo_mode,
         base_url=settings.app_base_url,

@@ -1,0 +1,83 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% from "teacher/_template_badge.html.j2" import template_badge %}
+{% block body_class %}mode-template{% endblock %}
+{% block title %}{{ exam_template.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent/sjablonen">{{ _("Exam templates") }}</a></p>
+<div class="template-banner" role="note">{{ template_badge(_("Exam template")) }}
+  <span>{{ _("This is a template, not an exam. Students cannot hand in here; create an exam from the template for that.") }}</span></div>
+<div class="page-head">
+  <h1>{{ exam_template.name }}</h1>
+  <div class="button-row">
+    <a class="button" href="/docent/examens/nieuw?sjabloon={{ exam_template.id }}">{{ _("New exam from this template") }}</a>
+    <a class="button button-secondary" href="/docent/sjablonen/{{ exam_template.id }}/bewerken">{{ _("Edit template") }}</a>
+  </div>
+</div>
+{% set ok_messages = {
+  "created": _("The template has been created. Add template files to the expected files if you want."),
+  "saved": _("The template has been saved."),
+  "saved_from_exam": _("The exam has been saved as a template. You can adjust it here; the exam itself does not change."),
+  "template_uploaded": _("Template file uploaded."), "template_removed": _("Template file removed."),
+} %}
+{% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
+{{ errors_box(errors) }}
+
+<section class="card">
+  <h2>{{ _("Settings") }}</h2>
+  <dl class="details">
+    <dt>{{ _("Access code required") }}</dt><dd>{{ _("Yes") if config.get("access_code_enabled", True) else _("No") }}</dd>
+    <dt>{{ _("IP restriction") }}</dt><dd>{% if config.get("ip_restriction_enabled") %}{% if preset %}{{ preset.name }}{% if config.get("ip_cidrs") %}, {% endif %}{% endif %}<span class="mono">{{ (config.get("ip_cidrs") or [])|join(", ") }}</span>{% else %}{{ _("No") }}{% endif %}</dd>
+    <dt>{{ _("Allowed extensions") }}</dt><dd><span class="mono">{{ (config.get("extensions") or [])|join(", ") }}</span></dd>
+    <dt>{{ _("Maximum size") }}</dt><dd>{{ _("%(f)s MB per file, %(s)s MB per submission", f=config.get("max_file_mb"), s=config.get("max_submission_mb")) }}</dd>
+    <dt>{{ _("Extra files") }}</dt><dd>{{ _("Allowed") if config.get("allow_extra_file", True) else _("Not allowed") }}</dd>
+    <dt>{{ _("Students not on the class list") }}</dt><dd>{{ _("Allowed") if config.get("allow_unlisted", True) else _("Not allowed") }}</dd>
+    <dt>{{ _("Created") }}</dt><dd>{{ exam_template.created_at|localtime }}</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>{{ _("Expected files") }}</h2>
+  {% if exam_template.slots %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">#</th><th scope="col">{{ _("Label") }}</th><th scope="col">{{ _("Expected file name") }}</th><th scope="col">{{ _("Extensions") }}</th><th scope="col">{{ _("Template file") }}</th></tr></thead>
+    <tbody>
+    {% for slot in exam_template.slots %}
+      <tr>
+        <td>{{ slot.position }}</td>
+        <td>{{ slot.label }}</td>
+        <td class="mono">{{ slot.expected_name_pattern or "" }}</td>
+        <td>{% if slot.extensions %}<span class="mono">{{ slot.extensions|join(", ") }}</span>{% else %}<span class="muted">{{ _("All allowed extensions") }}</span>{% endif %}</td>
+        <td>
+          {% if slot.template_file %}
+          <a href="/docent/sjablonen/{{ exam_template.id }}/vakjes/{{ slot.id }}/sjabloon">{{ slot.template_file.original_name }}</a>
+          <br><span class="mono small" title="SHA-256">{{ slot.template_file.sha256[:16] }}…</span>
+          <form method="post" action="/docent/sjablonen/{{ exam_template.id }}/vakjes/{{ slot.id }}/sjabloon/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}<span class="visually-hidden"> {{ slot.template_file.original_name }}</span></button></form>
+          {% else %}
+          <form method="post" action="/docent/sjablonen/{{ exam_template.id }}/vakjes/{{ slot.id }}/sjabloon" enctype="multipart/form-data" class="upload-form">
+            {{ csrf() }}
+            <label class="visually-hidden" for="tpl-{{ slot.id }}">{{ _("Template file for %(label)s", label=slot.label) }}</label>
+            <input id="tpl-{{ slot.id }}" type="file" name="file" required>
+            <button type="submit" class="button button-small button-secondary">{{ _("Upload") }}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ _("No expected files: students hand in extra files only.") }}</p>
+  {% endif %}
+</section>
+
+<section class="card danger-zone">
+  <h2>{{ _("Delete template") }}</h2>
+  <p>{{ _("Exams made from this template keep their settings and template files.") }}</p>
+  <form method="post" action="/docent/sjablonen/{{ exam_template.id }}/verwijderen">
+    {{ csrf() }}<button type="submit" class="button button-danger">{{ _("Delete template") }}</button>
+  </form>
+</section>
+{% endblock %}
