@@ -22,6 +22,7 @@ from inleverboks.services.errors import DomainError, NotFoundError, PermissionDe
 from inleverboks.services.exams import MB, ExamInput, ExamStatus, ExamValidationError
 from inleverboks.services.template_files import store_template, unreferenced
 from inleverboks.services.timeutil import default_window, format_local, parse_local, split_local
+from inleverboks.services.totp import QUIET_ZONE
 from inleverboks.web.deps import Db, Svc, Teacher, client_ip
 from inleverboks.web.downloads import bytes_download, stream_download
 from inleverboks.web.exam_form import (
@@ -412,7 +413,7 @@ def _perms(user: User, exam: Exam) -> dict[str, bool]:
 def _qr_svg(url: str, *, scale: int = 4, omit_size: bool = True) -> str:
     buffer = io.BytesIO()
     segno.make(url, error="m").save(
-        buffer, kind="svg", scale=scale, border=2, xmldecl=False, omitsize=omit_size
+        buffer, kind="svg", scale=scale, border=QUIET_ZONE, xmldecl=False, omitsize=omit_size
     )
     return buffer.getvalue().decode()
 
@@ -698,7 +699,9 @@ def qr_svg(exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc) -> Response:
 def qr_png(exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
     buffer = io.BytesIO()
-    segno.make(public_url(services, exam), error="m").save(buffer, kind="png", scale=16, border=2)
+    segno.make(public_url(services, exam), error="m").save(
+        buffer, kind="png", scale=16, border=QUIET_ZONE
+    )
     return bytes_download(buffer.getvalue(), f"{exam.slug}-qr.png", "image/png")
 
 

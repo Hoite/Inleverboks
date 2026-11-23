@@ -72,7 +72,7 @@ def test_bootstrap_admin_with_generated_password(
         )
         assert response.headers["location"] == "/account/tweestaps"
         page = client.get("/account/tweestaps")
-        secret = extract(r'<code class="mono secret">([A-Z2-7 ]+)</code>', page.text)
+        secret = extract(r'<code class="mono secret" data-secret="([A-Z2-7]+)">', page.text)
         secret = secret.replace(" ", "")
         response = post(client, "/account/tweestaps", {"code": "000000"})
         assert response.status_code == 400
@@ -320,7 +320,9 @@ def test_recovery_code_works_once(
     create_user(db, clock)
     login(client)
     page = client.get("/account/tweestaps")
-    secret = extract(r'<code class="mono secret">([A-Z2-7 ]+)</code>', page.text).replace(" ", "")
+    secret = extract(r'<code class="mono secret" data-secret="([A-Z2-7]+)">', page.text).replace(
+        " ", ""
+    )
     response = post(client, "/account/tweestaps", {"code": totp_code(secret, clock)})
     codes = [c.strip() for c in response.text.split('<ul class="code-list mono">')[1]
              .split("</ul>")[0].replace("<li>", "").split("</li>") if c.strip()]  # fmt: skip

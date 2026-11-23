@@ -225,7 +225,8 @@ td.actions form, td.actions details { display: inline-block; margin: .1rem .15re
 .details dd { margin: 0; }
 .code-list { columns: 2; padding-left: 1.2rem; font-size: 1.1rem; }
 .qr svg { width: 220px; height: auto; display: block; }
-.secret { word-spacing: .3em; display: inline-block; margin-top: .25rem; font-size: 1.05rem; overflow-wrap: anywhere; }
+.secret { display: inline-block; margin-top: .25rem; font-size: 1.1rem; line-height: 1.8; }
+.secret span + span { margin-left: .6em; }  /* inline: copying gives the bare key */
 .steps { padding-left: 1.2rem; }
 
 @media (max-width: 40rem) {

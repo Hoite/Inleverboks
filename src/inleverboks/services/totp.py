@@ -21,6 +21,9 @@ class TotpCheck:
     step: int | None = None
 
 
+QUIET_ZONE = 4  # modules of white around a QR code (ISO/IEC 18004)
+
+
 class TotpService:
     def __init__(self, secret_key: str, issuer: str = ISSUER) -> None:
         self._box = SecretBox(secret_key, "totp-secret")
@@ -41,7 +44,11 @@ class TotpService:
 
     def qr_svg(self, uri: str) -> str:
         buffer = io.BytesIO()
-        segno.make(uri, error="m").save(buffer, kind="svg", scale=5, border=2, xmldecl=False)
+        # A viewBox (omitsize) lets CSS scale the code without cropping it, and the quiet
+        # zone of 4 modules is what the QR standard asks for; scanners need it.
+        segno.make(uri, error="m").save(
+            buffer, kind="svg", scale=5, border=QUIET_ZONE, xmldecl=False, omitsize=True
+        )
         return buffer.getvalue().decode()
 
     def verify(

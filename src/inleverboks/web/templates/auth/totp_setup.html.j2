@@ -12,7 +12,9 @@
   </ol>
   <div class="qr" role="img" aria-label="{{ _('QR code for the authenticator app') }}">{{ qr_svg|safe }}</div>
   <p class="secret-intro">{{ _("Cannot scan? Enter this key:") }}<br>
-    <code class="mono secret">{{ secret }}</code></p>
+    {# Groups are spaced with CSS, not spaces: copying gives the bare key. #}
+    <code class="mono secret" data-secret="{{ secret }}">{% for group in secret_groups %}<span>{{ group }}</span>{% endfor %}</code></p>
+  <p class="hint">{{ _("The key only contains the letters A to Z and the digits 2 to 7, so an O is always the letter O.") }}</p>
   <form method="post" action="/account/tweestaps" class="stack">
     {{ csrf() }}
     <div class="field">

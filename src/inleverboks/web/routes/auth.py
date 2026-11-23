@@ -233,7 +233,8 @@ def _totp_page(
         "auth/totp_setup.html.j2",
         status_code=status,
         forced=ctx.stage is Stage.SETUP_TOTP,
-        secret=" ".join(secret[i : i + 4] for i in range(0, len(secret), 4)),
+        secret=secret,
+        secret_groups=[secret[i : i + 4] for i in range(0, len(secret), 4)],
         qr_svg=services.totp.qr_svg(uri),
         errors=errors,
     )
