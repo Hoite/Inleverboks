@@ -6,6 +6,14 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-23
+
+### Opgelost
+
+- Bij het dupliceren van een examen met een klassenlijst ging "studenten toestaan die niet op
+  de klassenlijst staan" ten onrechte aan (sinds 0.1.1), zodat ook andere studenten konden
+  inleveren. De kopie neemt de instelling en de klassenlijst nu weer correct over.
+
 ## [0.1.2] - 2026-11-23
 
 ### Opgelost
