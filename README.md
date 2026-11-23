@@ -86,6 +86,12 @@ verklaren (met een reden), alles downloaden als zip (met `manifest.csv` en een
 integriteitscontrole), het overzicht als CSV exporteren, een proces-verbaal (PDF) maken en een
 ontvangstbewijs van een student controleren. Elke download en export komt in het auditlog.
 
+**Examensjablonen** (tabblad *Examensjablonen*) bewaren de verwachte bestanden,
+sjabloonbestanden, extensies, limieten en toegangsinstellingen. Je maakt ze daar zelf, of slaat
+een bestaand examen op als sjabloon. Bij **Nieuw examen** kies je bovenaan een sjabloon. Tijden,
+linknaam en klassenlijst kies je altijd per examen. Sjablonen zijn persoonlijk en hebben een
+eigen (paarse) kleur, zodat je ze niet met een examen verwart.
+
 ## Huisstijl
 
 Onder *Admin → Huisstijl* stelt de admin de naam van de app, het lettertype (Poppins of het

@@ -6,6 +6,41 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-23
+
+Verbeteringen na de eerste bètatest.
+
+### Toegevoegd
+
+- Examensjablonen zijn nu volwaardig te beheren: een overzicht, een detailpagina, zelf een
+  sjabloon maken of bewerken (verwachte bestanden, extensies, limieten, toegang) en
+  sjabloonbestanden per vakje uploaden. Sjablonen hebben een eigen kleur en markering, zodat ze
+  nooit op een examen lijken.
+- Bij **Nieuw examen** kies je bovenaan een sjabloon; de naam van het sjabloon wordt alvast
+  ingevuld.
+- De versie van de app staat in de footer.
+
+### Gewijzigd
+
+- Start, einde en verlengingen hebben een datumkiezer plus een tijdveld in 24-uursnotatie
+  (`uu:mm`, ook `9.30` of `0930`) in plaats van `datetime-local`, dat in een Engelstalige
+  browser AM/PM toont.
+- Zonder klassenlijst staat "Studenten toestaan die niet op de klassenlijst staan" altijd aan
+  (uitgegrijsd); de server dwingt dat ook af.
+- "Opslaan als sjabloon" opent daarna het nieuwe sjabloon, en legt uit wat er wordt
+  overgenomen.
+- Sjabloonbestanden gaan bij een examen vanuit een sjabloon mee met hun eigen vakje, ook als
+  je vakjes toevoegt of weghaalt.
+
+### Opgelost
+
+- De sectie met tijdverlengingen heette "Extensies" (met "Geen verlengingen."). Die heet nu
+  "Verlengingen"; de bestandsextensies staan als "Toegestane extensies" bij de details, en een
+  vakje zonder eigen extensies toont "Alle toegestane extensies".
+- De sleutel bij het instellen van tweestapsverificatie staat op een eigen regel.
+
+## [0.1.0] - 2026-11-14
+
 ### Toegevoegd
 
 - Fundament (fase 1): projectstructuur met uv, configuratie via omgevingsvariabelen,
