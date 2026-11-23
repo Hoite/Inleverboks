@@ -14,8 +14,10 @@ from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import FrozenClock
 from inleverboks.db.models import Exam, User
+from inleverboks.services.audit import Actor
 from inleverboks.services.container import Services
 from tests.conftest import create_user, enable_totp, login
+from tests.integration.test_qualifications import record
 from tests.student_helpers import add_roster, form, good_files, ready, upload
 
 LABELLED_INPUTS = {"text", "email", "password", "number", "file", "url", "search", "tel",
@@ -124,6 +126,13 @@ def test_teacher_and_admin_pages(
     teacher = TestClient(client.app)
     login(teacher)
     template = services.exams.save_as_template(db, owner, exam, "Sjabloon", ip=None)
+    services.qualifications.import_records(
+        db, [record()], actor=Actor.system(), ip=None, source="t"
+    )
+    qualification = services.qualifications.search(db, "27016")[0]
+    crebo_template = services.exams.templates_from_qualification(
+        db, owner, qualification, ["B1-K1"], shared=False, ip=None
+    )[0]
     urls = [
         "/docent", "/docent/afgerond", "/docent/sjablonen", "/docent/examens/nieuw",
         f"/docent/examens/{exam.id}", f"/docent/examens/{exam.id}/instellingen",
@@ -133,6 +142,10 @@ def test_teacher_and_admin_pages(
         "/account/wachtwoord", "/account/tweestaps", "/docent/sjablonen/nieuw",
         f"/docent/sjablonen/{template.id}", f"/docent/sjablonen/{template.id}/bewerken",
         f"/docent/examens/nieuw?sjabloon={template.id}",
+        "/docent/sjablonen/crebo?q=27016", f"/docent/sjablonen/crebo/{qualification.id}",
+        f"/docent/sjablonen/{crebo_template.id}",
+        f"/docent/examens/nieuw?sjabloon={crebo_template.id}&wp=B1-K1-W3",
+        f"/docent/examens/{exam.id}/herkansing",
     ]  # fmt: skip
     problems = [p for url in urls for p in audit(teacher, url)]
 

@@ -362,6 +362,7 @@ def test_zip_structure_and_manifest(
         "inlevertijd_start",
         "inlevertijd_voltooid",
         "vakje",
+        "werkproces",
         "bestandsnaam_origineel",
         "bestandsnaam_in_zip",
         "grootte_bytes",

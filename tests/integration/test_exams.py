@@ -989,4 +989,4 @@ def test_save_as_template_opens_the_template(tclient: TestClient, db: Session) -
     assert template is not None
     assert response.headers["location"] == f"/docent/sjablonen/{template.id}?ok=saved_from_exam"
     overview = tclient.get("/docent/sjablonen").text
-    assert "badge-template" in overview and "Nieuw sjabloon" in overview
+    assert "badge-template" in overview and "Sjabloon uit crebo" in overview
