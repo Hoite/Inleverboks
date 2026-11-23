@@ -438,11 +438,16 @@ def overview_csv(
                 local(row.extension_until, tz),
                 ", ".join(s.value for s in row.signals),
                 sub.receipt_code if sub else "",
+                # Per work process (SBB code): handed in or not.
+                *[
+                    ("ja" if wp.slot_id in row.filled_slots else "nee") if sub else ""
+                    for wp in data.work_processes
+                ],
             ]
         )
     _audit(services, db, ctx.user, exam, "export.csv", request, rows=len(rows))
     return bytes_download(
-        write_csv(OVERVIEW_COLUMNS, rows),
+        write_csv(OVERVIEW_COLUMNS + [wp.code for wp in data.work_processes], rows),
         f"{exam.slug}_overzicht_{_zip_date(exam, services)}.csv",
         "text/csv; charset=utf-8",
     )

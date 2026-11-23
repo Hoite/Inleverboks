@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-23 21:30+0100\n"
+"POT-Creation-Date: 2026-11-23 22:18+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -188,6 +188,12 @@ msgstr "De reden is te lang."
 
 msgid "Only a finalized exam can be deleted permanently."
 msgstr "Alleen een afgerond examen kan definitief worden verwijderd."
+
+msgid "Choose at least one student for the resit."
+msgstr "Kies ten minste één student voor de herkansing."
+
+msgid "Choose at least one core task."
+msgstr "Kies ten minste één kerntaak."
 
 msgid "Choose a logo file."
 msgstr "Kies een logobestand."
@@ -376,6 +382,9 @@ msgstr "Gesloten"
 
 msgid "Finalized"
 msgstr "Afgerond"
+
+msgid "resit"
+msgstr "herkansing"
 
 msgid "Empty template"
 msgstr "Leeg sjabloon"
@@ -1111,6 +1120,20 @@ msgstr "Definitieve versie, gemaakt vóór het verwijderen van de bestanden."
 msgid "Exam"
 msgstr "Examen"
 
+msgid "Qualification"
+msgstr "Kwalificatie"
+
+#, python-format
+msgid "level %(n)s"
+msgstr "niveau %(n)s"
+
+#, python-format
+msgid "dossier %(v)s"
+msgstr "dossier %(v)s"
+
+msgid "Core task"
+msgstr "Kerntaak"
+
 msgid "Description"
 msgstr "Omschrijving"
 
@@ -1141,6 +1164,9 @@ msgstr "IP-beperking"
 
 msgid "Expected files"
 msgstr "Verwachte bestanden"
+
+msgid "Work process"
+msgstr "Werkproces"
 
 msgid "Label"
 msgstr "Label"
@@ -1177,6 +1203,9 @@ msgstr "Voltooid"
 
 msgid "Files"
 msgstr "Bestanden"
+
+msgid "Work processes"
+msgstr "Werkprocessen"
 
 msgid "File"
 msgstr "Bestand"
@@ -1344,8 +1373,22 @@ msgstr "Signalen"
 msgid "%(n)s attempts"
 msgstr "%(n)s pogingen"
 
+#, python-format
+msgid "%(code)s handed in"
+msgstr "%(code)s ingeleverd"
+
+#, python-format
+msgid "%(code)s missing"
+msgstr "%(code)s ontbreekt"
+
+msgid "Resit"
+msgstr "Herkansing"
+
 msgid "No hand-ins yet."
 msgstr "Nog geen inleveringen."
+
+msgid "No qualifications found."
+msgstr "Geen kwalificaties gevonden."
 
 msgid "My exams"
 msgstr "Mijn examens"
@@ -1479,11 +1522,28 @@ msgstr ""
 "Je bewerkt een sjabloon, geen examen. Studenten kunnen hier niet inleveren; maak daarvoor een "
 "examen van het sjabloon."
 
+#, python-format
+msgid ""
+"Resit of %(name)s for %(n)s student(s). Only the expected files that are still open for them are "
+"included; only these students can hand in."
+msgstr ""
+"Herkansing van %(name)s voor %(n)s student(en). Alleen de verwachte bestanden die voor hen nog "
+"openstaan zijn opgenomen; alleen deze studenten kunnen inleveren."
+
 msgid "Start from an exam template"
 msgstr "Beginnen met een examensjabloon"
 
 msgid "No template (empty exam)"
 msgstr "Geen sjabloon (leeg examen)"
+
+msgid "Work processes in this exam"
+msgstr "Werkprocessen in dit examen"
+
+msgid "Untick work processes for a part exam (for example only W3). One configuration per exam."
+msgstr "Vink werkprocessen uit voor een deelexamen (bijvoorbeeld alleen W3). Eén configuratie per examen."
+
+msgid "Apply"
+msgstr "Toepassen"
 
 msgid "Use template"
 msgstr "Sjabloon gebruiken"
@@ -1634,9 +1694,6 @@ msgstr "Sorteren op"
 msgid "Descending"
 msgstr "Aflopend"
 
-msgid "Apply"
-msgstr "Toepassen"
-
 msgid "Downloads and exports"
 msgstr "Downloads en exports"
 
@@ -1651,6 +1708,9 @@ msgstr "Alles downloaden (zip)"
 
 msgid "Proces-verbaal (PDF)"
 msgstr "Proces-verbaal (PDF)"
+
+msgid "Resit for several students"
+msgstr "Herkansing voor meerdere studenten"
 
 msgid "Proces-verbalen"
 msgstr "Proces-verbalen"
@@ -1856,6 +1916,65 @@ msgstr "Opent over"
 msgid "Leave presentation mode"
 msgstr "Presentatiemodus verlaten"
 
+msgid "Template from a qualification"
+msgstr "Sjabloon uit een kwalificatie"
+
+msgid "This dossier version is no longer current."
+msgstr "Deze dossierversie is niet meer actueel."
+
+msgid "Core tasks and work processes"
+msgstr "Kerntaken en werkprocessen"
+
+msgid ""
+"Every chosen core task becomes a template with an expected file per work process. You upload the "
+"template files yourself afterwards."
+msgstr ""
+"Elke gekozen kerntaak wordt een sjabloon met een verwacht bestand per werkproces. De "
+"sjabloonbestanden upload je daarna zelf."
+
+msgid "Shared template (available to all teachers)"
+msgstr "Gedeeld sjabloon (beschikbaar voor alle docenten)"
+
+msgid "Create templates"
+msgstr "Sjablonen maken"
+
+msgid "Back"
+msgstr "Terug"
+
+msgid ""
+"Search the qualification (outflow) by crebo number or name, then choose the core tasks. Every "
+"core task becomes a template with an expected file per work process."
+msgstr ""
+"Zoek de kwalificatie (uitstroom) op crebonummer of naam en kies daarna de kerntaken. Elke "
+"kerntaak wordt een sjabloon met een verwacht bestand per werkproces."
+
+msgid "The qualification structure of SBB has not been imported yet. Ask the admin."
+msgstr "De kwalificatiestructuur van SBB is nog niet ingelezen. Vraag het de admin."
+
+msgid "Crebo number or name"
+msgstr "Crebonummer of naam"
+
+msgid "e.g. 27016 or system engineer"
+msgstr "bijv. 27016 of system engineer"
+
+msgid "Search"
+msgstr "Zoeken"
+
+msgid ""
+"Choose the students for one resit. The new exam gets only the expected files that are still open "
+"for at least one of them, and only these students can hand in. Students who need something else "
+"get their own resit."
+msgstr ""
+"Kies de studenten voor één herkansing. Het nieuwe examen krijgt alleen de verwachte bestanden die"
+" voor ten minste één van hen nog openstaan, en alleen deze studenten kunnen inleveren. Studenten "
+"die iets anders nodig hebben, krijgen een eigen herkansing."
+
+msgid "No students yet."
+msgstr "Nog geen studenten."
+
+msgid "Make resit"
+msgstr "Herkansing maken"
+
 msgid "Download student (zip)"
 msgstr "Student downloaden (zip)"
 
@@ -1899,11 +2018,20 @@ msgstr ""
 "Dit is een sjabloon, geen examen. Studenten kunnen hier niet inleveren; maak daarvoor een examen "
 "van het sjabloon."
 
+msgid "Shared"
+msgstr "Gedeeld"
+
+msgid "Available to every teacher; managed by the admin."
+msgstr "Beschikbaar voor elke docent; beheerd door de admin."
+
 msgid "New exam from this template"
 msgstr "Nieuw examen met dit sjabloon"
 
 msgid "Edit template"
 msgstr "Sjabloon bewerken"
+
+msgid "Make a copy"
+msgstr "Kopie maken"
 
 msgid "The template has been created. Add template files to the expected files if you want."
 msgstr "Het sjabloon is aangemaakt. Voeg eventueel sjabloonbestanden toe aan de verwachte bestanden."
@@ -1914,6 +2042,35 @@ msgstr "Het sjabloon is opgeslagen."
 msgid "The exam has been saved as a template. You can adjust it here; the exam itself does not change."
 msgstr "Het examen is opgeslagen als sjabloon. Je kunt het hier aanpassen; het examen zelf verandert niet."
 
+msgid "The template is now shared with every teacher."
+msgstr "Het sjabloon is nu gedeeld met alle docenten."
+
+msgid "The template is no longer shared."
+msgstr "Het sjabloon wordt niet meer gedeeld."
+
+msgid "This is your own copy of the template. You can change it."
+msgstr "Dit is je eigen kopie van het sjabloon. Die kun je aanpassen."
+
+msgid "Dossier replaced"
+msgstr "Dossier vervangen"
+
+#, python-format
+msgid "SBB has a newer version (%(v)s) of this qualification. Check the template."
+msgstr "SBB heeft een nieuwere versie (%(v)s) van deze kwalificatie. Controleer het sjabloon."
+
+msgid "new:"
+msgstr "nieuw:"
+
+msgid "removed:"
+msgstr "vervallen:"
+
+msgid "The work processes of this core task did not change."
+msgstr "De werkprocessen van deze kerntaak zijn niet veranderd."
+
+#, python-format
+msgid "This dossier version has expired (%(d)s)."
+msgstr "Deze dossierversie is verlopen (%(d)s)."
+
 msgid "Students not on the class list"
 msgstr "Studenten die niet op de klassenlijst staan"
 
@@ -1923,17 +2080,52 @@ msgstr "Aangemaakt"
 msgid "No expected files: students hand in extra files only."
 msgstr "Geen verwachte bestanden: studenten leveren alleen extra bestanden in."
 
+msgid "Sharing"
+msgstr "Delen"
+
+msgid "Every teacher can use this template."
+msgstr "Elke docent kan dit sjabloon gebruiken."
+
+msgid "Stop sharing"
+msgstr "Niet meer delen"
+
+msgid "Share this template with every teacher. Only admins can change shared templates."
+msgstr "Deel dit sjabloon met alle docenten. Alleen admins kunnen gedeelde sjablonen wijzigen."
+
+msgid "Share with all teachers"
+msgstr "Delen met alle docenten"
+
 msgid "Delete template"
 msgstr "Sjabloon verwijderen"
 
 msgid "Exams made from this template keep their settings and template files."
 msgstr "Examens die met dit sjabloon zijn gemaakt, houden hun instellingen en sjabloonbestanden."
 
-msgid "New template"
-msgstr "Nieuw sjabloon"
+msgid "expected files"
+msgstr "verwachte bestanden"
+
+msgid "No expected files"
+msgstr "Geen verwachte bestanden"
+
+#, python-format
+msgid "from %(name)s"
+msgstr "met %(name)s"
+
+msgid "View"
+msgstr "Bekijken"
+
+msgid "Template from crebo"
+msgstr "Sjabloon uit crebo"
+
+msgid "New empty template"
+msgstr "Nieuw leeg sjabloon"
 
 msgid "The template has been deleted."
 msgstr "Het sjabloon is verwijderd."
+
+#, python-format
+msgid "Templates created: %(n)s. Upload the template files on each template page."
+msgstr "Sjablonen gemaakt: %(n)s. Upload de sjabloonbestanden op de pagina van elk sjabloon."
 
 msgid ""
 "A template holds the expected files, template files, extensions, limits and access settings. "
@@ -1942,12 +2134,16 @@ msgstr ""
 "Een sjabloon bevat de verwachte bestanden, sjabloonbestanden, extensies, limieten en "
 "toegangsinstellingen. Tijden, linknaam en klassenlijst kies je per examen."
 
-msgid "No expected files"
-msgstr "Geen verwachte bestanden"
+msgid "Shared templates"
+msgstr "Gedeelde sjablonen"
 
-#, python-format
-msgid "from %(name)s"
-msgstr "met %(name)s"
+msgid "Managed by the admin and available to every teacher. Make a copy to change one for yourself."
+msgstr ""
+"Beheerd door de admin en beschikbaar voor elke docent. Maak een kopie om er zelf een aan te "
+"passen."
+
+msgid "My templates"
+msgstr "Mijn sjablonen"
 
 msgid ""
 "No exam templates yet. Create one here, or save an existing exam as template from its settings "

@@ -128,6 +128,7 @@ def parse_exam_form(
                 pattern=_text(form, f"slot_pattern_{index}") or None,
                 extensions=[extensions] if extensions else None,
                 id=_uuid(form, f"slot_id_{index}"),
+                work_process_code=_text(form, f"slot_wp_{index}") or None,
             )
         )
 
@@ -157,7 +158,10 @@ def parse_exam_form(
         slots=slots,
         class_list_id=_uuid(form, "class_list_id"),
         source_template_id=_uuid(form, "source_template_id"),
+        source_exam_id=_uuid(form, "source_exam_id"),
     )
+    numbers = [n for n in form.getlist("roster_number") if isinstance(n, str) and n]
+    data.roster_numbers = numbers[:200]
     return ParsedForm(data=data, problems=problems, action=action)
 
 
@@ -195,12 +199,15 @@ def form_values(data: ExamInput, tz: ZoneInfo, raw: dict[str, str] | None = None
         "max_submission_mb": data.max_submission_mb,
         "class_list_id": str(data.class_list_id or ""),
         "source_template_id": str(data.source_template_id or ""),
+        "source_exam_id": str(data.source_exam_id or ""),
+        "roster_numbers": list(data.roster_numbers),
         "slots": [
             {
                 "id": str(s.id or ""),
                 "label": s.label,
                 "pattern": s.pattern or "",
                 "extensions": joined(s.extensions),
+                "work_process_code": s.work_process_code or "",
             }
             for s in data.slots
         ],

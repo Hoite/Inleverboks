@@ -64,6 +64,10 @@
   <section class="card">
     <h2>{{ _("Details") }}</h2>
     <dl class="details">
+      {% if exam.qualification %}
+      <dt>{{ _("Qualification") }}</dt><dd><span class="mono">{{ exam.qualification.crebo }}</span> {{ exam.qualification.name }} <span class="muted small">({{ _("dossier %(v)s", v=exam.qualification.dossier_version) }})</span></dd>
+      {% if exam.qualification.core_task_code %}<dt>{{ _("Core task") }}</dt><dd><span class="mono">{{ exam.qualification.core_task_code }}</span> {{ exam.qualification.core_task_title or "" }}</dd>{% endif %}
+      {% endif %}
       <dt>{{ _("Start") }}</dt><dd>{{ exam.starts_at|localtime }}</dd>
       <dt>{{ _("End") }}</dt><dd>{{ exam.ends_at|localtime }}{% if effective_end != exam.ends_at %} <span class="muted">({{ _("last extension until %(t)s", t=effective_end|localtime) }})</span>{% endif %}</dd>
       <dt>{{ _("Owner") }}</dt><dd>{{ owner.name if owner else "" }}</dd>

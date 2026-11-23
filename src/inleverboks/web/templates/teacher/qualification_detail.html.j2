@@ -1,0 +1,35 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box with context %}
+{% block title %}{{ qualification.crebo }} {{ qualification.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent/sjablonen">{{ _("Exam templates") }}</a> › <a href="/docent/sjablonen/crebo">{{ _("Template from a qualification") }}</a></p>
+<h1><span class="mono">{{ qualification.crebo }}</span> {{ qualification.name }}</h1>
+<p class="muted">{% if qualification.level %}{{ _("level %(n)s", n=qualification.level) }} · {% endif %}{{ _("dossier %(v)s", v=qualification.dossier_version) }}{% if qualification.dossier_name %} ({{ qualification.dossier_name }}){% endif %}</p>
+{% if status.outdated %}
+<div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">!</span>
+  <div><p>{{ _("This dossier version is no longer current.") }}</p></div></div>
+{% endif %}
+{{ errors_box(errors) }}
+<form method="post" action="/docent/sjablonen/crebo/{{ qualification.id }}" class="stack">
+  {{ csrf() }}
+  <fieldset>
+    <legend>{{ _("Core tasks and work processes") }}</legend>
+    <p class="hint">{{ _("Every chosen core task becomes a template with an expected file per work process. You upload the template files yourself afterwards.") }}</p>
+    {% for task in qualification.core_tasks %}
+    <div class="core-task">
+      <label class="checkbox"><input type="checkbox" name="core_task" value="{{ task.code }}" checked> <strong>{{ task.code }} - {{ task.title }}</strong></label>
+      <ul class="work-processes">
+        {% for wp in task.work_processes %}<li><span class="mono">{{ wp.code }}</span> {{ wp.title }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </fieldset>
+  {% if current_user.is_admin %}
+  <label class="checkbox"><input type="checkbox" name="shared" value="true" checked> {{ _("Shared template (available to all teachers)") }}</label>
+  {% endif %}
+  <div class="form-actions">
+    <button type="submit" class="button button-template">{{ _("Create templates") }}</button>
+    <a class="button button-secondary" href="/docent/sjablonen/crebo">{{ _("Back") }}</a>
+  </div>
+</form>
+{% endblock %}

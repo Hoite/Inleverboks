@@ -1,0 +1,12 @@
+{% if query|length >= 2 %}
+{% if results %}
+<ul class="result-list">
+  {% for q in results %}
+  <li><a href="/docent/sjablonen/crebo/{{ q.id }}"><span class="mono">{{ q.crebo }}</span> {{ q.name }}</a>
+    <span class="muted small">{% if q.level %}{{ _("level %(n)s", n=q.level) }} · {% endif %}{{ _("dossier %(v)s", v=q.dossier_version) }}</span></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">{{ _("No qualifications found.") }}</p>
+{% endif %}
+{% endif %}

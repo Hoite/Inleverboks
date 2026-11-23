@@ -50,6 +50,8 @@ def error_messages() -> dict[str, str]:
         "reason_required": _("Enter a reason."),
         "reason_too_long": _("The reason is too long."),
         "not_finalized": _("Only a finalized exam can be deleted permanently."),
+        "no_students_selected": _("Choose at least one student for the resit."),
+        "no_core_task_selected": _("Choose at least one core task."),
         "logo_missing": _("Choose a logo file."),
         "logo_too_large": _("The logo is too large (at most 1 MB and 4 megapixels)."),
         "logo_format": _("The logo must be a PNG or WebP file."),

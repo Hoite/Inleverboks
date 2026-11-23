@@ -22,7 +22,12 @@
   <span>{{ _("You are editing a template, not an exam. Students cannot hand in here; create an exam from the template for that.") }}</span></div>
 {% endif %}
 <h1>{{ heading }}</h1>
-{% if not is_template and not exam and templates %}
+{% if resit_from %}
+<div class="alert alert-info resit-banner" role="note"><span class="alert-icon" aria-hidden="true">i</span>
+  <div><p>{{ _("Resit of %(name)s for %(n)s student(s). Only the expected files that are still open for them are included; only these students can hand in.", name=resit_from.name, n=values.roster_numbers|length) }}</p>
+  <p class="mono small">{{ values.roster_numbers|join(", ") }}</p></div></div>
+{% endif %}
+{% if not is_template and not exam and templates and not resit_from %}
 <form method="get" action="/docent/examens/nieuw" class="template-picker">
   <div class="field grow">
     <label for="sjabloon">{{ _("Start from an exam template") }}</label>
@@ -31,7 +36,16 @@
       {% for t in templates %}<option value="{{ t.id }}"{% if values.source_template_id == t.id|string %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
     </select>
   </div>
-  <button type="submit" class="button button-secondary">{{ _("Use template") }}</button>
+  {% if picker_processes %}
+  <fieldset class="picker-processes">
+    <legend>{{ _("Work processes in this exam") }}</legend>
+    <p class="hint">{{ _("Untick work processes for a part exam (for example only W3). One configuration per exam.") }}</p>
+    {% for wp in picker_processes %}
+    <label class="checkbox"><input type="checkbox" name="wp" value="{{ wp.code }}"{% if wp.checked %} checked{% endif %}> {{ wp.label }}</label>
+    {% endfor %}
+  </fieldset>
+  {% endif %}
+  <button type="submit" class="button button-secondary">{{ _("Apply") if picker_processes else _("Use template") }}</button>
 </form>
 {% if source_template %}
 <p class="template-source">{{ template_badge(_("Template")) }} {{ _("Based on template %(name)s. Times, link name and class list are not part of a template.", name=source_template.name) }}</p>
@@ -50,6 +64,10 @@
   {# Enter in a text field triggers the first submit button: make that "save". #}
   <button type="submit" name="action" value="save" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ _("Save") }}</button>
   {% if not is_template %}<input type="hidden" name="source_template_id" value="{{ values.source_template_id }}">{% endif %}
+  {% if resit_from %}
+  <input type="hidden" name="source_exam_id" value="{{ resit_from.id }}">
+  {% for number in values.roster_numbers %}<input type="hidden" name="roster_number" value="{{ number }}">{% endfor %}
+  {% endif %}
 
   <fieldset>
     <legend>{{ _("Template") if is_template else _("Exam") }}</legend>
@@ -101,6 +119,7 @@
     {% set i = loop.index0 %}
     <div class="slot-row">
       <input type="hidden" name="slot_id_{{ i }}" value="{{ slot.id }}">
+      <input type="hidden" name="slot_wp_{{ i }}" value="{{ slot.work_process_code }}">
       <div class="field">
         <label for="slot_label_{{ i }}">{{ _("Label of file %(n)s", n=loop.index) }}</label>
         <input id="slot_label_{{ i }}" name="slot_label_{{ i }}" type="text" maxlength="100" value="{{ slot.label }}" placeholder="{{ _('e.g. Report') }}"{{ invalid("slot_%d_label"|format(i)) }}>
@@ -147,6 +166,7 @@
   <input type="hidden" name="slot_count" value="{{ values.slots|length }}">
   {% for slot in values.slots %}
   <input type="hidden" name="slot_id_{{ loop.index0 }}" value="{{ slot.id }}">
+  <input type="hidden" name="slot_wp_{{ loop.index0 }}" value="{{ slot.work_process_code }}">
   <input type="hidden" name="slot_label_{{ loop.index0 }}" value="{{ slot.label }}">
   <input type="hidden" name="slot_pattern_{{ loop.index0 }}" value="{{ slot.pattern }}">
   <input type="hidden" name="slot_extensions_{{ loop.index0 }}" value="{{ slot.extensions }}">
@@ -180,7 +200,7 @@
 
   <fieldset>
     <legend>{{ _("Students") }}</legend>
-    {% if not exam and not is_template %}
+    {% if not exam and not is_template and not resit_from %}
     <div class="field">
       <label for="class_list_id">{{ _("Class list (optional)") }}</label>
       <select id="class_list_id" name="class_list_id"{{ invalid("class_list_id") }}>

@@ -10,16 +10,23 @@ from typing import Annotated, Any
 
 import segno
 from anyio import from_thread
-from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from inleverboks.db.models import Exam, ExamTemplate, IpPreset, User
+from inleverboks.db.models import Exam, ExamTemplate, IpPreset, Qualification, User
 from inleverboks.i18n import gettext as _
 from inleverboks.policy import ExamAction, ExamRef, SystemAction, can, can_exam
 from inleverboks.services.container import Services
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
-from inleverboks.services.exams import MB, ExamInput, ExamStatus, ExamValidationError
+from inleverboks.services.exams import (
+    MB,
+    ExamInput,
+    ExamStatus,
+    ExamValidationError,
+    can_manage_template,
+)
+from inleverboks.services.overview import build_overview
 from inleverboks.services.template_files import store_template, unreferenced
 from inleverboks.services.timeutil import default_window, format_local, parse_local, split_local
 from inleverboks.services.totp import QUIET_ZONE
@@ -128,11 +135,19 @@ def all_exams(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response
 
 @router.get("/sjablonen")
 def exam_templates(
-    request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None
+    request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None, n: int = 0
 ) -> Response:
+    templates = services.exams.templates(db, ctx.user)
+    outdated = {
+        t.id for t in templates
+        if t.qualification is not None
+        and services.qualifications.status(db, t.qualification).outdated
+    }  # fmt: skip
     return render(
-        request, "teacher/templates.html.j2", tab="templates", ok=ok,
-        templates=services.exams.templates(db, ctx.user),
+        request, "teacher/templates.html.j2", tab="templates", ok=ok, created=n,
+        shared_templates=[t for t in templates if t.shared],
+        own_templates=[t for t in templates if not t.shared],
+        outdated=outdated,
     )  # fmt: skip
 
 
@@ -158,6 +173,65 @@ def create_exam_template(request: Request, ctx: Teacher, db: Db, services: Svc) 
     return _handle_template_form(request, db, services, ctx.user, None)
 
 
+# Templates from the SBB qualification structure ------------------------------------
+# These routes come before /sjablonen/{template_id}, which would take "crebo" as an id.
+
+
+@router.get("/sjablonen/crebo")
+def qualification_search(
+    request: Request, ctx: Teacher, db: Db, services: Svc, q: str = ""
+) -> Response:
+    results = services.qualifications.search(db, q[:100])
+    template = (
+        "teacher/_qualification_results.html.j2"
+        if request.headers.get("hx-request")
+        else "teacher/qualification_search.html.j2"
+    )
+    return render(
+        request, template, tab="templates", query=q, results=results,
+        imported=services.qualifications.count(db),
+    )  # fmt: skip
+
+
+def _qualification(db: Session, services: Services, qualification_id: uuid.UUID) -> Qualification:
+    qualification = services.qualifications.get(db, qualification_id)
+    if qualification is None:
+        raise NotFoundError()
+    return qualification
+
+
+@router.get("/sjablonen/crebo/{qualification_id}")
+def qualification_detail(
+    request: Request, qualification_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    error: str | None = None,
+) -> Response:  # fmt: skip
+    qualification = _qualification(db, services, qualification_id)
+    return render(
+        request, "teacher/qualification_detail.html.j2", tab="templates",
+        qualification=qualification, status=services.qualifications.status(db, qualification),
+        errors=[describe(DomainError(error))[0]] if error else [],
+    )  # fmt: skip
+
+
+@router.post("/sjablonen/crebo/{qualification_id}")
+def templates_from_qualification(
+    request: Request, qualification_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    core_task: Annotated[list[str] | None, Form()] = None,
+    shared: Annotated[bool, Form()] = False,
+) -> Response:  # fmt: skip
+    qualification = _qualification(db, services, qualification_id)
+    if shared and not ctx.user.is_admin:
+        raise PermissionDeniedError()  # shared templates are managed by admins (PLAN B53)
+    try:
+        created = services.exams.templates_from_qualification(
+            db, ctx.user, qualification, core_task or [], shared=shared, ip=client_ip(request)
+        )
+    except DomainError as exc:
+        db.rollback()
+        return _redirect(f"/docent/sjablonen/crebo/{qualification.id}?error={exc.code}")
+    return _redirect(f"/docent/sjablonen?ok=created_from_crebo&n={len(created)}")
+
+
 @router.get("/sjablonen/{template_id}")
 def exam_template_detail(
     request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
@@ -169,14 +243,49 @@ def exam_template_detail(
     return render(
         request, "teacher/template_detail.html.j2", exam_template=template, config=template.config,
         preset=preset, ok=ok, errors=[describe(DomainError(error))[0]] if error else [],
+        can_manage=can_manage_template(ctx.user, template),
+        dossier=_dossier_info(db, services, template),
     )  # fmt: skip
+
+
+def _dossier_info(db: Session, services: Services, template: ExamTemplate) -> dict[str, Any] | None:
+    """Status of the SBB dossier behind a template, for the "replaced" warning."""
+    qualification = template.qualification
+    if qualification is None:
+        return None
+    status = services.qualifications.status(db, qualification)
+    changes = (
+        services.qualifications.changes(qualification, status.replaced_by, template.core_task_code)
+        if status.replaced_by is not None and template.core_task_code
+        else []
+    )
+    return {"qualification": qualification, "status": status, "changes": changes}
+
+
+@router.post("/sjablonen/{template_id}/delen")
+def share_exam_template(
+    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    shared: Annotated[bool, Form()] = False,
+) -> Response:  # fmt: skip
+    template = services.exams.get_template(db, ctx.user, template_id)
+    services.exams.set_template_shared(db, ctx.user, template, shared, ip=client_ip(request))
+    return _redirect(f"/docent/sjablonen/{template.id}?ok={'shared' if shared else 'unshared'}")
+
+
+@router.post("/sjablonen/{template_id}/kopie")
+def copy_exam_template(
+    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    template = services.exams.get_template(db, ctx.user, template_id)
+    copy = services.exams.copy_template(db, ctx.user, template, ip=client_ip(request))
+    return _redirect(f"/docent/sjablonen/{copy.id}?ok=copied")
 
 
 @router.get("/sjablonen/{template_id}/bewerken")
 def edit_exam_template(
     request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
-    template = services.exams.get_template(db, ctx.user, template_id)
+    template = services.exams.get_managed_template(db, ctx.user, template_id)
     data = services.exams.template_input(template)
     return _render_form(
         request, db, services, ctx.user, data, exam=None, mode="template", template=template
@@ -187,7 +296,7 @@ def edit_exam_template(
 def update_exam_template(
     request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
-    template = services.exams.get_template(db, ctx.user, template_id)
+    template = services.exams.get_managed_template(db, ctx.user, template_id)
     return _handle_template_form(request, db, services, ctx.user, template)
 
 
@@ -228,7 +337,7 @@ def upload_template_slot_file(
     request: Request, template_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db,
     services: Svc, file: Annotated[UploadFile, File()],
 ) -> Response:  # fmt: skip
-    template = services.exams.get_template(db, ctx.user, template_id)
+    template = services.exams.get_managed_template(db, ctx.user, template_id)
     back = f"/docent/sjablonen/{template.id}"
     filename = (file.filename or "sjabloon").replace("\\", "/").rsplit("/", 1)[-1]
     max_bytes = int(template.config.get("max_file_mb", services.env.max_file_mb)) * MB
@@ -256,7 +365,7 @@ def remove_template_slot_file(
     request: Request, template_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db,
     services: Svc,
 ) -> Response:  # fmt: skip
-    template = services.exams.get_template(db, ctx.user, template_id)
+    template = services.exams.get_managed_template(db, ctx.user, template_id)
     key = services.exams.remove_template_slot_file(
         db, ctx.user, template, slot_id, ip=client_ip(request)
     )
@@ -306,11 +415,21 @@ def _render_form(
     status: int = 200,
     mode: str = "exam",
     template: ExamTemplate | None = None,
+    resit_from: Exam | None = None,
 ) -> Response:
     tz = services.env.timezone
     locked = exam is not None and services.exams.has_submissions(db, exam)
     templates = services.exams.templates(db, user)
     source = next((t for t in templates if t.id == data.source_template_id), None)
+    if resit_from is None and data.source_exam_id is not None:
+        candidate = db.get(Exam, data.source_exam_id)
+        resit_from = candidate if candidate is not None and candidate.owner_id == user.id else None
+    chosen = {s.work_process_code for s in data.slots if s.work_process_code}
+    picker_processes = [
+        {"code": s.work_process_code, "label": s.label, "checked": s.work_process_code in chosen}
+        for s in (source.slots if source else [])
+        if s.work_process_code
+    ]
     return render(
         request,
         "teacher/exam_form.html.j2",
@@ -320,6 +439,8 @@ def _render_form(
         exam_template=template,
         templates=templates,
         source_template=source,
+        picker_processes=picker_processes,
+        resit_from=resit_from,
         values=form_values(data, tz, raw),
         problems=problems or {},
         locked=locked,
@@ -331,14 +452,55 @@ def _render_form(
 
 @router.get("/examens/nieuw")
 def new_exam(
-    request: Request, ctx: Teacher, db: Db, services: Svc, sjabloon: uuid.UUID | None = None
-) -> Response:
+    request: Request, ctx: Teacher, db: Db, services: Svc, sjabloon: uuid.UUID | None = None,
+    wp: Annotated[list[str] | None, Query()] = None,
+) -> Response:  # fmt: skip
     start, end = default_window(services.clock.now(), services.env.timezone)
     data = services.exams.defaults(db, start, end)
     if sjabloon is not None:
         template = services.exams.get_template(db, ctx.user, sjabloon)
-        data = services.exams.input_from_template(db, template, data)
+        codes = {s.work_process_code for s in template.slots if s.work_process_code}
+        selected = [c for c in (wp or []) if c in codes]
+        data = services.exams.input_from_template(db, template, data, selected)
     return _render_form(request, db, services, ctx.user, data, exam=None)
+
+
+@router.get("/examens/{exam_id}/herkansing")
+def resit_selection(
+    request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    """Choose the students for one resit. Students with an open expected file (or no
+    active hand-in) are ticked already."""
+    from inleverboks.web.routes.review import row_status_labels  # noqa: PLC0415
+
+    exam = _load(db, services, ctx.user, exam_id, ExamAction.DUPLICATE)
+    data = build_overview(db, exam)
+    slot_ids = {s.id for s in exam.expected_files}
+    rows = [
+        {"row": row, "open": row.status.value != "active" or not slot_ids <= row.filled_slots}
+        for row in data.rows
+    ]
+    return render(
+        request, "teacher/resit_select.html.j2", exam=exam, rows=rows,
+        row_status_labels=row_status_labels(),
+    )  # fmt: skip
+
+
+@router.post("/examens/{exam_id}/herkansing")
+def new_resit(
+    request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    student_number: Annotated[list[str] | None, Form()] = None,
+) -> Response:  # fmt: skip
+    """One click from the overview: a new exam form, filled in for the selected students
+    with only the work processes that are still open for them."""
+    exam = _load(db, services, ctx.user, exam_id, ExamAction.DUPLICATE)
+    try:
+        data = services.exams.resit_input(
+            db, ctx.user, exam, (student_number or [])[:200], name_suffix=_("resit")
+        )
+    except DomainError as exc:
+        return _redirect(f"/docent/examens/{exam.id}?error={exc.code}")
+    return _render_form(request, db, services, ctx.user, data, exam=None, resit_from=exam)
 
 
 async def _form(request: Request) -> Any:

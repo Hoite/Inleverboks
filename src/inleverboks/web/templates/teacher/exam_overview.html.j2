@@ -8,6 +8,7 @@
   <div>
     <h1>{{ exam.name }}</h1>
     <p>{{ status_badge(exam_status, status_labels) }} <span class="muted">{{ exam.starts_at|localtime }} – {{ exam.ends_at|localtime("%H:%M") }}</span></p>
+    {% if exam.qualification %}<p class="muted small"><span class="mono">{{ exam.qualification.crebo }}</span> {{ exam.qualification.name }}{% if exam.qualification.core_task_code %} · <span class="mono">{{ exam.qualification.core_task_code }}</span>{% endif %}</p>{% endif %}
   </div>
   <div class="button-row">
     <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/presentatie">{{ _("Presentation mode") }}</a>
@@ -77,6 +78,7 @@
     </form>
     {% endif %}
     <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/auditlog">{{ _("Audit log") }}</a>
+    {% if perms.duplicate %}<a class="button button-secondary" href="/docent/examens/{{ exam.id }}/herkansing">{{ _("Resit for several students") }}</a>{% endif %}
   </div>
 </section>
 {% if proces_verbalen and perms.export %}

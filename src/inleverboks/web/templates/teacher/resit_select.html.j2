@@ -1,0 +1,25 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf with context %}
+{% block title %}{{ _("Resit") }} · {{ exam.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/docent">{{ _("Exams") }}</a> › <a href="/docent/examens/{{ exam.id }}">{{ exam.name }}</a></p>
+<h1>{{ _("Resit for several students") }}</h1>
+<p class="hint">{{ _("Choose the students for one resit. The new exam gets only the expected files that are still open for at least one of them, and only these students can hand in. Students who need something else get their own resit.") }}</p>
+<form method="post" action="/docent/examens/{{ exam.id }}/herkansing" class="stack">
+  {{ csrf() }}
+  <fieldset>
+    <legend>{{ _("Students") }}</legend>
+    {% for item in rows %}
+    {% set row = item.row %}
+    <label class="checkbox"><input type="checkbox" name="student_number" value="{{ row.student_number }}"{% if item.open %} checked{% endif %}>
+      {{ row.display_name }} <span class="mono small">{{ row.student_number }}</span> <span class="muted small">· {{ row_status_labels[row.status] }}</span></label>
+    {% else %}
+    <p class="muted">{{ _("No students yet.") }}</p>
+    {% endfor %}
+  </fieldset>
+  <div class="form-actions">
+    <button type="submit" class="button">{{ _("Make resit") }}</button>
+    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}">{{ _("Cancel") }}</a>
+  </div>
+</form>
+{% endblock %}

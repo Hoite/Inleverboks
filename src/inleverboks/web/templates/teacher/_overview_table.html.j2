@@ -1,3 +1,4 @@
+{% from "_macros.html.j2" import csrf with context %}
 {# Polled every 10 seconds while the exam is open. The id starts with "poll", so the
    request does not keep an idle session alive (PLAN B12). #}
 <div id="poll-overview"{% if polling %} hx-get="/docent/examens/{{ exam.id }}?fragment=true&amp;status={{ status_filter|urlencode }}&amp;sort={{ sort }}{% if desc %}&amp;desc=true{% endif %}" hx-trigger="every 10s" hx-swap="outerHTML"{% endif %}>
@@ -10,6 +11,7 @@
       <th scope="col">{{ _("Status") }}</th>
       <th scope="col">{{ _("Handed in at") }}</th>
       <th scope="col">{{ _("Files") }}</th>
+      {% for wp in data.work_processes %}<th scope="col" class="wp-cell"><abbr title="{{ wp.label }}">{{ wp.code }}</abbr></th>{% endfor %}
       <th scope="col">{{ _("Size") }}</th>
       <th scope="col">{{ _("Signals") }}</th>
       <th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th>
@@ -24,16 +26,20 @@
       <td><span class="badge badge-{{ kinds[row.status.value] }}"><span aria-hidden="true">{{ icons[row.status.value] }}</span> {{ row_status_labels[row.status] }}</span>{% if row.attempts > 1 %}<br><span class="small muted">{{ _("%(n)s attempts", n=row.attempts) }}</span>{% endif %}</td>
       <td>{{ row.submitted_at|localtime("%H:%M:%S") if row.submitted_at else "" }}</td>
       <td>{% if row.submission %}{% set deviates = data.expected_files and row.file_count != data.expected_files %}<span{% if deviates %} class="deviates"{% endif %}>{% if deviates %}<span aria-hidden="true">! </span>{% endif %}{{ row.file_count }}/{{ data.expected_files }}</span>{% endif %}</td>
+      {% for wp in data.work_processes %}
+      <td class="wp-cell">{% if row.submission and row.status.value == "active" %}{% if wp.slot_id in row.filled_slots %}<span aria-hidden="true">✓</span><span class="visually-hidden">{{ _("%(code)s handed in", code=wp.code) }}</span>{% else %}<span class="deviates" aria-hidden="true">—</span><span class="visually-hidden">{{ _("%(code)s missing", code=wp.code) }}</span>{% endif %}{% endif %}</td>
+      {% endfor %}
       <td>{% if row.submission %}{{ (row.total_size / 1024)|round(1) }} kB{% endif %}</td>
       <td>
         {% for signal in row.signals %}
         <span class="signal signal-{{ signal.value }}"><span aria-hidden="true">{{ "!" if signal.value not in ("extension", "zip") else "i" }}</span> {{ signal_labels[signal] }}</span>
         {% endfor %}
       </td>
-      <td class="actions"><a class="button button-small button-secondary" href="/docent/examens/{{ exam.id }}/studenten/{{ row.student_number }}">{{ _("Details") }}<span class="visually-hidden"> {{ row.display_name }}</span></a></td>
+      <td class="actions"><a class="button button-small button-secondary" href="/docent/examens/{{ exam.id }}/studenten/{{ row.student_number }}">{{ _("Details") }}<span class="visually-hidden"> {{ row.display_name }}</span></a>
+        {% if perms.duplicate %}<form method="post" action="/docent/examens/{{ exam.id }}/herkansing" class="inline-form">{{ csrf() }}<input type="hidden" name="student_number" value="{{ row.student_number }}"><button type="submit" class="button button-small button-secondary">{{ _("Resit") }}<span class="visually-hidden"> {{ row.display_name }}</span></button></form>{% endif %}</td>
     </tr>
   {% else %}
-    <tr><td colspan="7" class="muted">{{ _("No hand-ins yet.") }}</td></tr>
+    <tr><td colspan="{{ 7 + data.work_processes|length }}" class="muted">{{ _("No hand-ins yet.") }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
