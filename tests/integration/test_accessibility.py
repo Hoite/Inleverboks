@@ -123,13 +123,16 @@ def test_teacher_and_admin_pages(
     upload(student, exam, good_files(exam))
     teacher = TestClient(client.app)
     login(teacher)
+    template = services.exams.save_as_template(db, owner, exam, "Sjabloon", ip=None)
     urls = [
         "/docent", "/docent/afgerond", "/docent/sjablonen", "/docent/examens/nieuw",
         f"/docent/examens/{exam.id}", f"/docent/examens/{exam.id}/instellingen",
         f"/docent/examens/{exam.id}/bewerken", f"/docent/examens/{exam.id}/auditlog",
         f"/docent/examens/{exam.id}/studenten/123456", "/docent/ontvangstbewijs",
         "/docent/klassenlijsten", "/docent/klassenlijsten/nieuw", "/account",
-        "/account/wachtwoord", "/account/tweestaps",
+        "/account/wachtwoord", "/account/tweestaps", "/docent/sjablonen/nieuw",
+        f"/docent/sjablonen/{template.id}", f"/docent/sjablonen/{template.id}/bewerken",
+        f"/docent/examens/nieuw?sjabloon={template.id}",
     ]  # fmt: skip
     problems = [p for url in urls for p in audit(teacher, url)]
 

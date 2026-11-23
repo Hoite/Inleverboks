@@ -110,8 +110,11 @@ def test_new_exam_form_defaults(tclient: TestClient, clock: FrozenClock) -> None
     clock.set(datetime(2026, 11, 13, 9, 7, tzinfo=UTC))  # 10:07 local
     page = tclient.get("/docent/examens/nieuw")
     assert page.status_code == 200
-    assert 'value="2026-11-13T10:00"' in page.text  # rounded to the quarter
-    assert 'value="2026-11-13T12:00"' in page.text  # two hours later
+    # A date field plus a 24-hour time field (never AM/PM), rounded to the quarter.
+    assert 'name="starts_at_date" type="date" required value="2026-11-13"' in page.text
+    assert 'name="starts_at_time" type="text" required value="10:00"' in page.text
+    assert 'name="ends_at_time" type="text" required value="12:00"' in page.text  # 2 hours
+    assert 'type="datetime-local"' not in page.text
     assert "docx, xlsx, pptx, pdf" in page.text  # default extensions
 
 
@@ -787,3 +790,174 @@ def test_service_create_without_http(db: Session, services: Services, teacher: U
     exam = services.exams.create(db, teacher, data, ip=None)
     assert exam.slug == "direct"
     assert services.exams.status(db, exam) == "concept"
+
+
+# Beta feedback (v0.1.1) --------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("typed", "stored"),
+    [("10:00", "10:00"), ("9:30", "09:30"), ("09.30", "09:30"), ("1430", "14:30")],
+)
+def test_date_and_24_hour_time_fields(
+    tclient: TestClient, db: Session, typed: str, stored: str
+) -> None:
+    data = form(starts_at_date="2026-11-13", starts_at_time=typed,
+                ends_at_date="2026-11-13", ends_at_time="18:00")  # fmt: skip
+    del data["starts_at"], data["ends_at"]
+    exam = create_exam(tclient, **{k: v for k, v in data.items() if k not in form()} | data)
+    hour, minute = map(int, stored.split(":"))
+    assert exam.starts_at == datetime(2026, 11, 13, hour - 1, minute, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("typed", ["2:30 PM", "24:00", "10:75", "", "abc"])
+def test_invalid_times_are_refused(tclient: TestClient, typed: str) -> None:
+    data = form(starts_at_date="2026-11-13", starts_at_time=typed,
+                ends_at_date="2026-11-13", ends_at_time="18:00")  # fmt: skip
+    del data["starts_at"], data["ends_at"]
+    response = post(tclient, "/docent/examens/nieuw", data)
+    assert response.status_code == 400
+    assert "Vul een geldige datum en tijd in." in response.text
+    assert f'name="starts_at_time" type="text" required value="{typed}"' in response.text
+
+
+def test_extension_with_split_fields(tclient: TestClient, db: Session) -> None:
+    exam = create_exam(tclient)
+    url = f"/docent/examens/{exam.id}/verlengingen"
+    page = tclient.get(f"/docent/examens/{exam.id}/instellingen").text
+    assert 'name="ends_at_time" type="text" required value="12:00"' in page  # prefilled
+    assert "<h2>Verlengingen</h2>" in page
+    assert "Nog geen verlengingen gegeven." in page
+    response = post(tclient, url, {"student_number": "123456", "ends_at_date": "2026-11-13",
+                                   "ends_at_time": "13:15"})  # fmt: skip
+    assert response.headers["location"].endswith("ok=extension#verlengingen")
+    assert events(db, "exam.extension_granted")
+
+
+def test_allow_unlisted_forced_without_class_list(tclient: TestClient, db: Session) -> None:
+    exam = create_exam(tclient, allow_unlisted="")
+    db.expire_all()
+    fresh = db.get(Exam, exam.id)
+    assert fresh is not None and fresh.allow_unlisted is True
+    page = tclient.get(f"/docent/examens/{exam.id}/bewerken").text
+    assert 'id="allow_unlisted" name="allow_unlisted" value="true"' in page
+    assert "checked disabled" in page
+    # Editing (the disabled box is not submitted) keeps it on.
+    post(tclient, f"/docent/examens/{exam.id}/bewerken", form(slug=exam.slug, allow_unlisted=""))
+    db.expire_all()
+    assert db.get(Exam, exam.id).allow_unlisted is True  # type: ignore[union-attr]
+
+
+def test_settings_show_allowed_extensions(tclient: TestClient) -> None:
+    exam = create_exam(tclient)
+    page = tclient.get(f"/docent/examens/{exam.id}/instellingen").text
+    assert "Toegestane extensies" in page
+    assert "Alle toegestane extensies" in page  # slot 2 has no own extensions
+
+
+def test_footer_shows_version(tclient: TestClient) -> None:
+    from inleverboks import __version__  # noqa: PLC0415
+
+    assert f"v{__version__}</span>" in tclient.get("/docent").text
+
+
+def test_template_editor_create_edit_and_use(
+    tclient: TestClient, db: Session, services: Services
+) -> None:
+    page = tclient.get("/docent/sjablonen/nieuw").text
+    assert 'class="mode-template"' in page
+    assert "Je bewerkt een sjabloon, geen examen." in page
+    assert 'name="starts_at_date"' not in page and 'name="slug"' not in page
+    data = form(name="Python P1", slot_count="1", slot_label_0="Code", slot_pattern_0="*.py",
+                slot_extensions_0="py", extensions="py, md")  # fmt: skip
+    response = post(tclient, "/docent/sjablonen/nieuw", data)
+    template = db.scalar(select(ExamTemplate))
+    assert template is not None
+    assert response.headers["location"] == f"/docent/sjablonen/{template.id}?ok=created"
+    assert template.config["extensions"] == ["py", "md"]
+    assert events(db, "exam_template.created")
+
+    # Template file on the template's own page.
+    slot_id = template.slots[0].id
+    upload = tclient.post(
+        f"/docent/sjablonen/{template.id}/vakjes/{slot_id}/sjabloon",
+        data={"csrf_token": csrf_token(tclient)},
+        files={"file": ("leeg.py", b"# leeg\n", "text/x-python")}, follow_redirects=False,
+    )  # fmt: skip
+    assert upload.headers["location"].endswith("ok=template_uploaded")
+    detail = tclient.get(f"/docent/sjablonen/{template.id}").text
+    assert "leeg.py" in detail and "Nieuw examen met dit sjabloon" in detail
+
+    # Edit: add a slot before the existing one; the file stays with its slot.
+    edit = tclient.get(f"/docent/sjablonen/{template.id}/bewerken").text
+    assert f'name="slot_id_0" value="{slot_id}"' in edit
+    post(tclient, f"/docent/sjablonen/{template.id}/bewerken", form(
+        name="Python P1 (2026)", slot_count="2", slot_label_0="Uitleg", slot_pattern_0="*.md",
+        slot_extensions_0="md", slot_id_0="", slot_label_1="Code", slot_pattern_1="*.py",
+        slot_extensions_1="py", slot_id_1=str(slot_id), extensions="py, md"))  # fmt: skip
+    db.expire_all()
+    template = db.get(ExamTemplate, template.id)
+    assert template is not None
+    assert template.name == "Python P1 (2026)"
+    assert [s.label for s in template.slots] == ["Uitleg", "Code"]
+    assert template.slots[1].template_file is not None
+    assert (
+        events(db, "exam_template.updated")[0].details["changes"]["name"]["new"]
+        == "Python P1 (2026)"
+    )
+
+    # New exam: the picker is at the top and the file follows its slot by id.
+    new = tclient.get(f"/docent/examens/nieuw?sjabloon={template.id}").text
+    assert 'id="sjabloon" name="sjabloon"' in new
+    assert "Gebaseerd op sjabloon Python P1 (2026)." in new
+    slot_ids = [str(s.id) for s in template.slots]
+    response = post(tclient, "/docent/examens/nieuw", form(
+        name="Python P1 herkansing", source_template_id=str(template.id), slot_count="1",
+        slot_label_0="Code", slot_pattern_0="*.py", slot_extensions_0="py",
+        slot_id_0=slot_ids[1], extensions="py, md"))  # fmt: skip
+    exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[3]))
+    assert exam is not None
+    assert exam.expected_files[0].template_file is not None
+    assert exam.expected_files[0].template_file.original_name == "leeg.py"
+
+
+def test_template_edit_removes_slot_file(tclient: TestClient, db: Session) -> None:
+    post(tclient, "/docent/sjablonen/nieuw", form(name="T", slot_count="1", slot_label_0="A",
+         slot_pattern_0="", slot_extensions_0=""))  # fmt: skip
+    template = db.scalar(select(ExamTemplate))
+    assert template is not None
+    tclient.post(
+        f"/docent/sjablonen/{template.id}/vakjes/{template.slots[0].id}/sjabloon",
+        data={"csrf_token": csrf_token(tclient)}, files={"file": ("a.txt", b"a", "text/plain")},
+    )  # fmt: skip
+    post(tclient, f"/docent/sjablonen/{template.id}/bewerken",
+         form(name="T", slot_count="0", allow_extra_file="true"))  # fmt: skip
+    db.expire_all()
+    assert not db.scalars(select(TemplateFile)).all()
+
+
+def test_template_validation_and_privacy(
+    tclient: TestClient, db: Session, clock: FrozenClock
+) -> None:
+    response = post(tclient, "/docent/sjablonen/nieuw", form(name="", extensions=""))
+    assert response.status_code == 400
+    assert 'aria-invalid="true"' in response.text
+    post(tclient, "/docent/sjablonen/nieuw", form(name="Privé"))
+    template = db.scalar(select(ExamTemplate))
+    assert template is not None
+    other = other_client(tclient, db, clock, "ander@school.nl")
+    for url in (f"/docent/sjablonen/{template.id}", f"/docent/sjablonen/{template.id}/bewerken"):
+        assert other.get(url).status_code == 404
+    assert (
+        post(other, f"/docent/sjablonen/{template.id}/bewerken", form(name="x")).status_code == 404
+    )
+
+
+def test_save_as_template_opens_the_template(tclient: TestClient, db: Session) -> None:
+    exam = create_exam(tclient)
+    response = post(tclient, f"/docent/examens/{exam.id}/sjabloon-opslaan", {"name": "Kopie"})
+    template = db.scalar(select(ExamTemplate))
+    assert template is not None
+    assert response.headers["location"] == f"/docent/sjablonen/{template.id}?ok=saved_from_exam"
+    overview = tclient.get("/docent/sjablonen").text
+    assert "badge-template" in overview and "Nieuw sjabloon" in overview
