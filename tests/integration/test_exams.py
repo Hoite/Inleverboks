@@ -468,6 +468,35 @@ def test_duplicate_exam(tclient: TestClient, db: Session, clock: FrozenClock) ->
     assert events(db, "exam.duplicated", str(copy.id))[0].details["source_exam_id"] == str(exam.id)
 
 
+def test_duplicate_keeps_class_list_and_setting(tclient: TestClient, db: Session) -> None:
+    """Regression (v0.1.1/v0.1.2): the copy got its roster after create(), which then saw
+    no class list and turned "allow students who are not on the list" on."""
+    exam = create_exam(tclient)
+    db.add_all(
+        [
+            ExamRosterEntry(exam_id=exam.id, student_number="123456", first_name="Jan",
+                            infix="de", last_name="Vries", class_name="ICT-2A"),
+            ExamRosterEntry(exam_id=exam.id, student_number="123457", first_name="Zoë",
+                            last_name="Bakker"),
+        ]
+    )  # fmt: skip
+    db.get(Exam, exam.id).allow_unlisted = False  # type: ignore[union-attr]
+    db.commit()
+    response = post(tclient, f"/docent/examens/{exam.id}/dupliceren")
+    copy = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[3]))
+    assert copy is not None
+    assert copy.allow_unlisted is False
+    roster = db.scalars(
+        select(ExamRosterEntry).where(ExamRosterEntry.exam_id == copy.id)
+        .order_by(ExamRosterEntry.student_number)
+    ).all()  # fmt: skip
+    assert [(r.student_number, r.infix, r.class_name) for r in roster] == [
+        ("123456", "de", "ICT-2A"), ("123457", None, None),
+    ]  # fmt: skip
+    created = events(db, "exam.created", str(copy.id))[0]
+    assert created.details["exam"]["allow_unlisted"] is False
+
+
 def test_save_as_template_and_create_from_it(tclient: TestClient, db: Session) -> None:
     exam = create_exam(tclient, access_code_enabled="", allow_unlisted="")
     ids = _slot_ids(db, exam)

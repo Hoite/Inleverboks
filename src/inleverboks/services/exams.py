@@ -79,7 +79,18 @@ class ExamInput:
     max_submission_mb: int = 100
     slots: list[SlotInput] = field(default_factory=list)
     class_list_id: uuid.UUID | None = None
-    source_template_id: uuid.UUID | None = None  # copy template files by slot position
+    source_template_id: uuid.UUID | None = None  # copy template files per slot
+    # A roster given directly (duplicate) instead of a class list.
+    roster: list[RosterInput] | None = None
+
+
+@dataclass(frozen=True)
+class RosterInput:
+    student_number: str
+    first_name: str
+    last_name: str
+    infix: str | None = None
+    class_name: str | None = None
 
 
 class ExamValidationError(DomainError):
@@ -135,6 +146,13 @@ def _snapshot(exam: Exam) -> dict[str, Any]:
 
 
 TEMPLATE_WINDOW = timedelta(hours=2)
+
+
+def _roster_input(entry: ExamRosterEntry) -> RosterInput:
+    return RosterInput(
+        student_number=entry.student_number, first_name=entry.first_name,
+        last_name=entry.last_name, infix=entry.infix, class_name=entry.class_name,
+    )  # fmt: skip
 
 
 def _template_config(data: ExamInput) -> dict[str, Any]:
@@ -511,7 +529,7 @@ class ExamService:
 
     def create(self, db: Session, owner: User, data: ExamInput, *, ip: str | None) -> Exam:
         data = self.validate(db, owner.id, data)
-        if data.class_list_id is None:
+        if data.class_list_id is None and not data.roster:
             data.allow_unlisted = True  # without a class list nobody is "on the list"
         now = self.clock.now()
         exam = Exam(owner_id=owner.id, created_at=now, updated_at=now)
@@ -530,6 +548,15 @@ class ExamService:
                 self._copy_template_files(db, exam, source)
         if data.class_list_id is not None:
             self._set_roster(db, exam, db.get(ClassList, data.class_list_id))
+        elif data.roster:
+            for entry in data.roster:
+                db.add(
+                    ExamRosterEntry(
+                        exam_id=exam.id, student_number=entry.student_number,
+                        first_name=entry.first_name, infix=entry.infix,
+                        last_name=entry.last_name, class_name=entry.class_name,
+                    )
+                )  # fmt: skip
         self.audit.append(
             db,
             "exam.created",
@@ -663,20 +690,9 @@ class ExamService:
         duration = exam.ends_at - exam.starts_at
         data.starts_at, _ = default_window(now, self.env.timezone)
         data.ends_at = data.starts_at + duration
+        data.roster = [_roster_input(e) for e in self.roster(db, exam)]
         copy = self.create(db, user, data, ip=ip)
         self._copy_template_files(db, copy, [s.template_file for s in exam.expected_files])
-        roster = list(db.scalars(select(ExamRosterEntry).where(ExamRosterEntry.exam_id == exam.id)))
-        for entry in roster:
-            db.add(
-                ExamRosterEntry(
-                    exam_id=copy.id,
-                    student_number=entry.student_number,
-                    first_name=entry.first_name,
-                    infix=entry.infix,
-                    last_name=entry.last_name,
-                    class_name=entry.class_name,
-                )
-            )
         self.audit.append(
             db,
             "exam.duplicated",
