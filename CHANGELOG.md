@@ -6,6 +6,17 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-23
+
+### Opgelost
+
+- De QR-code voor tweestapsverificatie viel aan de rand weg: de SVG had een vaste breedte en
+  geen `viewBox`, terwijl de pagina hem verkleinde. Hij schaalt nu mee. Alle QR-codes hebben
+  een witrand van 4 modules, zoals de QR-standaard voorschrijft.
+- De sleutel om tweestapsverificatie handmatig in te stellen wordt in groepjes getoond, maar
+  kopiëren geeft nu de sleutel zonder spaties. Een hint legt uit dat een O altijd de letter O
+  is (een 0 komt in de sleutel niet voor).
+
 ## [0.1.1] - 2026-11-23
 
 Verbeteringen na de eerste bètatest.
