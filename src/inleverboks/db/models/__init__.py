@@ -13,6 +13,7 @@ from inleverboks.db.models.exams import (
     RetiredSlug,
     TemplateFile,
 )
+from inleverboks.db.models.qualifications import CoreTask, Qualification, WorkProcess
 from inleverboks.db.models.submissions import (
     ProcesVerbaal,
     ReceiptToken,
@@ -39,6 +40,7 @@ __all__ = [
     "BrandingAsset",
     "ClassList",
     "ClassListEntry",
+    "CoreTask",
     "DeniedAttemptBucket",
     "Exam",
     "ExamRosterEntry",
@@ -51,6 +53,7 @@ __all__ = [
     "JobLock",
     "PasswordReset",
     "ProcesVerbaal",
+    "Qualification",
     "ReceiptToken",
     "RecoveryCode",
     "RetiredSlug",
@@ -61,4 +64,5 @@ __all__ = [
     "User",
     "UserSession",
     "WhitelistEntry",
+    "WorkProcess",
 ]

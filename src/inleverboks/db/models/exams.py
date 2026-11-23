@@ -18,8 +18,10 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import false
 
 from inleverboks.db.base import Base
+from inleverboks.db.models.qualifications import Qualification
 from inleverboks.db.types import UTCDateTime, new_id
 
 
@@ -64,6 +66,9 @@ class Exam(Base):
     hold_reason: Mapped[str | None] = mapped_column(Text)
     retention_delete_after: Mapped[datetime | None] = mapped_column(UTCDateTime)
     finalized_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # Snapshot of the SBB qualification (crebo, name, dossier version, core task), so the
+    # archive stays right after SBB replaces a dossier.
+    qualification: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime)
@@ -85,6 +90,7 @@ class ExpectedFile(Base):
     label: Mapped[str] = mapped_column(String(100))
     expected_name_pattern: Mapped[str | None] = mapped_column(String(255))
     extensions: Mapped[list[str] | None] = mapped_column(JSON)
+    work_process_code: Mapped[str | None] = mapped_column(String(30))
 
     exam: Mapped[Exam] = relationship(back_populates="expected_files")
     template_file: Mapped[TemplateFile | None] = relationship(
@@ -102,6 +108,14 @@ class ExamTemplate(Base):
     name: Mapped[str] = mapped_column(String(200))
     config: Mapped[dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    # Shared templates are visible to every teacher and managed by admins only.
+    shared: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    qualification_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("qualification.id", ondelete="SET NULL"), index=True
+    )
+    core_task_code: Mapped[str | None] = mapped_column(String(20))
+
+    qualification: Mapped[Qualification | None] = relationship()
 
     slots: Mapped[list[ExamTemplateSlot]] = relationship(
         order_by="ExamTemplateSlot.position", cascade="all, delete-orphan"
@@ -120,6 +134,7 @@ class ExamTemplateSlot(Base):
     label: Mapped[str] = mapped_column(String(100))
     expected_name_pattern: Mapped[str | None] = mapped_column(String(255))
     extensions: Mapped[list[str] | None] = mapped_column(JSON)
+    work_process_code: Mapped[str | None] = mapped_column(String(30))
 
     template_file: Mapped[TemplateFile | None] = relationship(cascade="all, delete-orphan")
 
