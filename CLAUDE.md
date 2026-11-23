@@ -121,6 +121,11 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   zet nooit kleuren of de appnaam vast in een template. Nieuwe kleurcombinaties in `app.css`
   horen ook in `CONTRAST_PAIRS` (`services/branding.py`) en in de controle in
   `static/js/admin/branding.js`. PDF's krijgen `brand` via `PdfRenderer`.
+- **Kwalificaties (SBB):** `services/qualifications.py` (import van records, zoeken, dossierstatus)
+  en de modellen in `db/models/qualifications.py`. Vakjes dragen een `work_process_code`; een
+  examen een momentopname in `Exam.qualification`. Die bepaalt de server altijd zelf
+  (`ExamService._resolve_sources`), nooit uit verborgen velden. Gedeelde sjablonen: alleen admins
+  beheren ze (`can_manage_template`).
 - **Toegankelijkheid:** `tests/integration/test_accessibility.py` loopt alle paginatypen af
   (taal, één `h1`, labels, alt, knopnamen). Voeg een nieuwe pagina daar aan toe.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of

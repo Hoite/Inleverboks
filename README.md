@@ -92,6 +92,15 @@ een bestaand examen op als sjabloon. Bij **Nieuw examen** kies je bovenaan een s
 linknaam en klassenlijst kies je altijd per examen. Sjablonen zijn persoonlijk en hebben een
 eigen (paarse) kleur, zodat je ze niet met een examen verwart.
 
+**Sjablonen uit een kwalificatie:** onder *Examensjablonen → Sjabloon uit crebo* zoek je een
+opleiding op crebonummer of naam van de uitstroom (bijvoorbeeld 27016). Kies de kerntaken: elke
+kerntaak wordt een sjabloon met een vakje per werkproces, zoals `B1-K1-W1 [naam]`. De
+sjabloonbestanden upload je daarna zelf. Een admin kan sjablonen **delen** met alle docenten;
+alleen admins beheren gedeelde sjablonen. Bij een nieuw examen kies je welke werkprocessen
+meedoen (een **deelexamen**). Vanuit het overzicht maak je met één klik een **herkansing** voor
+een of meer studenten, met alleen de werkprocessen die voor hen nog openstaan. De kwalificaties
+komen uit de kwalificatiestructuur van SBB; het inlezen daarvan volgt.
+
 ## Huisstijl
 
 Onder *Admin → Huisstijl* stelt de admin de naam van de app, het lettertype (Poppins of het

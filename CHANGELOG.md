@@ -6,6 +6,35 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+Sjablonen op basis van de kwalificatiestructuur van SBB. Nog niet uitgebracht: het inlezen
+van het SBB-bestand volgt zodra het register van SBB weer bereikbaar is.
+
+### Toegevoegd
+
+- Kwalificaties (uitstroom, crebo), kerntaken en werkprocessen in de database, met een
+  importfunctie die per dossierversie bijwerkt. De parser voor het SBB-bestand volgt.
+- Sjablonen uit een kwalificatie: zoeken op crebo of naam (direct tijdens het typen), kerntaken
+  kiezen, en per kerntaak een sjabloon met een vakje per werkproces
+  (`B1-K1-W1 [naam]`).
+- Gedeelde sjablonen, beheerd door de admin en bruikbaar voor elke docent; docenten kunnen er
+  een eigen kopie van maken.
+- Deelexamens: bij een nieuw examen vink je aan welke werkprocessen meedoen. Naam en linknaam
+  worden voorgesteld (`27016 ICT System Engineer – B1-K1 …`, `27016-b1-k1-23112026`).
+- Het examen bewaart een momentopname van de kwalificatie; die staat in het proces-verbaal en op
+  de examenpagina.
+- Codes in de exports: een kolom per werkproces in de CSV, een kolom `werkproces` in het
+  manifest, en bestandsnamen in de zip die met de code beginnen.
+- Overzicht per werkproces: een kolom per werkproces met een vinkje per student.
+- Herkansing in één klik vanuit het overzicht, of voor meerdere studenten tegelijk: een
+  nieuw examen met alleen de openstaande werkprocessen en alleen die studenten.
+- Een waarschuwing bij een sjabloon waarvan het dossier is vervangen of verlopen, met de
+  gewijzigde werkprocessen.
+- `demo-seed` voegt een fictieve kwalificatie (crebo 99999) toe om dit uit te proberen.
+
+### Opgelost
+
+- Zoekvelden hebben dezelfde opmaak als andere invoervelden.
+
 ## [0.1.3] - 2026-11-23
 
 ### Opgelost
