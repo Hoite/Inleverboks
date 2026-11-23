@@ -198,13 +198,6 @@ def can_manage_template(user: User, template: ExamTemplate) -> bool:
     return user.is_admin if template.shared else template.owner_id == user.id
 
 
-def _roster_input(entry: ExamRosterEntry) -> RosterInput:
-    return RosterInput(
-        student_number=entry.student_number, first_name=entry.first_name,
-        last_name=entry.last_name, infix=entry.infix, class_name=entry.class_name,
-    )  # fmt: skip
-
-
 def _template_config(data: ExamInput) -> dict[str, Any]:
     return {
         "access_code_enabled": data.access_code_enabled,
