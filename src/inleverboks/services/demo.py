@@ -16,7 +16,7 @@ import tempfile
 import uuid
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -26,9 +26,15 @@ from inleverboks.adapters.storage import StorageBackend
 from inleverboks.config import Settings
 from inleverboks.db.models import Exam, ExamRosterEntry, User
 from inleverboks.services.asyncutil import call_async
+from inleverboks.services.audit import Actor
 from inleverboks.services.container import Services, build_services
 from inleverboks.services.exams import ExamInput, SlotInput
 from inleverboks.services.passwords import hash_password
+from inleverboks.services.qualifications import (
+    CoreTaskRecord,
+    QualificationRecord,
+    WorkProcessRecord,
+)
 from inleverboks.services.student_flow import StudentState
 from inleverboks.services.submissions import ReceivedFile
 from inleverboks.services.whitelist import WhitelistError
@@ -46,6 +52,23 @@ STUDENTS = [
     ("200106", "Noah", "", "Smit"),
     ("200107", "Zoë", "van der", "Berg"),
 ]
+
+
+DEMO_QUALIFICATION = QualificationRecord(
+    crebo="99999", name="Demo-opleiding ICT (fictief)", level=4, dossier_crebo="99998",
+    dossier_name="Demodossier ICT (fictief)", dossier_version="demo", valid_from=date(2025, 8, 1),
+    core_tasks=[
+        CoreTaskRecord("B1-K1", "Richt een werkplek in", [
+            WorkProcessRecord("B1-K1-W1", "Inventariseert de wensen"),
+            WorkProcessRecord("B1-K1-W2", "Installeert de werkplek"),
+            WorkProcessRecord("B1-K1-W3", "Test en levert op"),
+        ]),
+        CoreTaskRecord("P1-K1", "Beheert een netwerk", [
+            WorkProcessRecord("P1-K1-W1", "Monitort het netwerk"),
+            WorkProcessRecord("P1-K1-W2", "Lost storingen op"),
+        ]),
+    ],
+)  # fmt: skip
 
 
 @dataclass
@@ -265,4 +288,10 @@ def seed(
             extensions=["pdf"], max_file_mb=5, max_submission_mb=20,
         ), publish=False, roster=False)  # fmt: skip
         result.exams.append((concept.name, concept.slug, concept.access_code))
+
+        # A fictitious qualification, to try templates from a crebo number before the
+        # SBB qualification structure is imported. Crebo 99999 does not exist.
+        seeder.services.qualifications.import_records(
+            db, [DEMO_QUALIFICATION], actor=Actor.system(), ip=None, source="demo-seed"
+        )
         return result

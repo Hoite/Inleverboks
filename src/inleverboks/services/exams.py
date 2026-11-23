@@ -23,8 +23,10 @@ from inleverboks.db.models import (
     ExpectedFile,
     ExtensionGrant,
     IpPreset,
+    Qualification,
     RetiredSlug,
     Submission,
+    SubmissionFile,
     TemplateFile,
     User,
 )
@@ -33,6 +35,7 @@ from inleverboks.services import slugs
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
 from inleverboks.services.ipranges import parse_cidrs
+from inleverboks.services.qualifications import CODE_RE
 from inleverboks.services.security import human_code
 from inleverboks.services.system_settings import SettingsService, parse_extensions
 from inleverboks.services.template_files import StoredTemplate
@@ -58,6 +61,7 @@ class SlotInput:
     pattern: str | None = None
     extensions: list[str] | None = None
     id: uuid.UUID | None = None  # existing slot (keeps its template file)
+    work_process_code: str | None = None  # SBB code such as B1-K1-W1
 
 
 @dataclass
@@ -80,8 +84,13 @@ class ExamInput:
     slots: list[SlotInput] = field(default_factory=list)
     class_list_id: uuid.UUID | None = None
     source_template_id: uuid.UUID | None = None  # copy template files per slot
-    # A roster given directly (duplicate) instead of a class list.
+    # A roster given directly (duplicate, resit) instead of a class list.
     roster: list[RosterInput] | None = None
+    # Snapshot of the SBB qualification (crebo, name, dossier version, core task).
+    qualification: dict[str, Any] | None = None
+    source_exam_id: uuid.UUID | None = None  # resit: copy template files from this exam
+    # Resit: student numbers from the source exam that make up the roster.
+    roster_numbers: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -138,6 +147,7 @@ def _snapshot(exam: Exam) -> dict[str, Any]:
                 "label": s.label,
                 "pattern": s.expected_name_pattern,
                 "extensions": s.extensions,
+                "work_process_code": s.work_process_code,
                 "template_sha256": s.template_file.sha256 if s.template_file else None,
             }
             for s in exam.expected_files
@@ -146,6 +156,46 @@ def _snapshot(exam: Exam) -> dict[str, Any]:
 
 
 TEMPLATE_WINDOW = timedelta(hours=2)
+DASH = "\u2013"  # en dash between qualification and core task in suggested names
+
+
+def _roster_input(entry: ExamRosterEntry) -> RosterInput:
+    return RosterInput(
+        student_number=entry.student_number, first_name=entry.first_name,
+        last_name=entry.last_name, infix=entry.infix, class_name=entry.class_name,
+    )  # fmt: skip
+
+
+def _slot_label(code: str, title: str) -> str:
+    """``B1-K1-W1 Title`` within the 100 characters of a slot label."""
+    text = f"{code} {title}".strip()
+    return text if len(text) <= 100 else text[:99].rstrip() + "…"
+
+
+def _copy_file(source: TemplateFile, now: datetime) -> TemplateFile:
+    return TemplateFile(
+        original_name=source.original_name, storage_key=source.storage_key, size=source.size,
+        sha256=source.sha256, uploaded_at=now,
+    )  # fmt: skip
+
+
+def _qualification_snapshot(q: Qualification, core_task_code: str | None) -> dict[str, Any]:
+    task = next((t for t in q.core_tasks if t.code == core_task_code), None)
+    return {
+        "crebo": q.crebo, "name": q.name, "level": q.level,
+        "dossier_version": q.dossier_version, "core_task_code": core_task_code,
+        "core_task_title": task.title if task else None,
+    }  # fmt: skip
+
+
+def can_use_template(user: User, template: ExamTemplate) -> bool:
+    """Own templates, and shared templates for every teacher."""
+    return template.shared or template.owner_id == user.id
+
+
+def can_manage_template(user: User, template: ExamTemplate) -> bool:
+    """Shared templates are managed by admins only (PLAN B53); own ones by their owner."""
+    return user.is_admin if template.shared else template.owner_id == user.id
 
 
 def _roster_input(entry: ExamRosterEntry) -> RosterInput:
@@ -173,8 +223,14 @@ def _template_snapshot(template: ExamTemplate) -> dict[str, Any]:
     return {
         "name": template.name,
         **template.config,
+        "shared": template.shared,
         "slots": [
-            {"label": s.label, "pattern": s.expected_name_pattern, "extensions": s.extensions}
+            {
+                "label": s.label,
+                "pattern": s.expected_name_pattern,
+                "extensions": s.extensions,
+                "work_process_code": s.work_process_code,
+            }
             for s in template.slots
         ],
     }
@@ -345,15 +401,26 @@ class ExamService:
                     pattern=s.expected_name_pattern,
                     extensions=list(s.extensions) if s.extensions else None,
                     id=s.id,
+                    work_process_code=s.work_process_code,
                 )
                 for s in exam.expected_files
             ],
+            qualification=dict(exam.qualification) if exam.qualification else None,
         )
 
     def input_from_template(
-        self, db: Session, template: ExamTemplate, base: ExamInput
-    ) -> ExamInput:
+        self, db: Session, template: ExamTemplate, base: ExamInput,
+        work_processes: list[str] | None = None,
+    ) -> ExamInput:  # fmt: skip
+        """Fill the new-exam form from a template. ``work_processes`` limits the slots of
+        a template with SBB codes to a part exam (for example only B1-K1-W3)."""
         config = template.config
+        qualification = template.qualification
+        if qualification is not None:
+            base.name, base.slug = self._suggest_names(
+                db, template, qualification, work_processes or [], base.starts_at
+            )
+            base.qualification = _qualification_snapshot(qualification, template.core_task_code)
         base.name = base.name or template.name
         base.access_code_enabled = bool(config.get("access_code_enabled", True))
         base.ip_restriction_enabled = bool(config.get("ip_restriction_enabled", False))
@@ -367,14 +434,58 @@ class ExamService:
         base.max_submission_mb = int(config.get("max_submission_mb", base.max_submission_mb))
         # The template slot ids travel along, so template files follow their slot even
         # when the teacher adds or removes slots before saving.
+        selected = set(work_processes or [])
         base.slots = [
             SlotInput(
-                label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions, id=s.id
+                label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions, id=s.id,
+                work_process_code=s.work_process_code,
             )
             for s in template.slots
-        ]
+            if not selected or s.work_process_code in selected
+        ]  # fmt: skip
         base.source_template_id = template.id
         return base
+
+    def _resolve_sources(self, db: Session, owner: User, data: ExamInput) -> None:
+        """The qualification snapshot and a resit roster come from the server, never from
+        hidden form fields."""
+        if data.source_template_id is not None:
+            template = db.get(ExamTemplate, data.source_template_id)
+            usable = template is not None and can_use_template(owner, template)
+            if usable and template is not None and template.qualification is not None:
+                data.qualification = _qualification_snapshot(
+                    template.qualification, template.core_task_code
+                )
+        if data.source_exam_id is not None:
+            source = db.get(Exam, data.source_exam_id)
+            if source is None or not can_exam(owner, ExamAction.DUPLICATE, _ref(source)):
+                data.source_exam_id = None
+                return
+            data.qualification = dict(source.qualification) if source.qualification else None
+            if data.roster_numbers:
+                data.roster = self.resit_roster(db, source, data.roster_numbers)
+                data.class_list_id = None
+
+    def _suggest_names(
+        self, db: Session, template: ExamTemplate, qualification: Qualification,
+        selected: list[str], starts_at: datetime,
+    ) -> tuple[str, str]:  # fmt: skip
+        """``27016 ICT System Engineer, dash, B1-K1 Title`` and ``27016-b1-k1-23112026``.
+        A part exam names its work processes instead of the core task."""
+        task_code = template.core_task_code or ""
+        task = next((t for t in qualification.core_tasks if t.code == task_code), None)
+        codes = [s.work_process_code for s in template.slots if s.work_process_code]
+        chosen = [c for c in codes if c in selected]
+        prefix = f"{qualification.crebo} {qualification.name}"
+        if not chosen or len(chosen) == len(codes):
+            name = f"{prefix} {DASH} {task_code} {task.title if task else ''}".strip()
+            part = task_code
+        else:
+            name = f"{prefix} {DASH} {', '.join(chosen)}"
+            part = task_code + "".join(c.removeprefix(task_code) for c in chosen)
+        day = starts_at.astimezone(self.env.timezone).strftime("%d%m%Y")
+        slug = slugs.suggest(db, f"{qualification.crebo}-{part}-{day}")
+        return name[:200], slug
 
     def validate(
         self, db: Session, owner_id: uuid.UUID, data: ExamInput, *, exam: Exam | None = None
@@ -462,6 +573,9 @@ class ExamService:
                 problems[f"slot_{index}_pattern"] = "invalid"
             if slot.extensions and not all(_EXTENSION_RE.fullmatch(e) for e in slot.extensions):
                 problems[f"slot_{index}_extensions"] = "invalid"
+            slot.work_process_code = (slot.work_process_code or "").strip().upper() or None
+            if slot.work_process_code and not CODE_RE.fullmatch(slot.work_process_code):
+                slot.work_process_code = None  # hidden field from the form: drop, not an error
         if len(data.slots) > self.settings.load(db).max_files_per_submission:
             problems["slots"] = "too_many"
         if not data.slots and not data.allow_extra_file:
@@ -498,6 +612,7 @@ class ExamService:
             row.label = slot.label
             row.expected_name_pattern = slot.pattern
             row.extensions = slot.extensions
+            row.work_process_code = slot.work_process_code
             kept.append(row)
         for removed in existing.values():
             exam.expected_files.remove(removed)
@@ -529,23 +644,33 @@ class ExamService:
 
     def create(self, db: Session, owner: User, data: ExamInput, *, ip: str | None) -> Exam:
         data = self.validate(db, owner.id, data)
+        self._resolve_sources(db, owner, data)
         if data.class_list_id is None and not data.roster:
             data.allow_unlisted = True  # without a class list nobody is "on the list"
         now = self.clock.now()
-        exam = Exam(owner_id=owner.id, created_at=now, updated_at=now)
+        exam = Exam(
+            owner_id=owner.id, created_at=now, updated_at=now, qualification=data.qualification
+        )
         self._apply(exam, data)
         db.add(exam)
         db.flush()
         self._apply_slots(db, exam, data.slots)
         if data.source_template_id is not None:
             template = db.get(ExamTemplate, data.source_template_id)
-            if template is not None and template.owner_id == owner.id:
+            if template is not None and can_use_template(owner, template):
                 files = {s.id: s.template_file for s in template.slots}
                 if any(slot.id in files for slot in data.slots):
                     source = [files.get(slot.id) if slot.id else None for slot in data.slots]
                 else:  # a client without slot ids: match by position
                     source = [s.template_file for s in template.slots]
                 self._copy_template_files(db, exam, source)
+        if data.source_exam_id is not None:
+            source_exam = db.get(Exam, data.source_exam_id)
+            if source_exam is not None and can_exam(owner, ExamAction.DUPLICATE, _ref(source_exam)):
+                files = {s.id: s.template_file for s in source_exam.expected_files}
+                self._copy_template_files(
+                    db, exam, [files.get(slot.id) if slot.id else None for slot in data.slots]
+                )
         if data.class_list_id is not None:
             self._set_roster(db, exam, db.get(ClassList, data.class_list_id))
         elif data.roster:
@@ -797,6 +922,7 @@ class ExamService:
                 label=slot.label,
                 expected_name_pattern=slot.expected_name_pattern,
                 extensions=slot.extensions,
+                work_process_code=slot.work_process_code,
             )
             if slot.template_file is not None:
                 template_slot.template_file = TemplateFile(
@@ -839,10 +965,11 @@ class ExamService:
         data.max_submission_mb = int(config.get("max_submission_mb", 100))
         data.slots = [
             SlotInput(
-                label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions, id=s.id
+                label=s.label, pattern=s.expected_name_pattern, extensions=s.extensions, id=s.id,
+                work_process_code=s.work_process_code,
             )
             for s in template.slots
-        ]
+        ]  # fmt: skip
         return data
 
     def validate_template(self, db: Session, data: ExamInput) -> ExamInput:
@@ -871,7 +998,7 @@ class ExamService:
             template.slots.append(
                 ExamTemplateSlot(
                     position=index, label=slot.label, expected_name_pattern=slot.pattern,
-                    extensions=slot.extensions,
+                    extensions=slot.extensions, work_process_code=slot.work_process_code,
                 )
             )  # fmt: skip
         db.add(template)
@@ -887,8 +1014,7 @@ class ExamService:
         self, db: Session, user: User, template: ExamTemplate, data: ExamInput, *, ip: str | None
     ) -> list[str]:
         """Save the editor; returns storage keys of template files of removed slots."""
-        if template.owner_id != user.id:
-            raise NotFoundError("template_not_found")
+        self._check_manage(user, template)
         data = self.validate_template(db, data)
         before = _template_snapshot(template)
         template.name = data.name
@@ -902,6 +1028,7 @@ class ExamService:
             row.label = slot.label
             row.expected_name_pattern = slot.pattern
             row.extensions = slot.extensions
+            row.work_process_code = slot.work_process_code
             kept.append(row)
         removed_keys = [s.template_file.storage_key for s in existing.values() if s.template_file]
         for removed in existing.values():
@@ -929,8 +1056,7 @@ class ExamService:
         stored: StoredTemplate, original_name: str, *, ip: str | None,
     ) -> str | None:  # fmt: skip
         """Returns the storage key of a replaced file that may now be unreferenced."""
-        if template.owner_id != user.id:
-            raise NotFoundError("template_not_found")
+        self._check_manage(user, template)
         slot = next((s for s in template.slots if s.id == slot_id), None)
         if slot is None:
             raise NotFoundError()
@@ -953,8 +1079,7 @@ class ExamService:
         self, db: Session, user: User, template: ExamTemplate, slot_id: uuid.UUID,
         *, ip: str | None,
     ) -> str | None:  # fmt: skip
-        if template.owner_id != user.id:
-            raise NotFoundError("template_not_found")
+        self._check_manage(user, template)
         slot = next((s for s in template.slots if s.id == slot_id), None)
         if slot is None or slot.template_file is None:
             return None
@@ -968,24 +1093,127 @@ class ExamService:
         return key
 
     def templates(self, db: Session, user: User) -> list[ExamTemplate]:
+        """Shared templates and the user's own ones, by name."""
         return list(
             db.scalars(
                 select(ExamTemplate)
-                .where(ExamTemplate.owner_id == user.id)
+                .where(or_(ExamTemplate.shared.is_(True), ExamTemplate.owner_id == user.id))
                 .order_by(ExamTemplate.name)
             )
         )
 
     def get_template(self, db: Session, user: User, template_id: uuid.UUID) -> ExamTemplate:
+        """A template the user may use (own or shared); 404 otherwise."""
         template = db.get(ExamTemplate, template_id)
-        if template is None or template.owner_id != user.id:
+        if template is None or not can_use_template(user, template):
             raise NotFoundError("template_not_found")
         return template
+
+    def get_managed_template(self, db: Session, user: User, template_id: uuid.UUID) -> ExamTemplate:
+        template = self.get_template(db, user, template_id)
+        self._check_manage(user, template)
+        return template
+
+    @staticmethod
+    def _check_manage(user: User, template: ExamTemplate) -> None:
+        if not can_use_template(user, template):
+            raise NotFoundError("template_not_found")
+        if not can_manage_template(user, template):
+            raise PermissionDeniedError()
+
+    def set_template_shared(
+        self, db: Session, user: User, template: ExamTemplate, shared: bool, *, ip: str | None
+    ) -> None:
+        """Admins share a template with every teacher, or take it back."""
+        if not user.is_admin or not can_use_template(user, template):
+            raise PermissionDeniedError()
+        if template.shared == shared:
+            return
+        template.shared = shared
+        self.audit.append(
+            db, "exam_template.shared" if shared else "exam_template.unshared",
+            actor=Actor.for_user(user), ip=ip,
+            details={"template_id": str(template.id), "name": template.name},
+        )  # fmt: skip
+        db.commit()
+
+    def copy_template(
+        self, db: Session, user: User, template: ExamTemplate, *, ip: str | None
+    ) -> ExamTemplate:
+        """A personal copy (of a shared template) that the user can change."""
+        if not can_use_template(user, template):
+            raise NotFoundError("template_not_found")
+        now = self.clock.now()
+        copy = ExamTemplate(
+            owner_id=user.id, name=f"{template.name} (kopie)"[:200], config=dict(template.config),
+            created_at=now, qualification_id=template.qualification_id,
+            core_task_code=template.core_task_code,
+        )  # fmt: skip
+        for slot in template.slots:
+            row = ExamTemplateSlot(
+                position=slot.position, label=slot.label,
+                expected_name_pattern=slot.expected_name_pattern, extensions=slot.extensions,
+                work_process_code=slot.work_process_code,
+            )  # fmt: skip
+            if slot.template_file is not None:
+                row.template_file = _copy_file(slot.template_file, now)
+            copy.slots.append(row)
+        db.add(copy)
+        db.flush()
+        self.audit.append(
+            db, "exam_template.copied", actor=Actor.for_user(user), ip=ip,
+            details={"template_id": str(copy.id), "source_template_id": str(template.id)},
+        )  # fmt: skip
+        db.commit()
+        return copy
+
+    def templates_from_qualification(
+        self, db: Session, user: User, qualification: Qualification, core_task_codes: list[str],
+        *, shared: bool, ip: str | None,
+    ) -> list[ExamTemplate]:  # fmt: skip
+        """One template per chosen core task, with a slot per work process. The teacher
+        uploads the template files afterwards (they are protected material)."""
+        if shared and not user.is_admin:
+            raise PermissionDeniedError()
+        tasks = [t for t in qualification.core_tasks if t.code in set(core_task_codes)]
+        if not tasks:
+            raise DomainError("no_core_task_selected")
+        now = self.clock.now()
+        start, end = default_window(now, self.env.timezone)
+        defaults = self.defaults(db, start, end)
+        created: list[ExamTemplate] = []
+        for task in tasks:
+            name = f"{qualification.crebo} {qualification.name} {DASH} {task.code} {task.title}"
+            template = ExamTemplate(
+                owner_id=user.id, shared=shared, created_at=now, config=_template_config(defaults),
+                name=name[:200],
+                qualification_id=qualification.id, core_task_code=task.code,
+            )  # fmt: skip
+            for index, wp in enumerate(task.work_processes, start=1):
+                template.slots.append(
+                    ExamTemplateSlot(
+                        position=index, label=_slot_label(wp.code, wp.title),
+                        work_process_code=wp.code,
+                    )
+                )  # fmt: skip
+            db.add(template)
+            db.flush()
+            created.append(template)
+        self.audit.append(
+            db, "exam_template.created_from_qualification", actor=Actor.for_user(user), ip=ip,
+            details={
+                "crebo": qualification.crebo, "dossier_version": qualification.dossier_version,
+                "core_tasks": [t.code for t in tasks], "shared": shared,
+                "template_ids": [str(t.id) for t in created],
+            },
+        )  # fmt: skip
+        db.commit()
+        return created
 
     def delete_template(
         self, db: Session, user: User, template_id: uuid.UUID, *, ip: str | None
     ) -> list[str]:
-        template = self.get_template(db, user, template_id)
+        template = self.get_managed_template(db, user, template_id)
         keys = [s.template_file.storage_key for s in template.slots if s.template_file]
         self.audit.append(
             db,
@@ -1049,6 +1277,76 @@ class ExamService:
         )
         db.commit()
         return count
+
+    # Resit ---------------------------------------------------------------------------
+
+    def handed_in_slots(self, db: Session, exam: Exam) -> dict[str, set[uuid.UUID]]:
+        """Per student number: the slots of the active submission that hold a file."""
+        rows = db.execute(
+            select(Submission.student_number, SubmissionFile.expected_file_id)
+            .join(SubmissionFile, SubmissionFile.submission_id == Submission.id)
+            .where(Submission.exam_id == exam.id, Submission.status == "active")
+        )
+        result: dict[str, set[uuid.UUID]] = {}
+        for number, slot_id in rows:
+            if slot_id is not None:
+                result.setdefault(number, set()).add(slot_id)
+        return result
+
+    def resit_roster(self, db: Session, exam: Exam, numbers: list[str]) -> list[RosterInput]:
+        """Roster entries for a resit: from the class list, or from the student's own
+        submission when the student was not on the list. Unknown numbers are dropped."""
+        roster = {e.student_number: e for e in self.roster(db, exam)}
+        result: list[RosterInput] = []
+        for number in dict.fromkeys(numbers):
+            if number in roster:
+                result.append(_roster_input(roster[number]))
+                continue
+            submission = db.scalar(
+                select(Submission)
+                .where(Submission.exam_id == exam.id, Submission.student_number == number)
+                .order_by(Submission.attempt.desc())
+                .limit(1)
+            )
+            if submission is not None:
+                result.append(
+                    RosterInput(
+                        student_number=number, first_name=submission.first_name,
+                        infix=submission.infix, last_name=submission.last_name,
+                    )
+                )  # fmt: skip
+        return result
+
+    def resit_input(
+        self, db: Session, user: User, exam: Exam, numbers: list[str], *, name_suffix: str
+    ) -> ExamInput:
+        """A new exam for the selected students, with only the slots (work processes) that
+        are still open for at least one of them. One configuration for the whole group."""
+        if not can_exam(user, ExamAction.DUPLICATE, _ref(exam)):
+            raise PermissionDeniedError()
+        roster = self.resit_roster(db, exam, numbers)
+        if not roster:
+            raise DomainError("no_students_selected")
+        handed_in = self.handed_in_slots(db, exam)
+        chosen = [entry.student_number for entry in roster]
+        open_slots = {
+            slot.id for slot in exam.expected_files
+            if any(slot.id not in handed_in.get(number, set()) for number in chosen)
+        }  # fmt: skip
+        data = self.input_from_exam(db, exam)
+        if open_slots:
+            data.slots = [slot for slot in data.slots if slot.id in open_slots]
+        data.name = f"{exam.name} {DASH} {name_suffix}"[:200]
+        data.slug = ""
+        duration = exam.ends_at - exam.starts_at
+        data.starts_at, _ = default_window(self.clock.now(), self.env.timezone)
+        data.ends_at = data.starts_at + duration
+        data.allow_unlisted = False
+        data.class_list_id = None
+        data.source_exam_id = exam.id
+        data.roster_numbers = chosen
+        data.roster = roster
+        return data
 
     def roster(self, db: Session, exam: Exam) -> list[ExamRosterEntry]:
         return list(

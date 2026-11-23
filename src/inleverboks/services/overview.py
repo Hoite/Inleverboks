@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -50,6 +51,7 @@ class Row:
     attempts: int = 0
     signals: list[Signal] = field(default_factory=list)
     extension_until: datetime | None = None
+    filled_slots: set[uuid.UUID] = field(default_factory=set)  # slots with a file (active)
 
     @property
     def sort_name(self) -> tuple[str, str, str]:
@@ -84,12 +86,21 @@ class Counters:
     roster: int = 0
 
 
+@dataclass(frozen=True)
+class WorkProcessColumn:
+    slot_id: uuid.UUID
+    code: str
+    label: str
+
+
 @dataclass
 class Overview:
     rows: list[Row]
     counters: Counters
     expected_files: int
     has_roster: bool
+    # One column per slot with an SBB work process code (empty for other exams).
+    work_processes: list[WorkProcessColumn] = field(default_factory=list)
 
 
 def load_submissions(db: Session, exam: Exam) -> list[Submission]:
@@ -173,6 +184,8 @@ def build_overview(db: Session, exam: Exam) -> Overview:
             extension_until=grants.get(number),
         )
         row.signals = submission_signals(exam, latest, owners, has_roster=has_roster)
+        if status is RowStatus.ACTIVE:
+            row.filled_slots = {f.expected_file_id for f in latest.files if f.expected_file_id}
         if number in grants:
             row.signals.append(Signal.EXTENSION)
         rows.append(row)
@@ -217,6 +230,11 @@ def build_overview(db: Session, exam: Exam) -> Overview:
         counters=counters,
         expected_files=len(exam.expected_files),
         has_roster=has_roster,
+        work_processes=[
+            WorkProcessColumn(slot_id=s.id, code=s.work_process_code, label=s.label)
+            for s in exam.expected_files
+            if s.work_process_code
+        ],
     )
 
 

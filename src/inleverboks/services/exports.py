@@ -31,7 +31,7 @@ STATUS_NL = {"active": "ingeleverd", "cancelled": "geannuleerd", "invalid": "ong
 
 MANIFEST_COLUMNS = [
     "studentnummer", "achternaam", "tussenvoegsel", "voornaam", "status", "poging",
-    "inlevertijd_start", "inlevertijd_voltooid", "vakje", "bestandsnaam_origineel",
+    "inlevertijd_start", "inlevertijd_voltooid", "vakje", "werkproces", "bestandsnaam_origineel",
     "bestandsnaam_in_zip", "grootte_bytes", "sha256", "integriteit_ok", "waarschuwingen",
 ]  # fmt: skip
 
@@ -164,6 +164,7 @@ class ZipItem:
     file: SubmissionFile
     arcname: str
     slot_label: str | None
+    work_process_code: str | None = None
 
 
 def plan_zip(
@@ -174,6 +175,7 @@ def plan_zip(
     include_invalid: bool,
 ) -> list[ZipItem]:
     labels = {s.id: s.label for s in exam.expected_files}
+    codes = {s.id: s.work_process_code for s in exam.expected_files if s.work_process_code}
     items: list[ZipItem] = []
     used: dict[str, set[str]] = {}
     for submission in sorted(
@@ -193,13 +195,17 @@ def plan_zip(
         for file in sorted(submission.files, key=lambda f: f.position):
             if not file.storage_key:
                 continue
-            name = unique_name(windows_safe(file.original_name, MAX_FILE_NAME), names)
+            code = codes.get(file.expected_file_id) if file.expected_file_id else None
+            # Files of a work process start with its code, so they sort per work process.
+            original = f"{code}_{file.original_name}" if code else file.original_name
+            name = unique_name(windows_safe(original, MAX_FILE_NAME), names)
             items.append(
                 ZipItem(
                     submission=submission,
                     file=file,
                     arcname=f"{folder}/{name}",
                     slot_label=labels.get(file.expected_file_id) if file.expected_file_id else None,
+                    work_process_code=code,
                 )
             )
     return items
@@ -219,6 +225,7 @@ def manifest_rows(
             local(item.submission.started_at, tz),
             local(item.submission.completed_at, tz),
             item.slot_label or "extra",
+            item.work_process_code or "",
             item.file.original_name,
             item.arcname,
             item.file.size,

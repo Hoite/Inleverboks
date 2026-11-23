@@ -21,6 +21,7 @@ from inleverboks.services.exams import ExamService
 from inleverboks.services.lifecycle import LifecycleService
 from inleverboks.services.maintenance import MaintenanceService
 from inleverboks.services.pv import ProcesVerbaalService
+from inleverboks.services.qualifications import QualificationService
 from inleverboks.services.review import ReviewService
 from inleverboks.services.student_flow import StudentFlowService
 from inleverboks.services.submissions import SubmissionService
@@ -51,6 +52,7 @@ class Services:
     lifecycle: LifecycleService
     maintenance: MaintenanceService
     branding: BrandingService
+    qualifications: QualificationService
     mailer: Mailer = field(default_factory=NullMailer)
     scanner: FileScanner = field(default_factory=NoopScanner)
     # Rate-limit delays; tests replace this with a no-op.
@@ -117,4 +119,5 @@ def build_services(
         ),
         maintenance=MaintenanceService(clock=clock, audit=audit, storage=storage, flow=flow),
         branding=BrandingService(clock, audit, storage),
+        qualifications=QualificationService(clock, audit),
     )
