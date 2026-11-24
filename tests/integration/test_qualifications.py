@@ -1,8 +1,8 @@
 """Templates from the SBB qualification structure, part exams, codes in exports, the
-overview per work process, resits and the replaced-dossier warning.
+overview per work process, resits, the replaced-dossier warning and the SBB import.
 
-The import of the SBB XML itself follows once its schema is available; these tests feed
-the importer with records, which is what the XML parser will produce.
+Most tests feed the importer with records (what the XML parser produces); the parser
+itself is covered in ``tests/unit/test_sbb.py``.
 """
 
 from __future__ import annotations
@@ -12,15 +12,18 @@ import io
 import uuid
 import zipfile
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from typer.testing import CliRunner
 
 from inleverboks.adapters.clock import FrozenClock
+from inleverboks.config import Settings, get_settings
 from inleverboks.db.models import (
     AuditEvent,
     Exam,
@@ -29,6 +32,7 @@ from inleverboks.db.models import (
     Qualification,
     User,
 )
+from inleverboks.services import sbb
 from inleverboks.services.audit import Actor
 from inleverboks.services.container import Services
 from inleverboks.services.qualifications import (
@@ -36,7 +40,8 @@ from inleverboks.services.qualifications import (
     QualificationRecord,
     WorkProcessRecord,
 )
-from tests.conftest import create_user, csrf_token, enable_totp, login, post
+from tests.conftest import TEST_SECRET, create_user, csrf_token, enable_totp, login, post
+from tests.sbb_sample import sample_xml
 from tests.student_helpers import form, ready, upload
 
 DASH = chr(0x2013)  # en dash, as in suggested exam names
@@ -463,3 +468,99 @@ def test_duplicate_keeps_class_list_setting(
         "B1-K1-W2",
         "B1-K1-W3",
     ]
+
+
+# SBB import (admin screen and CLI) ------------------------------------------------
+
+
+def _upload(client: TestClient, data: bytes, name: str = "dossiers.xml") -> Any:
+    return client.post(
+        "/admin/kwalificaties", data={"csrf_token": csrf_token(client)},
+        files={"file": (name, data, "application/xml")}, follow_redirects=False,
+    )  # fmt: skip
+
+
+def test_admin_imports_the_sbb_file(admin: TestClient, teacher: TestClient, db: Session) -> None:
+    assert teacher.get("/admin/kwalificaties").status_code == 403
+    page = admin.get("/admin/kwalificaties").text
+    assert "kwalificatie-mijn.s-bb.nl" in page
+    response = _upload(admin, sample_xml())
+    assert response.status_code == 303
+    assert response.headers["location"] == "/admin/kwalificaties?created=6&updated=0"
+    page = admin.get(response.headers["location"]).text
+    assert "6 nieuwe en 0 bijgewerkte" in page
+    db.expire_all()
+    assert db.scalar(select(func.count()).select_from(Qualification)) == 6
+    event = db.scalar(select(AuditEvent).where(AuditEvent.event == "qualifications.imported"))
+    assert event is not None
+    assert event.details["source"] == "upload"
+    # Importing again updates the same versions.
+    response = _upload(admin, sample_xml())
+    assert response.headers["location"] == "/admin/kwalificaties?created=0&updated=6"
+
+
+def test_admin_import_refuses_other_files(admin: TestClient, db: Session) -> None:
+    response = _upload(admin, b"<html><body>no</body></html>", "dossiers.xml")
+    assert response.status_code == 400
+    assert "geen SBB-kwalificatiebestand" in response.text
+    response = admin.post(
+        "/admin/kwalificaties", data={"csrf_token": csrf_token(admin)}, follow_redirects=False
+    )
+    assert response.status_code == 400
+    assert db.scalar(select(func.count()).select_from(Qualification)) == 0
+
+
+def test_a_new_crebo_after_a_revision_counts_as_replacement(
+    teacher: TestClient, db: Session, services: Services
+) -> None:
+    records = sbb.parse(io.BytesIO(sample_xml())).records
+    services.qualifications.import_records(db, records, actor=Actor.system(), ip=None, source="t")
+    old = services.qualifications.current(db, "29001")
+    assert old is not None
+    assert old.dossier_version == "2015, gewijzigd 2016-2"  # newest of the 2016 changes
+    status = services.qualifications.status(db, old)
+    assert status.replaced_by is not None
+    assert (status.replaced_by.crebo, status.replaced_by.dossier_version) == ("29101", "2024")
+    # A template on the old crebo warns with the new crebo.
+    make_templates(teacher, old, "B1-K1")
+    template = template_named(db, "B1-K1")
+    page = teacher.get(f"/docent/sjablonen/{template.id}").text
+    assert "crebo 29101" in page
+    # Search shows the replaced qualification after the current one, with a badge.
+    results = teacher.get("/docent/sjablonen/crebo?q=Medewerker", headers={"HX-Request": "true"})
+    assert results.text.index("29101") < results.text.index("29001")
+    assert "vervangen door 29101" in results.text
+    # The detail page of the old version links to the current one.
+    current = services.qualifications.current(db, "29101")
+    assert current is not None
+    assert (
+        f"/docent/sjablonen/crebo/{current.id}"
+        in teacher.get(f"/docent/sjablonen/crebo/{old.id}").text
+    )
+
+
+def test_cli_sbb_import(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, db: Session
+) -> None:
+    from inleverboks import cli  # noqa: PLC0415
+
+    monkeypatch.setenv("APP_BASE_URL", "http://testserver")
+    monkeypatch.setenv("SECRET_KEY", TEST_SECRET)
+    monkeypatch.setenv("DATABASE_URL", settings.database_url)
+    monkeypatch.setenv("STORAGE_PATH", settings.storage_path)
+    get_settings.cache_clear()
+    try:
+        path = tmp_path / "sbb.zip"
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("dossiers.xml", sample_xml())
+        result = CliRunner().invoke(cli.app, ["sbb-import", str(path)])
+        assert result.exit_code == 0, result.output
+        assert "5 dossier(s) read, 1 not adopted" in result.stdout
+        assert "6 new and 0 updated" in result.stdout
+        bad = tmp_path / "bad.xml"
+        bad.write_bytes(b"<nope/>")
+        result = CliRunner().invoke(cli.app, ["sbb-import", str(bad)])
+        assert result.exit_code == 2
+    finally:
+        get_settings.cache_clear()
+    assert db.scalar(select(func.count()).select_from(Qualification)) == 6

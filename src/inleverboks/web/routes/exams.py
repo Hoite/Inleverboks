@@ -181,14 +181,17 @@ def create_exam_template(request: Request, ctx: Teacher, db: Db, services: Svc) 
 def qualification_search(
     request: Request, ctx: Teacher, db: Db, services: Svc, q: str = ""
 ) -> Response:
-    results = services.qualifications.search(db, q[:100])
+    found = services.qualifications.search(db, q[:100])
+    statuses = {row.id: services.qualifications.status(db, row) for row in found}
+    # Current qualifications first; replaced or expired ones stay findable for old cohorts.
+    results = sorted(found, key=lambda row: statuses[row.id].outdated)
     template = (
         "teacher/_qualification_results.html.j2"
         if request.headers.get("hx-request")
         else "teacher/qualification_search.html.j2"
     )
     return render(
-        request, template, tab="templates", query=q, results=results,
+        request, template, tab="templates", query=q, results=results, statuses=statuses,
         imported=services.qualifications.count(db),
     )  # fmt: skip
 

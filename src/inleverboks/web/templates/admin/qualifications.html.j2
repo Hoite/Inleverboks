@@ -1,0 +1,33 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("Qualifications") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% if result %}{{ ok_box(_("Imported: %(c)s new and %(u)s updated qualification versions.", c=result.created, u=result.updated)) }}{% endif %}
+{{ errors_box(errors) }}
+<section class="card">
+  <h2>{{ _("SBB qualification structure") }}</h2>
+  <p>{{ _("Teachers build templates from the core tasks and work processes of a qualification. The data comes from the SBB register.") }}</p>
+  <dl class="details">
+    <dt>{{ _("Qualifications") }}</dt><dd>{{ count }}</dd>
+    <dt>{{ _("Last import") }}</dt><dd>{{ last_import|localtime if last_import else _("Never") }}</dd>
+  </dl>
+</section>
+<section class="card">
+  <h2>{{ _("Import") }}</h2>
+  <ol>
+    <li>{{ _("Download the file “XML Herziening dossiers” (dossiers.xml) from the SBB register:") }} <a href="{{ download_page }}" rel="noopener noreferrer">{{ _("SBB downloads, XML") }}</a></li>
+    <li>{{ _("Upload the file here. A zip with the file in it also works and is a lot smaller.") }}</li>
+  </ol>
+  <p class="hint">{{ _("Existing versions are updated and new versions are added. Old versions remain, so templates keep their dossier; they get a warning when SBB has a newer version.") }}</p>
+  <form method="post" action="/admin/kwalificaties" enctype="multipart/form-data" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="file">{{ _("SBB file") }}</label>
+      <input id="file" name="file" type="file" accept=".xml,.zip,application/xml,text/xml,application/zip" required>
+    </div>
+    <button type="submit" class="button">{{ _("Import") }}</button>
+  </form>
+</section>
+{% endblock %}

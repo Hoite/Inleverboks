@@ -1,4 +1,5 @@
-"""Admin screens: users and invitations, whitelist, settings and the system audit log."""
+"""Admin screens: users and invitations, whitelist, settings, SBB qualifications and the
+system audit log."""
 
 from __future__ import annotations
 
@@ -6,13 +7,14 @@ import uuid
 from dataclasses import replace
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Request
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select, update
 
 from inleverboks.db.models import AuditEvent, Exam, Invite, IpPreset, User
 from inleverboks.db.models.audit import SYSTEM_CHAIN
 from inleverboks.i18n import gettext as _
+from inleverboks.services import sbb
 from inleverboks.services.audit import Actor
 from inleverboks.services.errors import DomainError
 from inleverboks.services.ipranges import parse_cidrs
@@ -425,3 +427,49 @@ def ip_preset_delete(
         db.delete(preset)
         db.commit()
     return _redirect("/admin/ip-presets?ok=removed")
+
+
+# Qualifications (SBB) ---------------------------------------------------------------
+
+
+def _qualifications_page(
+    request: Request, db: Db, services: Svc, *, errors: list[str] | None = None,
+    status: int = 200, result: dict[str, int] | None = None,
+) -> Response:  # fmt: skip
+    return render(
+        request, "admin/qualifications.html.j2", status_code=status, errors=errors or [],
+        count=services.qualifications.count(db),
+        last_import=services.qualifications.last_imported_at(db),
+        download_page=sbb.DOWNLOAD_PAGE, result=result,
+    )  # fmt: skip
+
+
+@router.get("/kwalificaties")
+def qualifications(
+    request: Request, ctx: Admin, db: Db, services: Svc,
+    created: int | None = None, updated: int | None = None,
+) -> Response:  # fmt: skip
+    result = (
+        {"created": created or 0, "updated": updated or 0}
+        if created is not None or updated is not None
+        else None
+    )
+    return _qualifications_page(request, db, services, result=result)
+
+
+@router.post("/kwalificaties")
+def qualifications_import(
+    request: Request, ctx: Admin, db: Db, services: Svc,
+    file: Annotated[UploadFile | None, File()] = None,
+) -> Response:  # fmt: skip
+    try:
+        if file is None or not file.filename:
+            raise DomainError("sbb_missing")
+        _parsed, result = sbb.import_file(
+            db, services.qualifications, file.file, actor=Actor.for_user(ctx.user),
+            ip=client_ip(request), source="upload",
+        )  # fmt: skip
+    except DomainError as exc:
+        db.rollback()
+        return _qualifications_page(request, db, services, errors=describe(exc), status=400)
+    return _redirect(f"/admin/kwalificaties?created={result.created}&updated={result.updated}")

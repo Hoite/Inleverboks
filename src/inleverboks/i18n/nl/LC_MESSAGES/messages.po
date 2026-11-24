@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-23 22:18+0100\n"
+"POT-Creation-Date: 2026-11-24 16:57+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -197,6 +197,15 @@ msgstr "Kies ten minste één kerntaak."
 
 msgid "Choose a logo file."
 msgstr "Kies een logobestand."
+
+msgid "Choose the SBB file (dossiers.xml, or a zip with that file)."
+msgstr "Kies het SBB-bestand (dossiers.xml, of een zip met dat bestand)."
+
+msgid "This is not an SBB qualification file in XML format."
+msgstr "Dit is geen SBB-kwalificatiebestand in XML-formaat."
+
+msgid "The file contains no adopted qualifications."
+msgstr "Het bestand bevat geen vastgestelde kwalificaties."
 
 msgid "The logo is too large (at most 1 MB and 4 megapixels)."
 msgstr "Het logo is te groot (maximaal 1 MB en 4 megapixel)."
@@ -671,6 +680,9 @@ msgstr "IP-presets"
 msgid "Settings"
 msgstr "Instellingen"
 
+msgid "Qualifications"
+msgstr "Kwalificaties"
+
 msgid "House style"
 msgstr "Huisstijl"
 
@@ -856,6 +868,49 @@ msgstr "Deze link wordt maar één keer getoond."
 
 msgid "Back to users"
 msgstr "Terug naar gebruikers"
+
+#, python-format
+msgid "Imported: %(c)s new and %(u)s updated qualification versions."
+msgstr "Geïmporteerd: %(c)s nieuwe en %(u)s bijgewerkte kwalificatieversies."
+
+msgid "SBB qualification structure"
+msgstr "SBB-kwalificatiestructuur"
+
+msgid ""
+"Teachers build templates from the core tasks and work processes of a qualification. The data "
+"comes from the SBB register."
+msgstr ""
+"Docenten maken sjablonen uit de kerntaken en werkprocessen van een kwalificatie. De gegevens "
+"komen uit het register van SBB."
+
+msgid "Last import"
+msgstr "Laatste import"
+
+msgid "Never"
+msgstr "Nooit"
+
+msgid "Import"
+msgstr "Importeren"
+
+msgid "Download the file “XML Herziening dossiers” (dossiers.xml) from the SBB register:"
+msgstr "Download het bestand ‘XML Herziening dossiers’ (dossiers.xml) uit het register van SBB:"
+
+msgid "SBB downloads, XML"
+msgstr "SBB-downloads, XML"
+
+msgid "Upload the file here. A zip with the file in it also works and is a lot smaller."
+msgstr "Upload het bestand hier. Een zip met het bestand erin kan ook en is veel kleiner."
+
+msgid ""
+"Existing versions are updated and new versions are added. Old versions remain, so templates keep "
+"their dossier; they get a warning when SBB has a newer version."
+msgstr ""
+"Bestaande versies worden bijgewerkt en nieuwe versies toegevoegd. Oude versies blijven bestaan, "
+"zodat sjablonen hun dossier houden; ze krijgen een waarschuwing als SBB een nieuwere versie "
+"heeft."
+
+msgid "SBB file"
+msgstr "SBB-bestand"
 
 msgid "Retention"
 msgstr "Bewaartermijn"
@@ -1386,6 +1441,16 @@ msgstr "Herkansing"
 
 msgid "No hand-ins yet."
 msgstr "Nog geen inleveringen."
+
+#, python-format
+msgid "replaced by %(c)s"
+msgstr "vervangen door %(c)s"
+
+msgid "replaced"
+msgstr "vervangen"
+
+msgid "expired"
+msgstr "verlopen"
 
 msgid "No qualifications found."
 msgstr "Geen kwalificaties gevonden."
@@ -1922,6 +1987,10 @@ msgstr "Sjabloon uit een kwalificatie"
 msgid "This dossier version is no longer current."
 msgstr "Deze dossierversie is niet meer actueel."
 
+#, python-format
+msgid "Go to the current version: %(c)s %(name)s (dossier %(v)s)"
+msgstr "Naar de huidige versie: %(c)s %(name)s (dossier %(v)s)"
+
 msgid "Core tasks and work processes"
 msgstr "Kerntaken en werkprocessen"
 
@@ -2057,6 +2126,12 @@ msgstr "Dossier vervangen"
 #, python-format
 msgid "SBB has a newer version (%(v)s) of this qualification. Check the template."
 msgstr "SBB heeft een nieuwere versie (%(v)s) van deze kwalificatie. Controleer het sjabloon."
+
+#, python-format
+msgid "SBB has replaced this qualification by crebo %(c)s %(name)s (dossier %(v)s). Check the template."
+msgstr ""
+"SBB heeft deze kwalificatie vervangen door crebo %(c)s %(name)s (dossier %(v)s). Controleer het "
+"sjabloon."
 
 msgid "new:"
 msgstr "nieuw:"

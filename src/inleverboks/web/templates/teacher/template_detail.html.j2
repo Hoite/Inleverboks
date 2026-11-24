@@ -37,7 +37,12 @@
 <div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">!</span>
   <div>
     {% if dossier.status.replaced_by %}
-    <p><strong>{{ _("Dossier replaced") }}:</strong> {{ _("SBB has a newer version (%(v)s) of this qualification. Check the template.", v=dossier.status.replaced_by.dossier_version) }}</p>
+    {% set new = dossier.status.replaced_by %}
+    {% if new.crebo == q.crebo %}
+    <p><strong>{{ _("Dossier replaced") }}:</strong> {{ _("SBB has a newer version (%(v)s) of this qualification. Check the template.", v=new.dossier_version) }}</p>
+    {% else %}
+    <p><strong>{{ _("Dossier replaced") }}:</strong> {{ _("SBB has replaced this qualification by crebo %(c)s %(name)s (dossier %(v)s). Check the template.", c=new.crebo, name=new.name, v=new.dossier_version) }}</p>
+    {% endif %}
     {% if dossier.changes %}
     <ul>
       {% for c in dossier.changes %}

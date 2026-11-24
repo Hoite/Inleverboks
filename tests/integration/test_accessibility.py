@@ -155,7 +155,7 @@ def test_teacher_and_admin_pages(
     login(ac, "admin@school.nl", secret=secret, clock=clock)
     admin_urls = [
         "/admin/gebruikers", "/admin/whitelist", "/admin/ip-presets", "/admin/instellingen",
-        "/admin/huisstijl", "/admin/auditlog", "/docent/alle",
+        "/admin/huisstijl", "/admin/kwalificaties", "/admin/auditlog", "/docent/alle",
     ]  # fmt: skip
     problems += [p for url in admin_urls for p in audit(ac, url)]
     assert problems == []

@@ -1,7 +1,7 @@
 """Command line interface: ``inleverboks <command>``.
 
 Available: version, migrate, create-admin, audit verify, retention run, cleanup run,
-backup, restore, integrity check and demo-seed.
+backup, restore, integrity check, sbb-import and demo-seed.
 """
 
 from __future__ import annotations
@@ -235,6 +235,30 @@ def integrity_check(
     typer.echo(f"{report.checked} files checked, {len(report.mismatches)} mismatch(es).")
     if report.mismatches:
         raise typer.Exit(code=1)
+
+
+@app.command("sbb-import")
+def sbb_import(
+    path: Annotated[Path, typer.Argument(help="dossiers.xml from SBB, or a zip with it.")],
+) -> None:
+    """Import the SBB qualification structure (XML "Herziening dossiers")."""
+    from inleverboks.services import sbb  # noqa: PLC0415
+    from inleverboks.services.errors import DomainError  # noqa: PLC0415
+
+    _settings, services, db = _open()
+    with db, path.open("rb") as stream:
+        try:
+            parsed, result = sbb.import_file(
+                db, services.qualifications, stream, actor=Actor.system(), ip=None,
+                source=f"cli:{path.name}",
+            )  # fmt: skip
+        except DomainError as exc:
+            typer.echo(f"Refused: {exc.code}", err=True)
+            raise typer.Exit(code=2) from exc
+    typer.echo(
+        f"{parsed.dossiers} dossier(s) read, {parsed.skipped_dossiers} not adopted (skipped); "
+        f"{result.created} new and {result.updated} updated qualification version(s)."
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

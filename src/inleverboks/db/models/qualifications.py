@@ -31,6 +31,11 @@ class Qualification(Base):
     dossier_version: Mapped[str] = mapped_column(String(40))
     valid_from: Mapped[date | None] = mapped_column(Date)
     valid_until: Mapped[date | None] = mapped_column(Date)
+    # Order of the versions of one crebo (0 = oldest), from the SBB version chain:
+    # versions often share their start date, so this orders them.
+    revision: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Crebo of the previous version when a revision gave this outflow a new crebo.
+    previous_crebo: Mapped[str | None] = mapped_column(String(10), index=True)
     imported_at: Mapped[datetime] = mapped_column(UTCDateTime)
 
     core_tasks: Mapped[list[CoreTask]] = relationship(

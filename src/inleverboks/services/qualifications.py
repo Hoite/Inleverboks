@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -45,6 +45,8 @@ class QualificationRecord:
     dossier_name: str | None = None
     valid_from: date | None = None
     valid_until: date | None = None
+    revision: int = 0
+    previous_crebo: str | None = None
     core_tasks: list[CoreTaskRecord] = field(default_factory=list)
 
 
@@ -111,6 +113,8 @@ class QualificationService:
             row.dossier_name = record.dossier_name
             row.valid_from = record.valid_from
             row.valid_until = record.valid_until
+            row.revision = record.revision
+            row.previous_crebo = record.previous_crebo
             row.imported_at = now
             # Remove the old tasks first: the new rows reuse their (qualification, code).
             row.core_tasks.clear()
@@ -137,6 +141,9 @@ class QualificationService:
 
     def count(self, db: Session) -> int:
         return db.scalar(select(func.count(func.distinct(Qualification.crebo)))) or 0
+
+    def last_imported_at(self, db: Session) -> datetime | None:
+        return db.scalar(select(func.max(Qualification.imported_at)))
 
     def get(self, db: Session, qualification_id: object) -> Qualification | None:
         return db.get(Qualification, qualification_id)
@@ -176,9 +183,26 @@ class QualificationService:
     def status(self, db: Session, qualification: Qualification) -> DossierStatus:
         today = self.clock.now().date()
         current = self.current(db, qualification.crebo)
-        replaced_by = current if current is not None and current.id != qualification.id else None
+        newest = self._successor(db, current or qualification)
+        replaced_by = newest if newest.id != qualification.id else None
         expired = qualification.valid_until is not None and qualification.valid_until < today
         return DossierStatus(replaced_by=replaced_by, expired=expired)
+
+    def _successor(self, db: Session, qualification: Qualification) -> Qualification:
+        """Follow revisions that gave the outflow a new crebo, to the newest version."""
+        seen = {qualification.crebo}
+        while True:
+            crebos = db.scalars(
+                select(Qualification.crebo)
+                .where(Qualification.previous_crebo == qualification.crebo)
+                .distinct()
+            ).all()
+            candidates = (self.current(db, crebo) for crebo in crebos if crebo not in seen)
+            nexts = [c for c in candidates if c is not None]
+            if not nexts:
+                return qualification
+            qualification = max(nexts, key=lambda q: (q.valid_from or date.min, q.crebo))
+            seen.add(qualification.crebo)
 
     def changes(
         self, old: Qualification, new: Qualification, core_task_code: str
@@ -202,5 +226,5 @@ class QualificationService:
         return changes
 
 
-def _version_key(q: Qualification) -> tuple[date, str]:
-    return (q.valid_from or date.min, q.dossier_version)
+def _version_key(q: Qualification) -> tuple[int, date, str]:
+    return (q.revision, q.valid_from or date.min, q.dossier_version)

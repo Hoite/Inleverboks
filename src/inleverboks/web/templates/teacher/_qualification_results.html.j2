@@ -3,7 +3,10 @@
 <ul class="result-list">
   {% for q in results %}
   <li><a href="/docent/sjablonen/crebo/{{ q.id }}"><span class="mono">{{ q.crebo }}</span> {{ q.name }}</a>
-    <span class="muted small">{% if q.level %}{{ _("level %(n)s", n=q.level) }} · {% endif %}{{ _("dossier %(v)s", v=q.dossier_version) }}</span></li>
+    <span class="muted small">{% if q.level %}{{ _("level %(n)s", n=q.level) }} · {% endif %}{{ _("dossier %(v)s", v=q.dossier_version) }}</span>
+    {% set st = statuses[q.id] %}
+    {% if st.replaced_by %}<span class="badge badge-warning">{{ _("replaced by %(c)s", c=st.replaced_by.crebo) if st.replaced_by.crebo != q.crebo else _("replaced") }}</span>
+    {% elif st.expired %}<span class="badge badge-warning">{{ _("expired") }}</span>{% endif %}</li>
   {% endfor %}
 </ul>
 {% else %}
