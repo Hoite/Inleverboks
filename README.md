@@ -99,7 +99,20 @@ sjabloonbestanden upload je daarna zelf. Een admin kan sjablonen **delen** met a
 alleen admins beheren gedeelde sjablonen. Bij een nieuw examen kies je welke werkprocessen
 meedoen (een **deelexamen**). Vanuit het overzicht maak je met één klik een **herkansing** voor
 een of meer studenten, met alleen de werkprocessen die voor hen nog openstaan. De kwalificaties
-komen uit de kwalificatiestructuur van SBB; het inlezen daarvan volgt.
+komen uit de kwalificatiestructuur van SBB.
+
+**Kwalificaties inlezen (admin):** download bij SBB het bestand *XML Herziening dossiers*
+(`dossiers.xml`, ongeveer 60 MB) via [kwalificatie-mijn.s-bb.nl → Downloads →
+XML](https://kwalificatie-mijn.s-bb.nl/Lijsten/Groep/10) en upload het onder
+*Admin → Kwalificaties*. Een zip met het bestand erin kan ook (ongeveer 11 MB). Of via de CLI:
+
+```bash
+inleverboks sbb-import dossiers.xml
+```
+
+Bestaande versies worden bijgewerkt en nieuwe toegevoegd; oude versies blijven, zodat
+sjablonen hun dossier houden. Doe dit na elke herziening van SBB (meestal één keer per jaar).
+De upload valt onder dezelfde limiet als een inlevering (`MAX_SUBMISSION_MB`).
 
 ## Huisstijl
 

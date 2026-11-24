@@ -6,13 +6,15 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
-Sjablonen op basis van de kwalificatiestructuur van SBB. Nog niet uitgebracht: het inlezen
-van het SBB-bestand volgt zodra het register van SBB weer bereikbaar is.
+Sjablonen op basis van de kwalificatiestructuur van SBB.
 
 ### Toegevoegd
 
-- Kwalificaties (uitstroom, crebo), kerntaken en werkprocessen in de database, met een
-  importfunctie die per dossierversie bijwerkt. De parser voor het SBB-bestand volgt.
+- Kwalificaties (uitstroom, crebo), kerntaken en werkprocessen in de database, per
+  dossierversie.
+- Het SBB-bestand inlezen (XML *Herziening dossiers*, `dossiers.xml`, of een zip daarmee):
+  onder *Admin → Kwalificaties* of met `inleverboks sbb-import BESTAND`. Concepten worden
+  overgeslagen; varianten met dezelfde crebo worden samengevoegd.
 - Sjablonen uit een kwalificatie: zoeken op crebo of naam (direct tijdens het typen), kerntaken
   kiezen, en per kerntaak een sjabloon met een vakje per werkproces
   (`B1-K1-W1 [naam]`).
@@ -28,7 +30,9 @@ van het SBB-bestand volgt zodra het register van SBB weer bereikbaar is.
 - Herkansing in één klik vanuit het overzicht, of voor meerdere studenten tegelijk: een
   nieuw examen met alleen de openstaande werkprocessen en alleen die studenten.
 - Een waarschuwing bij een sjabloon waarvan het dossier is vervangen of verlopen, met de
-  gewijzigde werkprocessen.
+  gewijzigde werkprocessen. Dat werkt ook als SBB de uitstroom bij een herziening een nieuwe
+  crebo geeft. In de zoekresultaten staan vervangen en verlopen kwalificaties onderaan, met
+  een label.
 - `demo-seed` voegt een fictieve kwalificatie (crebo 99999) toe om dit uit te proberen.
 
 ### Opgelost

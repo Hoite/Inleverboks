@@ -122,7 +122,9 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   horen ook in `CONTRAST_PAIRS` (`services/branding.py`) en in de controle in
   `static/js/admin/branding.js`. PDF's krijgen `brand` via `PdfRenderer`.
 - **Kwalificaties (SBB):** `services/qualifications.py` (import van records, zoeken, dossierstatus)
-  en de modellen in `db/models/qualifications.py`. Vakjes dragen een `work_process_code`; een
+  en de modellen in `db/models/qualifications.py`. `services/sbb.py` leest het SBB-bestand
+  (streaming, geen DOCTYPE) en maakt er records van; testdata met dezelfde structuur staat in
+  `tests/sbb_sample.py`. Vakjes dragen een `work_process_code`; een
   examen een momentopname in `Exam.qualification`. Die bepaalt de server altijd zelf
   (`ExamService._resolve_sources`), nooit uit verborgen velden. Gedeelde sjablonen: alleen admins
   beheren ze (`can_manage_template`).
