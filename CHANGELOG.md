@@ -6,6 +6,8 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-24
+
 Sjablonen op basis van de kwalificatiestructuur van SBB.
 
 ### Toegevoegd
