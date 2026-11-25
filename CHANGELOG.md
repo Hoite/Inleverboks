@@ -6,6 +6,18 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Toegevoegd
+
+- Klassenlijsten zijn voor alle docenten zichtbaar en bruikbaar, met een kolom *Eigenaar* en de
+  keuze *Mijn lijsten / Alle lijsten*. Iedere docent kan een eigen kopie maken.
+- Een klassenlijst hernoemen en vervangen door een nieuwe CSV (eigenaar en admins). Bestaande
+  examens houden hun eigen momentopname.
+- Admins: een kolom *Eigenaar* en een filter op eigenaar onder *Alle examens*, en de weergave
+  *Alle sjablonen* met de persoonlijke sjablonen van alle docenten. Een admin kan een
+  persoonlijk sjabloon van een ander bekijken en kopiëren naar zijn eigen of naar de gedeelde
+  sjablonen.
+- Een kolom *Eigenaar* onder *Gedeeld met mij* (en, voor admins, onder *Afgeronde examens*).
+
 ### Gewijzigd
 
 - De docentpagina's staan nu onder `/examens` in plaats van `/docent`: `/examens/{id}`,
@@ -48,6 +60,8 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   sjablonenformulier en herkansingen werken zoals voorheen. Verwijder je het sjabloon, dan
   worden de vakjes weer bewerkbaar. Nieuwe kolom `exam.source_template_id` (migratie
   `d4f2b7a91c35`); bestaande examens krijgen geen koppeling.
+- Alleen de eigenaar en admins mogen een klassenlijst wijzigen of verwijderen. Dit staat nu als
+  matrix in `policy.py`. Kopiëren, hernoemen, vervangen en verwijderen komen in het auditlog.
 
 ### Opgelost
 
@@ -55,6 +69,8 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   bestandsnamen en hashes van de pagina af. Tabellen hebben nu een vaste indeling met
   kolombreedtes, en lange woorden en hashes breken af. Een test controleert met de
   layout van WeasyPrint dat niets buiten de pagina valt.
+- De teller in de presentatiemodus daalde als de docent een inlevering ongeldig verklaarde. Hij
+  telt nu het aantal studenten met een actieve of ongeldige inlevering, één per student.
 
 ## [0.2.0] - 2026-11-24
 

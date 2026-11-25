@@ -104,6 +104,17 @@ Een nieuw examen staat standaard op de eerstvolgende werkdag van 09:00 tot 17:00
 de start, dan schuift het einde mee. Keuzelijsten met veel namen (sjabloon, klassenlijst,
 tweede beoordelaar, nieuwe eigenaar) zijn doorzoekbaar op naam en e-mailadres.
 
+**Klassenlijsten** (tabblad *Klassenlijsten*) importeer je als CSV. Elke docent kan alle
+klassenlijsten van de school bekijken en gebruiken bij een examen (kies *Alle lijsten*), en er
+een eigen kopie van maken. Alleen de eigenaar en admins kunnen een lijst hernoemen, vervangen
+door een nieuwe CSV of verwijderen. Een examen bewaart een eigen kopie van de lijst: als die
+later verandert, blijft het examen ongewijzigd.
+
+**Admins** zien onder *Alle examens* alle examens met hun eigenaar, en kunnen op eigenaar
+filteren. Onder *Examensjablonen → Alle sjablonen* zien ze ook de persoonlijke sjablonen van
+alle docenten; die kunnen ze bekijken en kopiëren (naar hun eigen of naar de gedeelde sjablonen),
+maar niet wijzigen.
+
 **Sjablonen uit een kwalificatie:** onder *Examensjablonen → Sjabloon uit crebo* zoek je een
 opleiding op crebonummer of naam van de uitstroom (bijvoorbeeld 27016). Kies de kerntaken: elke
 kerntaak wordt een sjabloon met een vakje per werkproces, zoals `B1-K1-W1 [naam]`. De

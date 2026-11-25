@@ -199,6 +199,20 @@ Een admin die zelf eigenaar is van een examen heeft daarop ook alle rechten van 
 Een ontvangstbewijs controleren (*Admin → Ontvangstbewijs controleren*,
 `/admin/ontvangstbewijs`) mag alleen een admin; dat kan voor elk examen
 (`SystemAction.VERIFY_RECEIPT`).
+
+**Klassenlijsten** (B60) hebben een eigen matrix, `policy.CLASS_LIST_MATRIX`:
+
+| Actie | Admin (lijst van ander) | Eigenaar | Andere docent |
+|---|---|---|---|
+| Bekijken (namen en studentnummers) | ✓ | ✓ | ✓ |
+| Gebruiken bij een examen (momentopname) | ✓ | ✓ | ✓ |
+| Kopiëren naar eigen lijsten | ✓ | ✓ | ✓ |
+| Hernoemen, vervangen (nieuwe CSV), verwijderen | ✓ | ✓ | ✗ |
+
+**Examensjablonen** (B53, B61): persoonlijke sjablonen zijn alleen voor de eigenaar; gedeelde
+sjablonen gebruikt iedereen, en alleen admins beheren ze. Een admin mag een persoonlijk sjabloon
+van een ander bekijken, gebruiken en kopiëren (ook als gedeelde kopie), maar niet wijzigen,
+verwijderen of delen.
 Studenten hebben geen account. Er bestaat **geen enkele route** waarmee een student ingeleverde
 bestanden kan opvragen.
 
