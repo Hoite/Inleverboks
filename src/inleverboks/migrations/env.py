@@ -62,14 +62,11 @@ def _prepare_sqlite(connection: Connection) -> None:
     if connection.exec_driver_sql("PRAGMA foreign_keys").scalar() != 0:
         msg = "could not turn off SQLite foreign keys for the migration"
         raise RuntimeError(msg)
-    leftovers = (
-        connection.exec_driver_sql(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '\\_alembic\\_tmp\\_%'"
-            " ESCAPE '\\'"
-        )
-        .scalars()
-        .all()
+    query = (
+        "SELECT name FROM sqlite_master"
+        " WHERE type = 'table' AND name LIKE '\\_alembic\\_tmp\\_%' ESCAPE '\\'"
     )
+    leftovers = connection.exec_driver_sql(query).scalars().all()
     for name in leftovers:
         connection.exec_driver_sql(f'DROP TABLE "{name}"')
     connection.commit()
