@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 13:42+0100\n"
+"POT-Creation-Date: 2026-11-25 13:44+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -1626,6 +1626,9 @@ msgstr "Nieuw examen"
 msgid "The exam has been deleted permanently."
 msgstr "Het examen is definitief verwijderd."
 
+msgid "All teachers"
+msgstr "Alle docenten"
+
 msgid "Link"
 msgstr "Link"
 
@@ -2181,6 +2184,12 @@ msgstr "Gedeeld"
 msgid "Available to every teacher; managed by the admin."
 msgstr "Beschikbaar voor elke docent; beheerd door de admin."
 
+msgid "Personal"
+msgstr "Persoonlijk"
+
+msgid "Only the owner can change this template."
+msgstr "Alleen de eigenaar kan dit sjabloon wijzigen."
+
 msgid "New exam from this template"
 msgstr "Nieuw examen met dit sjabloon"
 
@@ -2207,6 +2216,9 @@ msgstr "Het sjabloon wordt niet meer gedeeld."
 
 msgid "This is your own copy of the template. You can change it."
 msgstr "Dit is je eigen kopie van het sjabloon. Die kun je aanpassen."
+
+msgid "This is a shared copy of the template. Every teacher can use it now."
+msgstr "Dit is een gedeelde kopie van het sjabloon. Elke docent kan het nu gebruiken."
 
 msgid "Dossier replaced"
 msgstr "Dossier vervangen"
@@ -2245,6 +2257,16 @@ msgstr "Geen verwachte bestanden: studenten leveren alleen extra bestanden in."
 
 msgid "Sharing"
 msgstr "Delen"
+
+msgid ""
+"This is another teacher's personal template. You can share a copy of it with every teacher; the "
+"original stays with its owner."
+msgstr ""
+"Dit is een persoonlijk sjabloon van een andere docent. Je kunt een kopie delen met alle docenten;"
+" het origineel blijft van de eigenaar."
+
+msgid "Copy to shared templates"
+msgstr "Kopiëren naar gedeelde sjablonen"
 
 msgid "Every teacher can use this template."
 msgstr "Elke docent kan dit sjabloon gebruiken."
@@ -2296,6 +2318,29 @@ msgid ""
 msgstr ""
 "Een sjabloon bevat de verwachte bestanden, sjabloonbestanden, extensies, limieten en "
 "toegangsinstellingen. Tijden, linknaam en klassenlijst kies je per examen."
+
+msgid "Show templates"
+msgstr "Sjablonen tonen"
+
+msgid "Shared and mine"
+msgstr "Gedeeld en eigen"
+
+msgid "All templates"
+msgstr "Alle sjablonen"
+
+msgid ""
+"Shared templates and the personal templates of every teacher. You can view another teacher's "
+"personal template and copy it to your own or to the shared templates; only its owner changes it."
+msgstr ""
+"Gedeelde sjablonen en de persoonlijke sjablonen van alle docenten. Een persoonlijk sjabloon van "
+"een andere docent kun je bekijken en kopiëren naar je eigen of naar de gedeelde sjablonen; alleen"
+" de eigenaar wijzigt het."
+
+msgid "Kind"
+msgstr "Soort"
+
+msgid "No exam templates yet."
+msgstr "Nog geen examensjablonen."
 
 msgid "Shared templates"
 msgstr "Gedeelde sjablonen"

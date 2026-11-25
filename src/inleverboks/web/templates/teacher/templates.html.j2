@@ -1,6 +1,7 @@
 {% extends "base.html.j2" %}
 {% from "_macros.html.j2" import ok_box with context %}
 {% from "teacher/_template_badge.html.j2" import template_badge %}
+{% from "teacher/_view_switch.html.j2" import view_switch %}
 {% block title %}{{ _("Exam templates") }} · {{ app_name }}{% endblock %}
 {% macro card(t) %}
   <li class="template-card{% if t.shared %} template-card-shared{% endif %}">
@@ -31,6 +32,33 @@
 {% if ok == "deleted" %}{{ ok_box(_("The template has been deleted.")) }}{% endif %}
 {% if ok == "created_from_crebo" %}{{ ok_box(_("Templates created: %(n)s. Upload the template files on each template page.", n=created)) }}{% endif %}
 <p class="hint">{{ _("A template holds the expected files, template files, extensions, limits and access settings. Times, link name and class list are chosen per exam.") }}</p>
+{% if current_user.is_admin %}{{ view_switch(_("Show templates"), "/examens/sjablonen", everyone, _("Shared and mine"), _("All templates")) }}{% endif %}
+
+{% if everyone %}
+<section aria-labelledby="all-title">
+  <h2 id="all-title">{{ _("All templates") }}</h2>
+  <p class="hint">{{ _("Shared templates and the personal templates of every teacher. You can view another teacher's personal template and copy it to your own or to the shared templates; only its owner changes it.") }}</p>
+  {% if all_templates %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ _("Template") }}</th><th scope="col">{{ _("Owner") }}</th><th scope="col">{{ _("Kind") }}</th><th scope="col">{{ _("Expected files") }}</th></tr></thead>
+    <tbody>
+    {% for t in all_templates %}
+      <tr>
+        <td><a href="/examens/sjablonen/{{ t.id }}">{{ t.name }}</a>{% if t.id in outdated %} <span class="badge badge-warning"><span aria-hidden="true">!</span> {{ _("Dossier replaced") }}</span>{% endif %}</td>
+        <td>{% if t.owner_id == current_user.id %}{{ _("You") }}{% else %}{{ owner_names.get(t.owner_id, "") }}{% endif %}</td>
+        <td>{% if t.shared %}<span class="badge badge-neutral">{{ _("Shared") }}</span>{% else %}{{ _("Personal") }}{% endif %}</td>
+        <td>{{ t.slots|length }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ _("No exam templates yet.") }}</p>
+  {% endif %}
+</section>
+{% else %}
 
 {% if shared_templates %}
 <section aria-labelledby="shared-title">
@@ -48,4 +76,5 @@
   <p class="muted">{{ _("No exam templates yet. Create one here, or save an existing exam as template on its Advanced tab.") }}</p>
   {% endif %}
 </section>
+{% endif %}
 {% endblock %}

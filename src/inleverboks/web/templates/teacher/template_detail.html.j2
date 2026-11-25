@@ -4,13 +4,14 @@
 {% block body_class %}mode-template{% endblock %}
 {% block title %}{{ exam_template.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/examens/sjablonen">{{ _("Exam templates") }}</a></p>
+<p class="breadcrumb"><a href="/examens/sjablonen{% if not exam_template.shared and exam_template.owner_id != current_user.id %}?toon=alle{% endif %}">{{ _("Exam templates") }}</a></p>
 <div class="template-banner" role="note">{{ template_badge(_("Exam template")) }}
   <span>{{ _("This is a template, not an exam. Students cannot hand in here; create an exam from the template for that.") }}</span></div>
 <div class="page-head">
   <div>
     <h1>{{ exam_template.name }}</h1>
-    {% if exam_template.shared %}<p><span class="badge badge-neutral">{{ _("Shared") }}</span> <span class="muted small">{{ _("Available to every teacher; managed by the admin.") }}</span></p>{% endif %}
+    {% if exam_template.shared %}<p><span class="badge badge-neutral">{{ _("Shared") }}</span> <span class="muted small">{{ _("Available to every teacher; managed by the admin.") }}</span></p>
+    {% elif exam_template.owner_id != current_user.id %}<p><span class="badge badge-neutral">{{ _("Personal") }}</span> <span class="muted small">{{ _("Owner") }}: {{ owner_name }}. {{ _("Only the owner can change this template.") }}</span></p>{% endif %}
   </div>
   <div class="button-row">
     <a class="button" href="/examens/nieuw?sjabloon={{ exam_template.id }}">{{ _("New exam from this template") }}</a>
@@ -28,6 +29,7 @@
   "shared": _("The template is now shared with every teacher."),
   "unshared": _("The template is no longer shared."),
   "copied": _("This is your own copy of the template. You can change it."),
+  "copied_shared": _("This is a shared copy of the template. Every teacher can use it now."),
 } %}
 {% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
 {{ errors_box(errors) }}
@@ -116,7 +118,16 @@
   {% endif %}
 </section>
 
-{% if current_user.is_admin %}
+{% if current_user.is_admin and not exam_template.shared and exam_template.owner_id != current_user.id %}
+<section class="card">
+  <h2>{{ _("Sharing") }}</h2>
+  <p>{{ _("This is another teacher's personal template. You can share a copy of it with every teacher; the original stays with its owner.") }}</p>
+  <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/kopie">
+    {{ csrf() }}<input type="hidden" name="shared" value="true">
+    <button type="submit" class="button button-template">{{ _("Copy to shared templates") }}</button>
+  </form>
+</section>
+{% elif current_user.is_admin %}
 <section class="card">
   <h2>{{ _("Sharing") }}</h2>
   <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/delen">

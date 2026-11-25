@@ -154,7 +154,7 @@ def test_teacher_and_admin_pages(
         f"/examens/sjablonen/{crebo_template.id}",
         f"/examens/nieuw?sjabloon={crebo_template.id}&wp=B1-K1-W3",
         f"/examens/{exam.id}/herkansing",
-        "/examens/klassenlijsten?toon=alle",
+        "/examens/gedeeld", "/examens/klassenlijsten?toon=alle",
         f"/examens/klassenlijsten/{class_list.id}", f"/examens/klassenlijsten/{class_list.id}/vervangen",
     ]  # fmt: skip
     problems = [p for url in urls for p in audit(teacher, url)]
@@ -167,6 +167,9 @@ def test_teacher_and_admin_pages(
         "/admin/gebruikers", "/admin/whitelist", "/admin/ip-presets", "/admin/instellingen",
         "/admin/huisstijl", "/admin/kwalificaties", "/admin/auditlog", "/examens/alle",
         "/admin/ontvangstbewijs", f"/examens/{exam.id}/geavanceerd",
+        f"/examens/alle?eigenaar={owner.id}", "/examens/sjablonen?toon=alle",
+        f"/examens/sjablonen/{template.id}",  # another teacher's personal template
+        f"/examens/klassenlijsten/{class_list.id}",  # another teacher's class list
     ]  # fmt: skip
     problems += [p for url in admin_urls for p in audit(ac, url)]
     assert problems == []

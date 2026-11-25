@@ -114,8 +114,9 @@ def dashboard(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response
 @router.get("/gedeeld")
 def shared(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
     return _dashboard(
-        request, "shared", _rows(db, services, services.exams.shared_with(db, ctx.user))
-    )
+        request, "shared", _rows(db, services, services.exams.shared_with(db, ctx.user)),
+        owner_names=services.users.names(db),
+    )  # fmt: skip
 
 
 @router.get("/afgerond")
@@ -123,22 +124,46 @@ def finalized(
     request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None
 ) -> Response:
     return _dashboard(
-        request, "finalized", _rows(db, services, services.exams.finalized(db, ctx.user)), ok=ok
-    )
+        request, "finalized", _rows(db, services, services.exams.finalized(db, ctx.user)), ok=ok,
+        # Admins see every finalized exam, so they get the owner column too.
+        owner_names=services.users.names(db) if ctx.user.is_admin else None,
+    )  # fmt: skip
+
+
+def _uuid_or_none(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value) if value else None
+    except ValueError:
+        return None
 
 
 @router.get("/alle")
-def all_exams(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
+def all_exams(
+    request: Request, ctx: Teacher, db: Db, services: Svc, eigenaar: str = ""
+) -> Response:
     if not ctx.user.is_admin:
         raise PermissionDeniedError()
-    return _dashboard(request, "all", _rows(db, services, services.exams.all_exams(db)))
+    names = services.users.names(db)
+    owner_id = _uuid_or_none(eigenaar)
+    owners = sorted(
+        ((uid, names.get(uid, "")) for uid in services.exams.exam_owner_ids(db)),
+        key=lambda item: item[1].lower(),
+    )
+    return _dashboard(
+        request, "all", _rows(db, services, services.exams.all_exams(db, owner_id)),
+        owner_names=names, owners=owners, owner_filter=owner_id,
+    )  # fmt: skip
 
 
 @router.get("/sjablonen")
 def exam_templates(
-    request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None, n: int = 0
-) -> Response:
-    templates = services.exams.templates(db, ctx.user)
+    request: Request, ctx: Teacher, db: Db, services: Svc, ok: str | None = None, n: int = 0,
+    toon: str = "",
+) -> Response:  # fmt: skip
+    everyone = toon == "alle" and ctx.user.is_admin  # PLAN B61: admin view of all templates
+    templates = (
+        services.exams.all_templates(db) if everyone else services.exams.templates(db, ctx.user)
+    )
     outdated = {
         t.id for t in templates
         if t.qualification is not None
@@ -148,6 +173,8 @@ def exam_templates(
         request, "teacher/templates.html.j2", tab="templates", ok=ok, created=n,
         shared_templates=[t for t in templates if t.shared],
         own_templates=[t for t in templates if not t.shared],
+        all_templates=templates if everyone else [], everyone=everyone,
+        owner_names=services.users.names(db) if everyone else {},
         outdated=outdated,
     )  # fmt: skip
 
@@ -249,6 +276,7 @@ def exam_template_detail(
         preset=preset, ok=ok, errors=[describe(DomainError(error))[0]] if error else [],
         can_manage=can_manage_template(ctx.user, template),
         dossier=_dossier_info(db, services, template),
+        owner_name=services.users.names(db).get(template.owner_id, ""),
     )  # fmt: skip
 
 
@@ -278,11 +306,14 @@ def share_exam_template(
 
 @router.post("/sjablonen/{template_id}/kopie")
 def copy_exam_template(
-    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
-) -> Response:
+    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    shared: Annotated[bool, Form()] = False,
+) -> Response:  # fmt: skip
     template = services.exams.get_template(db, ctx.user, template_id)
-    copy = services.exams.copy_template(db, ctx.user, template, ip=client_ip(request))
-    return _redirect(f"/examens/sjablonen/{copy.id}?ok=copied")
+    copy = services.exams.copy_template(
+        db, ctx.user, template, ip=client_ip(request), shared=shared
+    )
+    return _redirect(f"/examens/sjablonen/{copy.id}?ok={'copied_shared' if shared else 'copied'}")
 
 
 @router.get("/sjablonen/{template_id}/bewerken")

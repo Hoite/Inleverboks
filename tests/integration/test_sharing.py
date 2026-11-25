@@ -1,5 +1,5 @@
-"""Shared class lists (PLAN B60) and the presentation counter that keeps counting
-invalidated work (PLAN B62)."""
+"""Shared class lists (PLAN B60), the admin views with an owner column (PLAN B61) and the
+presentation counter that keeps counting invalidated work (PLAN B62)."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from inleverboks.db.models import (
     ClassList,
     Exam,
     ExamRosterEntry,
+    ExamTemplate,
     Submission,
     User,
 )
@@ -322,3 +323,88 @@ def test_counter_keeps_invalidated_work_once_per_student(
     assert count() == 2
     _hand_in(client, exam, "222222")
     assert count() == 3
+
+
+# Admin views with an owner column -------------------------------------------------
+
+
+def test_all_exams_owner_column_and_filter(
+    db: Session, services: Services, clients: dict[str, TestClient], teacher: User,
+    colleague: User,
+) -> None:  # fmt: skip
+    make_exam(db, services, teacher, name="Examen van Anna", slug="anna-1")
+    make_exam(db, services, colleague, name="Examen van Bert", slug="bert-1")
+    admin = clients["admin"]
+    page = admin.get("/examens/alle").text
+    assert '<th scope="col">Eigenaar</th>' in page
+    assert "Examen van Anna" in page and "Examen van Bert" in page
+    assert f'<option value="{teacher.id}">Anna Eigenaar</option>' in page
+    filtered = admin.get(f"/examens/alle?eigenaar={teacher.id}").text
+    assert "Examen van Anna" in filtered and "Examen van Bert" not in filtered
+    assert f'<option value="{teacher.id}" selected>' in filtered
+    assert "Examen van Bert" in admin.get("/examens/alle?eigenaar=onzin").text
+    assert clients["owner"].get("/examens/alle").status_code == 403
+
+
+def test_shared_with_me_shows_owner(
+    db: Session, services: Services, clients: dict[str, TestClient], teacher: User,
+    colleague: User,
+) -> None:  # fmt: skip
+    make_exam(db, services, teacher, name="Samen nakijken", second_reviewer_id=colleague.id)
+    page = clients["other"].get("/examens/gedeeld").text
+    assert '<th scope="col">Eigenaar</th>' in page
+    assert re.search(r"Samen nakijken</a>.*?</td>\s*<td>Anna Eigenaar</td>", page, re.S)
+    # "My exams" has no owner column.
+    assert '<th scope="col">Eigenaar</th>' not in clients["owner"].get("/examens").text
+
+
+@pytest.fixture
+def personal_template(db: Session, services: Services, teacher: User) -> ExamTemplate:
+    exam = make_exam(db, services, teacher, slug="voor-sjabloon")
+    return services.exams.save_as_template(db, teacher, exam, "Persoonlijk van Anna", ip=None)
+
+
+def test_admin_sees_all_templates(
+    clients: dict[str, TestClient], personal_template: ExamTemplate
+) -> None:
+    page = clients["admin"].get("/examens/sjablonen?toon=alle").text
+    assert "Persoonlijk van Anna" in page
+    assert '<th scope="col">Eigenaar</th>' in page and "Anna Eigenaar" in page
+    assert "Persoonlijk van Anna" not in clients["admin"].get("/examens/sjablonen").text
+    # Teachers get no switch and the parameter changes nothing for them.
+    other = clients["other"].get("/examens/sjablonen?toon=alle").text
+    assert "Persoonlijk van Anna" not in other and "Alle sjablonen" not in other
+    assert clients["other"].get(f"/examens/sjablonen/{personal_template.id}").status_code == 404
+
+
+def test_admin_views_and_copies_personal_template_but_does_not_change_it(
+    db: Session, clients: dict[str, TestClient], personal_template: ExamTemplate, admin: User
+) -> None:
+    c = clients["admin"]
+    base = f"/examens/sjablonen/{personal_template.id}"
+    page = c.get(base).text
+    assert "Alleen de eigenaar kan dit sjabloon wijzigen." in page
+    assert "Anna Eigenaar" in page
+    assert f"{base}/bewerken" not in page and f"{base}/verwijderen" not in page
+    assert f"{base}/delen" not in page
+    assert c.get(f"{base}/bewerken").status_code == 403
+    assert post(c, f"{base}/verwijderen").status_code == 403
+    assert post(c, f"{base}/delen", {"shared": "true"}).status_code == 403
+
+    own = post(c, f"{base}/kopie")
+    assert own.headers["location"].endswith("?ok=copied")
+    shared = post(c, f"{base}/kopie", {"shared": "true"})
+    assert shared.headers["location"].endswith("?ok=copied_shared")
+    db.expire_all()
+    copies = {
+        t.shared: t
+        for t in db.scalars(select(ExamTemplate).where(ExamTemplate.owner_id == admin.id))
+    }
+    assert set(copies) == {False, True}
+    original = db.get(ExamTemplate, personal_template.id)
+    assert original is not None and not original.shared
+    shared_event = next(e for e in events(db, "exam_template.copied") if e.details["shared"])
+    assert shared_event.details["source_template_id"] == str(personal_template.id)
+    assert shared_event.details["source_owner_id"] == str(personal_template.owner_id)
+    # A teacher may not make shared copies.
+    assert post(clients["owner"], f"{base}/kopie", {"shared": "true"}).status_code == 403

@@ -204,8 +204,9 @@ def _qualification_snapshot(q: Qualification, core_task_code: str | None) -> dic
 
 
 def can_use_template(user: User, template: ExamTemplate) -> bool:
-    """Own templates, and shared templates for every teacher."""
-    return template.shared or template.owner_id == user.id
+    """Own templates, and shared templates for every teacher. Admins also see (and use
+    and copy) other teachers' personal templates, but do not change them (PLAN B61)."""
+    return template.shared or template.owner_id == user.id or user.is_admin
 
 
 def can_manage_template(user: User, template: ExamTemplate) -> bool:
@@ -381,8 +382,14 @@ class ExamService:
             query = query.where(or_(Exam.owner_id == user.id, Exam.second_reviewer_id == user.id))
         return list(db.scalars(query.order_by(Exam.finalized_at.desc())))
 
-    def all_exams(self, db: Session) -> list[Exam]:
-        return list(db.scalars(select(Exam).order_by(Exam.starts_at.desc())))
+    def all_exams(self, db: Session, owner_id: uuid.UUID | None = None) -> list[Exam]:
+        query = select(Exam)
+        if owner_id is not None:
+            query = query.where(Exam.owner_id == owner_id)
+        return list(db.scalars(query.order_by(Exam.starts_at.desc())))
+
+    def exam_owner_ids(self, db: Session) -> set[uuid.UUID]:
+        return set(db.scalars(select(Exam.owner_id).distinct()))
 
     # Input defaults and validation ---------------------------------------------------
 
@@ -1194,6 +1201,10 @@ class ExamService:
             )
         )
 
+    def all_templates(self, db: Session) -> list[ExamTemplate]:
+        """Every template, shared and personal; for the admin view (PLAN B61)."""
+        return list(db.scalars(select(ExamTemplate).order_by(ExamTemplate.name)))
+
     def get_template(self, db: Session, user: User, template_id: uuid.UUID) -> ExamTemplate:
         """A template the user may use (own or shared); 404 otherwise."""
         template = db.get(ExamTemplate, template_id)
@@ -1216,8 +1227,11 @@ class ExamService:
     def set_template_shared(
         self, db: Session, user: User, template: ExamTemplate, shared: bool, *, ip: str | None
     ) -> None:
-        """Admins share a template with every teacher, or take it back."""
+        """Admins share a template with every teacher, or take it back. Another teacher's
+        personal template is never shared as such: the admin shares a copy (PLAN B61)."""
         if not user.is_admin or not can_use_template(user, template):
+            raise PermissionDeniedError()
+        if not template.shared and template.owner_id != user.id:
             raise PermissionDeniedError()
         if template.shared == shared:
             return
@@ -1230,14 +1244,18 @@ class ExamService:
         db.commit()
 
     def copy_template(
-        self, db: Session, user: User, template: ExamTemplate, *, ip: str | None
-    ) -> ExamTemplate:
-        """A personal copy (of a shared template) that the user can change."""
+        self, db: Session, user: User, template: ExamTemplate, *, ip: str | None,
+        shared: bool = False,
+    ) -> ExamTemplate:  # fmt: skip
+        """A personal copy that the user can change, or (admins) a shared copy."""
         if not can_use_template(user, template):
             raise NotFoundError("template_not_found")
+        if shared and not user.is_admin:
+            raise PermissionDeniedError()
         now = self.clock.now()
         copy = ExamTemplate(
-            owner_id=user.id, name=f"{template.name} (kopie)"[:200], config=dict(template.config),
+            owner_id=user.id, shared=shared, name=f"{template.name} (kopie)"[:200],
+            config=dict(template.config),
             created_at=now, qualification_id=template.qualification_id,
             core_task_code=template.core_task_code,
         )  # fmt: skip
@@ -1254,7 +1272,10 @@ class ExamService:
         db.flush()
         self.audit.append(
             db, "exam_template.copied", actor=Actor.for_user(user), ip=ip,
-            details={"template_id": str(copy.id), "source_template_id": str(template.id)},
+            details={
+                "template_id": str(copy.id), "source_template_id": str(template.id),
+                "source_owner_id": str(template.owner_id), "shared": shared,
+            },
         )  # fmt: skip
         db.commit()
         return copy
