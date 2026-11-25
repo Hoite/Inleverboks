@@ -137,6 +137,7 @@ def test_teacher_and_admin_pages(
         "/examens", "/examens/afgerond", "/examens/sjablonen", "/examens/nieuw",
         f"/examens/{exam.id}", f"/examens/{exam.id}/instellingen",
         f"/examens/{exam.id}/bewerken", f"/examens/{exam.id}/auditlog",
+        f"/examens/{exam.id}/geavanceerd",
         f"/examens/{exam.id}/studenten/123456",
         "/examens/klassenlijsten", "/examens/klassenlijsten/nieuw", "/account",
         "/account/wachtwoord", "/account/tweestaps", "/examens/sjablonen/nieuw",
@@ -156,7 +157,7 @@ def test_teacher_and_admin_pages(
     admin_urls = [
         "/admin/gebruikers", "/admin/whitelist", "/admin/ip-presets", "/admin/instellingen",
         "/admin/huisstijl", "/admin/kwalificaties", "/admin/auditlog", "/examens/alle",
-        "/admin/ontvangstbewijs",
+        "/admin/ontvangstbewijs", f"/examens/{exam.id}/geavanceerd",
     ]  # fmt: skip
     problems += [p for url in admin_urls for p in audit(ac, url)]
     assert problems == []

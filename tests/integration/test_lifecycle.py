@@ -202,7 +202,9 @@ def test_hold_blocks_deletion_and_grace_after_removal(
     login(teacher)
     url = f"/examens/{handed_in.id}/bewaren"
     assert "error=reason_required" in form(teacher, url, {"reason": ""}).headers["location"]
-    assert "ok=hold_set" in form(teacher, url, {"reason": "Bezwaar ingediend"}).headers["location"]
+    location = form(teacher, url, {"reason": "Bezwaar ingediend"}).headers["location"]
+    assert location == f"/examens/{handed_in.id}/geavanceerd?ok=hold_set#bewaartermijn"
+    assert "De bewaren-vlag staat aan" in teacher.get(location).text
     assert events(db, "exam.hold_set")[0].details["reason"] == "Bezwaar ingediend"
 
     clock.set(AMS_MIDNIGHT_13_JAN + timedelta(days=30))

@@ -20,6 +20,11 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 - In de kop staat nu een accountmenu (persoonicoon en je naam) met *Account* en
   *Uitloggen*. Het is gebouwd met `<details>`, werkt zonder JavaScript en sluit met Escape of
   een klik ernaast.
+- Een examen heeft een vierde tabblad *Geavanceerd* (`/examens/{id}/geavanceerd`) met de
+  acties die je zelden nodig hebt: dupliceren, terug naar concept, concept verwijderen,
+  opslaan als sjabloon en eigendom overdragen, plus de bewaartermijn met de bewaren-vlag (en
+  definitief verwijderen). De waarschuwing dat bestanden binnenkort worden verwijderd staat
+  nog op *Inleveringen* en op het dashboard, met een link naar dit tabblad.
 
 ### Opgelost
 

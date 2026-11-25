@@ -617,11 +617,28 @@ def exam_settings(
         roster=services.exams.roster(db, exam),
         class_lists=services.classlists.library(db, ctx.user),
         extensions=services.exams.extensions(db, exam),
-        teachers=services.users.teachers(db) if ctx.user.is_admin else [],
         submissions=services.exams.submission_count(db, exam),
         ok=ok,
         errors=[describe(DomainError(error))[0]] if error else [],
     )
+
+
+@router.get("/{exam_id:uuid}/geavanceerd")
+def exam_advanced(
+    request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    ok: str | None = None, error: str | None = None,
+) -> Response:  # fmt: skip
+    """Rarely used and far-reaching actions: duplicate, back to concept, delete, save as
+    template, transfer ownership, and the retention period with the retention hold."""
+    exam = _load(db, services, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
+    return render(
+        request, "teacher/exam_advanced.html.j2", exam=exam,
+        status=services.exams.status(db, exam), status_labels=status_labels(),
+        perms=_perms(ctx.user, exam), submissions=services.exams.submission_count(db, exam),
+        teachers=services.users.teachers(db) if ctx.user.is_admin else [],
+        retention=services.lifecycle.retention(db, exam), now=services.clock.now(),
+        ok=ok, errors=[describe(DomainError(error))[0]] if error else [],
+    )  # fmt: skip
 
 
 def _action(
@@ -633,14 +650,15 @@ def _action(
     action: ExamAction,
     fn: Any,
     ok: str,
+    tab: str = "instellingen",
 ) -> Response:
     exam = _load(db, services, user, exam_id, action)
     try:
         fn(exam)
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
-    return _redirect(f"/examens/{exam.id}/instellingen?ok={ok}")
+        return _redirect(f"/examens/{exam.id}/{tab}?error={exc.code}")
+    return _redirect(f"/examens/{exam.id}/{tab}?ok={ok}")
 
 
 @router.post("/{exam_id:uuid}/publiceren")
@@ -658,6 +676,7 @@ def unpublish(
     return _action(
         request, exam_id, db, services, ctx.user, ExamAction.EDIT_SETTINGS,
         lambda e: services.exams.unpublish(db, ctx.user, e, ip=client_ip(request)), "unpublished",
+        tab="geavanceerd",
     )  # fmt: skip
 
 
@@ -703,7 +722,7 @@ def delete_exam(
         keys = services.exams.delete_concept(db, ctx.user, exam, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
+        return _redirect(f"/examens/{exam.id}/geavanceerd?error={exc.code}")
     _delete_unreferenced(db, services, list(keys))
     return _redirect("/examens")
 
@@ -780,8 +799,8 @@ def transfer_ownership(
     except (DomainError, ValueError) as exc:
         db.rollback()
         code = exc.code if isinstance(exc, DomainError) else "owner_invalid"
-        return _redirect(f"/examens/{exam.id}/instellingen?error={code}")
-    return _redirect(f"/examens/{exam.id}/instellingen?ok=owner")
+        return _redirect(f"/examens/{exam.id}/geavanceerd?error={code}")
+    return _redirect(f"/examens/{exam.id}/geavanceerd?ok=owner")
 
 
 # Template files ------------------------------------------------------------------

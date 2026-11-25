@@ -1,5 +1,6 @@
 <nav class="tabs" aria-label="{{ _('Exam') }}">
   <a href="/examens/{{ exam.id }}"{% if exam_tab == "overview" %} aria-current="page"{% endif %}>{{ _("Hand-ins") }}</a>
   <a href="/examens/{{ exam.id }}/instellingen"{% if exam_tab == "settings" %} aria-current="page"{% endif %}>{{ _("Settings") }}</a>
+  <a href="/examens/{{ exam.id }}/geavanceerd"{% if exam_tab == "advanced" %} aria-current="page"{% endif %}>{{ _("Advanced") }}</a>
   <a href="/examens/{{ exam.id }}/auditlog"{% if exam_tab == "audit" %} aria-current="page"{% endif %}>{{ _("Audit log") }}</a>
 </nav>

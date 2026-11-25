@@ -233,7 +233,8 @@ def test_admin_sees_all_and_transfers_ownership(
     assert aclient.get(f"/examens/{exam.id}/bewerken").status_code == 403
     new_owner = create_user(db, clock, "nieuw@school.nl", name="Nieuw")
     response = post(aclient, f"/examens/{exam.id}/eigenaar", {"owner_id": str(new_owner.id)})
-    assert response.headers["location"].endswith("?ok=owner")
+    assert response.headers["location"] == f"/examens/{exam.id}/geavanceerd?ok=owner"
+    assert "Eigendom overgedragen." in aclient.get(response.headers["location"]).text
     db.expire_all()
     assert db.get(Exam, exam.id).owner_id == new_owner.id  # type: ignore[union-attr]
     assert events(db, "exam.ownership_transferred", "system")
@@ -1028,3 +1029,49 @@ def test_examens_is_a_reserved_link_name(tclient: TestClient) -> None:
     response = post(tclient, "/examens/nieuw", form(slug="examens"))
     assert response.status_code == 400
     assert "Deze linknaam is gereserveerd" in response.text
+
+
+# Advanced tab ------------------------------------------------------------------------
+
+
+def test_advanced_tab_holds_the_rare_actions(tclient: TestClient, db: Session) -> None:
+    exam = create_exam(tclient)
+    settings = tclient.get(f"/examens/{exam.id}/instellingen").text
+    advanced = tclient.get(f"/examens/{exam.id}/geavanceerd")
+    assert advanced.status_code == 200
+    assert f'href="/examens/{exam.id}/geavanceerd" aria-current="page">Geavanceerd' in advanced.text
+    for action in ("dupliceren", "verwijderen", "sjabloon-opslaan"):
+        assert f"/examens/{exam.id}/{action}" in advanced.text
+        assert f"/examens/{exam.id}/{action}" not in settings
+    assert 'id="bewaartermijn"' in advanced.text
+    assert f"/examens/{exam.id}/bewaren" in advanced.text
+    overview = tclient.get(f"/examens/{exam.id}").text
+    assert 'id="bewaartermijn"' not in overview
+    assert f"/examens/{exam.id}/bewaren" not in overview
+    # Ownership is only for admins.
+    assert f"/examens/{exam.id}/eigenaar" not in advanced.text
+    # Back to concept and its error land on the advanced tab.
+    post(tclient, f"/examens/{exam.id}/publiceren")
+    response = post(tclient, f"/examens/{exam.id}/concept")
+    assert response.headers["location"] == f"/examens/{exam.id}/geavanceerd?ok=unpublished"
+    post(tclient, f"/examens/{exam.id}/publiceren")
+    response = post(tclient, f"/examens/{exam.id}/verwijderen")
+    assert response.headers["location"] == f"/examens/{exam.id}/geavanceerd?error=not_concept"
+
+
+def test_advanced_tab_permissions(tclient: TestClient, db: Session, clock: FrozenClock) -> None:
+    exam = create_exam(tclient)
+    other = other_client(tclient, db, clock, "ander@school.nl")
+    assert other.get(f"/examens/{exam.id}/geavanceerd").status_code == 404  # no access
+    reviewer = create_user(db, clock, "tweede@school.nl", name="Tweede")
+    db.expire_all()
+    stored = db.get(Exam, exam.id)
+    assert stored is not None
+    stored.second_reviewer_id = reviewer.id
+    db.commit()
+    rclient = TestClient(tclient.app)
+    login(rclient, "tweede@school.nl")
+    page = rclient.get(f"/examens/{exam.id}/geavanceerd").text
+    assert "Alleen de eigenaar van het examen kan deze acties gebruiken." in page
+    assert f"/examens/{exam.id}/dupliceren" not in page
+    assert f"/examens/{exam.id}/bewaren" not in page

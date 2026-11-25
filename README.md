@@ -84,7 +84,9 @@ Op de examenpagina zien docenten live wie heeft ingeleverd, met signalen zoals "
 of "identiek aan een andere student". Ze kunnen een inlevering ongedaan maken of ongeldig
 verklaren (met een reden), alles downloaden als zip (met `manifest.csv` en een
 integriteitscontrole), het overzicht als CSV exporteren en een proces-verbaal (PDF) maken.
-Elke download en export komt in het auditlog. Een ontvangstbewijs van een student controleren
+Elke download en export komt in het auditlog. Dupliceren, terug naar concept, een concept
+verwijderen, opslaan als sjabloon, eigendom overdragen en de bewaartermijn staan op het
+tabblad *Geavanceerd* van het examen. Een ontvangstbewijs van een student controleren
 doet een admin, onder *Admin → Ontvangstbewijs controleren*.
 
 De docentpagina's staan onder `/examens` (tot versie 0.2 was dat `/docent`; oude links en
@@ -247,7 +249,8 @@ integriteitscontrole. Daarna verwijdert hij alle ingeleverde bestanden (ook gean
 ongeldige pogingen) en de klassenlijst van het examen. Het examen staat daarna onder
 **Afgerond**. De metadata, de proces-verbalen en het auditlog blijven bewaard.
 
-- **Bewaren-vlag:** de eigenaar of de admin kan de verwijdering met een reden tegenhouden,
+- **Bewaren-vlag:** de eigenaar of de admin kan de verwijdering met een reden tegenhouden
+  (tabblad *Geavanceerd* van het examen),
   bijvoorbeeld bij een bezwaar. Wordt de vlag weggehaald terwijl de termijn al verstreken is,
   dan volgt de verwijdering op zijn vroegst 7 dagen later.
 - **Definitief verwijderen:** alleen de admin kan een afgerond examen helemaal verwijderen, met

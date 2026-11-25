@@ -529,9 +529,10 @@ def set_hold(
             services.lifecycle.set_hold(db, ctx.user, exam, reason, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/examens/{exam.id}?error={exc.code}#bewaartermijn")
+        return _redirect(f"/examens/{exam.id}/geavanceerd?error={exc.code}#bewaartermijn")
     return _redirect(
-        f"/examens/{exam.id}?ok={'hold_removed' if remove else 'hold_set'}#bewaartermijn"
+        f"/examens/{exam.id}/geavanceerd?ok={'hold_removed' if remove else 'hold_set'}"
+        "#bewaartermijn"
     )
 
 
@@ -549,7 +550,7 @@ def delete_permanently(
         services.lifecycle.delete_permanently(db, ctx.user, exam, reason, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/examens/{exam.id}?error={exc.code}")
+        return _redirect(f"/examens/{exam.id}/geavanceerd?error={exc.code}")
     return _redirect("/examens/afgerond?ok=deleted")
 
 

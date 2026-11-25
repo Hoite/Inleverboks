@@ -1,0 +1,97 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% from "teacher/_status.html.j2" import status_badge %}
+{% block title %}{{ _("Advanced") }} · {{ exam.name }} · {{ app_name }}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/examens">{{ _("Exams") }}</a></p>
+<div class="page-head">
+  <div>
+    <h1>{{ exam.name }}</h1>
+    <p>{{ status_badge(status, status_labels) }}{% if exam.description %} <span class="muted">{{ exam.description }}</span>{% endif %}</p>
+  </div>
+</div>
+
+{% set exam_tab = "advanced" %}{% include "teacher/_exam_tabs.html.j2" %}
+
+{% set ok_messages = {
+  "unpublished": _("The exam is a concept again."), "owner": _("Ownership transferred."),
+  "hold_set": _("The retention hold is set. Files will not be deleted."),
+  "hold_removed": _("The retention hold has been removed."),
+} %}
+{% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
+{{ errors_box(errors) }}
+
+{% set any_action = perms.duplicate or perms.edit_settings or perms.delete_concept or perms.transfer_ownership %}
+<section class="card">
+  <h2>{{ _("Actions") }}</h2>
+  {% if not any_action %}<p class="muted">{{ _("Only the owner of the exam can use these actions.") }}</p>{% endif %}
+  <div class="button-row">
+    {% if perms.duplicate %}
+    <form method="post" action="/examens/{{ exam.id }}/dupliceren" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Duplicate") }}</button></form>
+    {% endif %}
+    {% if perms.edit_settings and status == "scheduled" and not submissions %}
+    <form method="post" action="/examens/{{ exam.id }}/concept" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Back to concept") }}</button></form>
+    {% endif %}
+    {% if perms.delete_concept and status == "concept" %}
+    <form method="post" action="/examens/{{ exam.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Delete concept") }}</button></form>
+    {% endif %}
+  </div>
+  {% if perms.duplicate %}
+  <form method="post" action="/examens/{{ exam.id }}/sjabloon-opslaan" class="row-form top-gap">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="template-name">{{ _("Save as exam template") }}</label>
+      <input id="template-name" name="name" type="text" maxlength="200" value="{{ exam.name }}" aria-describedby="template-name-hint">
+      <p class="hint" id="template-name-hint">{{ _("Copies the expected files, template files, extensions, limits and access settings to a new template. You can edit it afterwards under Exam templates.") }}</p>
+    </div>
+    <button type="submit" class="button button-template">{{ _("Save as template") }}</button>
+  </form>
+  {% endif %}
+  {% if perms.transfer_ownership %}
+  <form method="post" action="/examens/{{ exam.id }}/eigenaar" class="row-form top-gap">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="owner_id">{{ _("Transfer ownership to") }}</label>
+      <select id="owner_id" name="owner_id">
+        {% for t in teachers %}<option value="{{ t.id }}"{% if t.id == exam.owner_id %} selected{% endif %}>{{ t.name }} ({{ t.email }})</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Transfer") }}</button>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card" id="bewaartermijn">
+  <h2>{{ _("Retention") }}</h2>
+  {% if exam.finalized_at %}
+    <p>{{ _("Files deleted on %(d)s.", d=exam.finalized_at|localtime("%d-%m-%Y %H:%M")) }}</p>
+  {% elif retention.held %}
+    <p><span class="signal signal-extension"><span aria-hidden="true">i</span> {{ _("Retention hold") }}</span> {{ exam.hold_reason }}</p>
+  {% elif retention.due %}
+    <p>{{ _("The handed-in files will be deleted on %(d)s.", d=retention.due|localtime("%d-%m-%Y %H:%M")) }}</p>
+  {% else %}
+    <p class="muted">{{ _("The retention period starts when the exam is published and closed.") }}</p>
+  {% endif %}
+  {% if perms.set_hold and not exam.finalized_at %}
+  <form method="post" action="/examens/{{ exam.id }}/bewaren" class="row-form">
+    {{ csrf() }}
+    {% if exam.hold %}<input type="hidden" name="remove" value="true">{% endif %}
+    <div class="field grow">
+      <label for="hold-reason">{{ _("Reason") }}</label>
+      <input id="hold-reason" name="reason" type="text" required maxlength="1000" placeholder="{{ _('e.g. objection or appeal') }}">
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Remove retention hold") if exam.hold else _("Set retention hold") }}</button>
+  </form>
+  {% endif %}
+  {% if perms.delete_finalized and exam.finalized_at %}
+  <form method="post" action="/examens/{{ exam.id }}/definitief-verwijderen" class="row-form top-gap">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="delete-reason">{{ _("Reason for permanent deletion") }}</label>
+      <input id="delete-reason" name="reason" type="text" required maxlength="1000">
+    </div>
+    <button type="submit" class="button button-danger">{{ _("Delete exam permanently") }}</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

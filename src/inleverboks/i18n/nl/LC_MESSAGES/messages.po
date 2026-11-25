@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 13:10+0100\n"
+"POT-Creation-Date: 2026-11-25 13:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -1436,6 +1436,9 @@ msgstr "De link is nog niet opengezet door de docent."
 msgid "Hand-ins"
 msgstr "Inleveringen"
 
+msgid "Advanced"
+msgstr "Geavanceerd"
+
 msgid "Signals"
 msgstr "Signalen"
 
@@ -1562,6 +1565,78 @@ msgstr "Bestanden worden verwijderd op %(d)s"
 
 msgid "No exams yet."
 msgstr "Nog geen examens."
+
+msgid "The exam is a concept again."
+msgstr "Het examen is weer een concept."
+
+msgid "Ownership transferred."
+msgstr "Eigendom overgedragen."
+
+msgid "The retention hold is set. Files will not be deleted."
+msgstr "De bewaren-vlag staat aan. De bestanden worden niet verwijderd."
+
+msgid "The retention hold has been removed."
+msgstr "De bewaren-vlag is weggehaald."
+
+msgid "Only the owner of the exam can use these actions."
+msgstr "Alleen de eigenaar van het examen kan deze acties gebruiken."
+
+msgid "Duplicate"
+msgstr "Dupliceren"
+
+msgid "Back to concept"
+msgstr "Terug naar concept"
+
+msgid "Delete concept"
+msgstr "Concept verwijderen"
+
+msgid "Save as exam template"
+msgstr "Opslaan als examensjabloon"
+
+msgid ""
+"Copies the expected files, template files, extensions, limits and access settings to a new "
+"template. You can edit it afterwards under Exam templates."
+msgstr ""
+"Neemt de verwachte bestanden, sjabloonbestanden, extensies, limieten en toegangsinstellingen over"
+" in een nieuw sjabloon. Dat kun je daarna aanpassen onder Examensjablonen."
+
+msgid "Save as template"
+msgstr "Opslaan als sjabloon"
+
+msgid "Transfer ownership to"
+msgstr "Eigendom overdragen aan"
+
+msgid "Transfer"
+msgstr "Overdragen"
+
+#, python-format
+msgid "Files deleted on %(d)s."
+msgstr "Bestanden verwijderd op %(d)s."
+
+#, python-format
+msgid "The handed-in files will be deleted on %(d)s."
+msgstr "De ingeleverde bestanden worden verwijderd op %(d)s."
+
+msgid "The retention period starts when the exam is published and closed."
+msgstr "De bewaartermijn begint als het examen gepubliceerd en gesloten is."
+
+msgid "Reason"
+msgstr "Reden"
+
+msgid "e.g. objection or appeal"
+msgstr "bijv. bezwaar of beroep"
+
+msgid "Remove retention hold"
+msgstr "Bewaren-vlag weghalen"
+
+msgid "Set retention hold"
+msgstr "Bewaren-vlag zetten"
+
+msgid "Reason for permanent deletion"
+msgstr "Reden voor definitief verwijderen"
+
+msgid "Delete exam permanently"
+msgstr "Examen definitief verwijderen"
 
 msgid "Hash chain intact"
 msgstr "Hash-keten intact"
@@ -1723,12 +1798,6 @@ msgstr "Presentatiemodus"
 msgid "Link and QR code"
 msgstr "Link en QR-code"
 
-msgid "The retention hold is set. Files will not be deleted."
-msgstr "De bewaren-vlag staat aan. De bestanden worden niet verwijderd."
-
-msgid "The retention hold has been removed."
-msgstr "De bewaren-vlag is weggehaald."
-
 #, python-format
 msgid ""
 "This exam is finalized: the handed-in files were deleted on %(d)s. The proces-verbaal and the "
@@ -1737,9 +1806,8 @@ msgstr ""
 "Dit examen is afgerond: de ingeleverde bestanden zijn verwijderd op %(d)s. Het proces-verbaal en "
 "het auditlog blijven bewaard."
 
-#, python-format
-msgid "The handed-in files will be deleted on %(d)s."
-msgstr "De ingeleverde bestanden worden verwijderd op %(d)s."
+msgid "Retention and retention hold"
+msgstr "Bewaartermijn en bewaren-vlag"
 
 msgid "Counters"
 msgstr "Tellers"
@@ -1795,31 +1863,6 @@ msgstr "Proces-verbalen"
 msgid "final"
 msgstr "definitief"
 
-#, python-format
-msgid "Files deleted on %(d)s."
-msgstr "Bestanden verwijderd op %(d)s."
-
-msgid "The retention period starts when the exam is published and closed."
-msgstr "De bewaartermijn begint als het examen gepubliceerd en gesloten is."
-
-msgid "Reason"
-msgstr "Reden"
-
-msgid "e.g. objection or appeal"
-msgstr "bijv. bezwaar of beroep"
-
-msgid "Remove retention hold"
-msgstr "Bewaren-vlag weghalen"
-
-msgid "Set retention hold"
-msgstr "Bewaren-vlag zetten"
-
-msgid "Reason for permanent deletion"
-msgstr "Reden voor definitief verwijderen"
-
-msgid "Delete exam permanently"
-msgstr "Examen definitief verwijderen"
-
 msgid "Edit"
 msgstr "Bewerken"
 
@@ -1829,14 +1872,8 @@ msgstr "Publiceren"
 msgid "The exam is published."
 msgstr "Het examen is gepubliceerd."
 
-msgid "The exam is a concept again."
-msgstr "Het examen is weer een concept."
-
 msgid "A new access code has been generated."
 msgstr "Er is een nieuwe toegangscode gemaakt."
-
-msgid "Saved as exam template."
-msgstr "Opgeslagen als examensjabloon."
 
 msgid "Class list updated."
 msgstr "Klassenlijst bijgewerkt."
@@ -1846,9 +1883,6 @@ msgstr "Verlenging opgeslagen."
 
 msgid "Extension removed."
 msgstr "Verlenging verwijderd."
-
-msgid "Ownership transferred."
-msgstr "Eigendom overgedragen."
 
 msgid "Template file uploaded."
 msgstr "Sjabloonbestand geüpload."
@@ -1952,37 +1986,6 @@ msgstr "Nog geen verlengingen gegeven."
 
 msgid "Grant extension"
 msgstr "Verlenging geven"
-
-msgid "More"
-msgstr "Meer"
-
-msgid "Duplicate"
-msgstr "Dupliceren"
-
-msgid "Back to concept"
-msgstr "Terug naar concept"
-
-msgid "Delete concept"
-msgstr "Concept verwijderen"
-
-msgid "Save as exam template"
-msgstr "Opslaan als examensjabloon"
-
-msgid ""
-"Copies the expected files, template files, extensions, limits and access settings to a new "
-"template. You can edit it afterwards under Exam templates."
-msgstr ""
-"Neemt de verwachte bestanden, sjabloonbestanden, extensies, limieten en toegangsinstellingen over"
-" in een nieuw sjabloon. Dat kun je daarna aanpassen onder Examensjablonen."
-
-msgid "Save as template"
-msgstr "Opslaan als sjabloon"
-
-msgid "Transfer ownership to"
-msgstr "Eigendom overdragen aan"
-
-msgid "Transfer"
-msgstr "Overdragen"
 
 msgid "Go to"
 msgstr "Ga naar"

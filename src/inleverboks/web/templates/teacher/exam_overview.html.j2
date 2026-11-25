@@ -16,15 +16,14 @@
   </div>
 </div>
 {% set exam_tab = "overview" %}{% include "teacher/_exam_tabs.html.j2" %}
-{% set ok_messages = {"hold_set": _("The retention hold is set. Files will not be deleted."), "hold_removed": _("The retention hold has been removed.")} %}
-{% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
 {{ errors_box(error) }}
 {% if exam.finalized_at %}
 <div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">i</span>
   <div><p>{{ _("This exam is finalized: the handed-in files were deleted on %(d)s. The proces-verbaal and the audit log remain.", d=exam.finalized_at|localtime("%d-%m-%Y")) }}</p></div></div>
 {% elif retention.warning(now) %}
 <div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">!</span>
-  <div><p>{{ _("The handed-in files will be deleted on %(d)s.", d=retention.due|localtime("%d-%m-%Y %H:%M")) }}</p></div></div>
+  <div><p>{{ _("The handed-in files will be deleted on %(d)s.", d=retention.due|localtime("%d-%m-%Y %H:%M")) }}
+    <a href="/examens/{{ exam.id }}/geavanceerd#bewaartermijn">{{ _("Retention and retention hold") }}</a></p></div></div>
 {% endif %}
 
 <ul class="counters" aria-label="{{ _('Counters') }}">
@@ -93,37 +92,4 @@
 </section>
 {% endif %}
 
-<section class="card" id="bewaartermijn">
-  <h2>{{ _("Retention") }}</h2>
-  {% if exam.finalized_at %}
-    <p>{{ _("Files deleted on %(d)s.", d=exam.finalized_at|localtime("%d-%m-%Y %H:%M")) }}</p>
-  {% elif retention.held %}
-    <p><span class="signal signal-extension"><span aria-hidden="true">i</span> {{ _("Retention hold") }}</span> {{ exam.hold_reason }}</p>
-  {% elif retention.due %}
-    <p>{{ _("The handed-in files will be deleted on %(d)s.", d=retention.due|localtime("%d-%m-%Y %H:%M")) }}</p>
-  {% else %}
-    <p class="muted">{{ _("The retention period starts when the exam is published and closed.") }}</p>
-  {% endif %}
-  {% if perms.set_hold and not exam.finalized_at %}
-  <form method="post" action="/examens/{{ exam.id }}/bewaren" class="row-form">
-    {{ csrf() }}
-    {% if exam.hold %}<input type="hidden" name="remove" value="true">{% endif %}
-    <div class="field grow">
-      <label for="hold-reason">{{ _("Reason") }}</label>
-      <input id="hold-reason" name="reason" type="text" required maxlength="1000" placeholder="{{ _('e.g. objection or appeal') }}">
-    </div>
-    <button type="submit" class="button button-secondary">{{ _("Remove retention hold") if exam.hold else _("Set retention hold") }}</button>
-  </form>
-  {% endif %}
-  {% if perms.delete_finalized and exam.finalized_at %}
-  <form method="post" action="/examens/{{ exam.id }}/definitief-verwijderen" class="row-form top-gap">
-    {{ csrf() }}
-    <div class="field grow">
-      <label for="delete-reason">{{ _("Reason for permanent deletion") }}</label>
-      <input id="delete-reason" name="reason" type="text" required maxlength="1000">
-    </div>
-    <button type="submit" class="button button-danger">{{ _("Delete exam permanently") }}</button>
-  </form>
-  {% endif %}
-</section>
 {% endblock %}
