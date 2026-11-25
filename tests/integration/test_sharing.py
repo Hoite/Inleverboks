@@ -1,9 +1,11 @@
-"""Shared class lists (PLAN B60)."""
+"""Shared class lists (PLAN B60) and the presentation counter that keeps counting
+invalidated work (PLAN B62)."""
 
 from __future__ import annotations
 
 import re
 import uuid
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -15,13 +17,15 @@ from inleverboks.adapters.clock import FrozenClock
 from inleverboks.db.models import (
     AuditEvent,
     ClassList,
+    Exam,
     ExamRosterEntry,
+    Submission,
     User,
 )
 from inleverboks.services.classlists import ImportResult, ParsedEntry
 from inleverboks.services.container import Services
-from tests.conftest import create_user, csrf_token, enable_totp, extract, login, post
-from tests.student_helpers import make_exam
+from tests.conftest import START, create_user, csrf_token, enable_totp, extract, login, post
+from tests.student_helpers import make_exam, ready, slot_ids, upload
 
 
 @pytest.fixture
@@ -260,3 +264,61 @@ def test_other_teacher_uses_list_in_exam_and_snapshot_stays(
             )
         )
         assert numbers == {"123456", "123457"}
+
+
+# Presentation counter -------------------------------------------------------------
+
+
+def _hand_in(client: TestClient, exam: Exam, number: str) -> None:
+    student = TestClient(client.app)
+    ready(student, exam, number, first="Piet", infix="", last=f"Jansen{number}")
+    files = [
+        (f"Examen_Linux_P3_{number}.docx", b"PK verslag " + number.encode(), slot_ids(exam)[0])
+    ]
+    assert upload(student, exam, files, confirmed=True).status_code == 200
+
+
+def _submission(db: Session, exam: Exam, number: str) -> Submission:
+    db.expire_all()
+    found = db.scalar(
+        select(Submission).where(
+            Submission.exam_id == exam.id, Submission.student_number == number,
+            Submission.status == "active",
+        )
+    )  # fmt: skip
+    assert found is not None
+    return found
+
+
+def test_counter_keeps_invalidated_work_once_per_student(
+    client: TestClient, db: Session, services: Services, clock: FrozenClock,
+    clients: dict[str, TestClient], teacher: User,
+) -> None:  # fmt: skip
+    exam = make_exam(db, services, teacher)
+    clock.set(START + timedelta(minutes=5))
+    for number in ("111111", "222222", "333333"):
+        _hand_in(client, exam, number)
+
+    def count() -> int:
+        db.expire_all()
+        page = clients["owner"].get(f"/examens/{exam.id}/presentatie/teller").text
+        shown = int(extract(r'class="present-count">(\d+) ingeleverd', page))
+        assert shown == services.exams.handed_in_count(db, exam)
+        return shown
+
+    assert count() == 3
+    # Invalidating work does not lower the count.
+    services.review.invalidate(
+        db, teacher, exam, _submission(db, exam, "111111").id, "Fraude", may_resubmit=True, ip=None
+    )
+    assert count() == 3
+    # Invalid + a new active hand-in counts once.
+    _hand_in(client, exam, "111111")
+    assert count() == 3
+    # A cancelled submission does not count: that student hands in again.
+    services.review.cancel(
+        db, teacher, exam, _submission(db, exam, "222222").id, "Vervangen", ip=None
+    )
+    assert count() == 2
+    _hand_in(client, exam, "222222")
+    assert count() == 3

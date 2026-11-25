@@ -900,7 +900,7 @@ def qr_png(exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc) -> Response:
 
 def _counter(db: Session, services: Services, exam: Exam) -> dict[str, Any]:
     return {
-        "submitted": services.exams.submission_count(db, exam),
+        "submitted": services.exams.handed_in_count(db, exam),
         "expected": services.exams.roster_count(db, exam),
         "status": services.exams.status(db, exam),
     }

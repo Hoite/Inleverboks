@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import exists, func, or_, select, update
+from sqlalchemy import distinct, exists, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import Clock
@@ -328,6 +328,19 @@ class ExamService:
                 select(func.count())
                 .select_from(Submission)
                 .where(Submission.exam_id == exam.id, Submission.status == "active")
+            )
+            or 0
+        )
+
+    def handed_in_count(self, db: Session, exam: Exam) -> int:
+        """Students who handed in, for the presentation counter: one per student with an
+        active or invalid submission. A cancelled one does not count: that student hands
+        in again. Invalidating work therefore never lowers the count."""
+        return (
+            db.scalar(
+                select(func.count(distinct(Submission.student_number))).where(
+                    Submission.exam_id == exam.id, Submission.status.in_(("active", "invalid"))
+                )
             )
             or 0
         )
