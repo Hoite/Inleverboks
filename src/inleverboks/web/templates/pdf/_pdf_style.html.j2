@@ -1,8 +1,8 @@
 <style>
   @page {
     size: A4; margin: 18mm 15mm 24mm;
-    @bottom-left { content: element(footer); }
-    @bottom-right { content: counter(page) " / " counter(pages); font-size: 7.5pt; color: #5b6770; }
+    @bottom-left { content: element(footer); width: 158mm; }
+    @bottom-right { content: counter(page) " / " counter(pages); width: 20mm; white-space: nowrap; font-size: 7.5pt; color: #5b6770; }
   }
   body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #313131; line-height: 1.35; }
   /* Long names, file names and hashes must wrap instead of running off the page. */
