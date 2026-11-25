@@ -6,6 +6,8 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-25
+
 ### Toegevoegd
 
 - Klassenlijsten zijn voor alle docenten zichtbaar en bruikbaar, met een kolom *Eigenaar* en de
