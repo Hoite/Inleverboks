@@ -23,6 +23,7 @@ from inleverboks.db.models import (
     ExpectedFile,
     ExtensionGrant,
     IpPreset,
+    ProcesVerbaal,
     Qualification,
     RetiredSlug,
     Submission,
@@ -862,16 +863,27 @@ class ExamService:
         db.commit()
 
     def delete_concept(self, db: Session, user: User, exam: Exam, *, ip: str | None) -> list[str]:
-        """Delete a concept without submissions. Returns template storage keys that may
-        now be unreferenced (the caller removes them from storage)."""
+        """Delete a concept without submissions. Returns storage keys the caller removes:
+        template files that may now be unreferenced, and the PDFs of its proces-verbalen.
+
+        A proces-verbaal can exist when one was downloaded while the exam was published.
+        Without submissions it records no hand-ins, so it goes with the exam; the audit
+        event keeps its document ids.
+        """
         if not can_exam(user, ExamAction.DELETE_CONCEPT, _ref(exam)):
             raise PermissionDeniedError()
         if exam.published_at is not None:
             raise DomainError("not_concept")
         if self.has_submissions(db, exam):
             raise DomainError("has_submissions")
+        reports = list(db.scalars(select(ProcesVerbaal).where(ProcesVerbaal.exam_id == exam.id)))
+        if any(pv.is_final for pv in reports):  # pragma: no cover - a concept is never final
+            raise DomainError("not_concept")
         keys = [s.template_file.storage_key for s in exam.expected_files if s.template_file]
-        details = {"exam_id": str(exam.id), "name": exam.name, "slug": exam.slug}
+        keys += [pv.storage_key for pv in reports]
+        details: dict[str, Any] = {"exam_id": str(exam.id), "name": exam.name, "slug": exam.slug}
+        if reports:
+            details["proces_verbaal"] = sorted(pv.document_id for pv in reports)
         self.audit.append(
             db, "exam.deleted", actor=Actor.for_user(user), chain=exam.id, ip=ip, details=details
         )
@@ -879,6 +891,9 @@ class ExamService:
         db.add(RetiredSlug(slug=exam.slug, retired_at=self.clock.now()))
         db.query(ExamRosterEntry).filter_by(exam_id=exam.id).delete()
         db.query(ExtensionGrant).filter_by(exam_id=exam.id).delete()
+        for pv in reports:
+            db.delete(pv)
+        db.flush()  # the proces-verbalen refer to the exam: remove them first
         db.delete(exam)
         db.commit()
         return keys

@@ -6,6 +6,13 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Opgelost
+
+- *Concept verwijderen* gaf een serverfout als er een proces-verbaal van het examen was
+  gedownload terwijl het gepubliceerd was. Zo'n proces-verbaal (zonder inleveringen) wordt nu
+  met het concept verwijderd; het auditlog bewaart de documentnummers.
+- De velden voor een verlenging (studentnummer, datum, tijd) staan weer op één lijn.
+
 ## [0.3.2] - 2026-11-25
 
 ### Toegevoegd

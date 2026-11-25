@@ -18,6 +18,7 @@ from inleverboks.db.models import (
     ExamRosterEntry,
     ExamTemplate,
     IpPreset,
+    ProcesVerbaal,
     RetiredSlug,
     Submission,
     TemplateFile,
@@ -1099,8 +1100,11 @@ def test_advanced_tab_permissions(tclient: TestClient, db: Session, clock: Froze
 
 
 def test_delete_concept_made_from_template_after_unpublish(
-    tclient: TestClient, db: Session
+    tclient: TestClient, db: Session, services: Services, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A proces-verbaal downloaded while published goes with the concept (it used to make
+    the delete fail on its foreign key)."""
+    monkeypatch.setattr(tclient.app.state.pdf, "render", lambda *_args: b"%PDF-1.7 test")  # type: ignore[attr-defined]
     exam = create_exam(tclient, access_code_enabled="", allow_unlisted="")
     ids = _slot_ids(db, exam)
     _upload(tclient, exam, ids[0], b"sjabloon", "leeg.docx")
@@ -1113,12 +1117,24 @@ def test_delete_concept_made_from_template_after_unpublish(
              source_template_id=str(template.id)),
     )  # fmt: skip
     assert response.status_code == 303, response.text[:500]
-    new_id = response.headers["location"].split("/")[2]
+    new_id = uuid.UUID(response.headers["location"].split("/")[2])
     assert post(tclient, f"/examens/{new_id}/publiceren").status_code == 303
+    assert post(tclient, f"/examens/{new_id}/proces-verbaal").status_code == 200
+    pv = db.scalar(select(ProcesVerbaal).where(ProcesVerbaal.exam_id == new_id))
+    assert pv is not None
+    pv_key, document_id = pv.storage_key, pv.document_id
+    assert _exists(services, pv_key)
     assert post(tclient, f"/examens/{new_id}/concept").status_code == 303
 
     response = post(tclient, f"/examens/{new_id}/verwijderen")
 
     assert response.status_code == 303
+    assert response.headers["location"] == "/examens"
     db.expire_all()
-    assert db.get(Exam, uuid.UUID(new_id)) is None
+    assert db.get(Exam, new_id) is None
+    assert db.scalar(select(ProcesVerbaal)) is None
+    assert not _exists(services, pv_key)
+    deleted = events(db, "exam.deleted", str(new_id))[0]
+    assert deleted.details["proces_verbaal"] == [document_id]
+    template_key = db.scalars(select(TemplateFile.storage_key)).first()
+    assert template_key is not None and _exists(services, template_key)  # still in use
