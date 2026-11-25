@@ -34,7 +34,7 @@
 <h3>{{ _("Expected files") }}</h3>
 <table>
   {% set has_wp = expected_files|selectattr("work_process_code")|list %}
-  <thead><tr><th>#</th>{% if has_wp %}<th>{{ _("Work process") }}</th>{% endif %}<th>{{ _("Label") }}</th><th>{{ _("Expected file name") }}</th><th>{{ _("Extensions") }}</th><th>{{ _("Template SHA-256") }}</th></tr></thead>
+  <thead><tr><th class="w4">#</th>{% if has_wp %}<th class="w12">{{ _("Work process") }}</th>{% endif %}<th class="{{ 'w20' if has_wp else 'w26' }}">{{ _("Label") }}</th><th class="{{ 'w22' if has_wp else 'w26' }}">{{ _("Expected file name") }}</th><th class="w14">{{ _("Extensions") }}</th><th>{{ _("Template SHA-256") }}</th></tr></thead>
   <tbody>
   {% for slot in expected_files %}
     <tr><td>{{ slot.position }}</td>{% if has_wp %}<td class="mono">{{ slot.work_process_code or "" }}</td>{% endif %}<td>{{ slot.label }}</td><td class="mono">{{ slot.expected_name_pattern or "" }}</td>
@@ -67,7 +67,7 @@
   <p>{{ _("Work processes") }}: {% for slot in expected_files if slot.work_process_code %}<span class="mono">{{ slot.work_process_code }}</span> {{ "✓" if slot.id in s.row.filled_slots else "—" }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
   {% endif %}
   <table>
-    <thead><tr><th>{{ _("File") }}</th><th>{{ _("Expected file") }}</th><th>{{ _("Size") }}</th><th>SHA-256</th><th>{{ _("Warnings") }}</th></tr></thead>
+    <thead><tr><th class="w30">{{ _("File") }}</th><th class="w16">{{ _("Expected file") }}</th><th class="w12">{{ _("Size") }}</th><th class="w24">SHA-256</th><th>{{ _("Warnings") }}</th></tr></thead>
     <tbody>
     {% for f in s.files %}
       <tr><td>{{ f.name }}{% if f.integrity_ok == false %} <span class="bad">({{ _("integrity check failed") }})</span>{% endif %}</td>
@@ -91,7 +91,7 @@
 <h2>{{ _("Particulars") }}</h2>
 {% if particulars %}
 <table>
-  <thead><tr><th>{{ _("Time") }}</th><th>{{ _("Type") }}</th><th>{{ _("Student") }}</th><th>{{ _("Details") }}</th><th>{{ _("By") }}</th></tr></thead>
+  <thead><tr><th class="w14">{{ _("Time") }}</th><th class="w14">{{ _("Type") }}</th><th class="w22">{{ _("Student") }}</th><th>{{ _("Details") }}</th><th class="w18">{{ _("By") }}</th></tr></thead>
   <tbody>
   {% set kinds = {"cancelled": _("Undone"), "invalid": _("Declared invalid"), "extension": _("Extension"), "hold": _("Retention hold")} %}
   {% for p in particulars %}

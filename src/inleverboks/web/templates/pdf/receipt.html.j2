@@ -6,12 +6,14 @@
 <style>
   @page { size: A4; margin: 18mm 16mm 20mm; @bottom-right { content: counter(page) " / " counter(pages); font-size: 8pt; color: #5b6770; } }
   body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10pt; color: #313131; }
+  /* Long names and file names must wrap instead of running off the page. */
+  h1, h2, p, dd, li { overflow-wrap: anywhere; }
   h1 { color: #005381; font-size: 16pt; margin: 0 0 4mm; border-bottom: 1.5pt solid #e73443; padding-bottom: 2mm; }
   h2 { color: #005381; font-size: 11pt; margin: 6mm 0 2mm; }
-  dl { display: grid; grid-template-columns: 40mm 1fr; gap: 1.5mm 4mm; margin: 0; }
+  dl { display: grid; grid-template-columns: 40mm minmax(0, 1fr); gap: 1.5mm 4mm; margin: 0; }
   dt { font-weight: bold; }
   dd { margin: 0; }
-  .mono { font-family: "DejaVu Sans Mono", monospace; }
+  .mono { font-family: "DejaVu Sans Mono", monospace; word-break: break-all; }
   .code { font-size: 13pt; letter-spacing: 1pt; }
   ul { padding-left: 5mm; }
   li { margin-bottom: 2.5mm; }

@@ -11,7 +11,7 @@
 <h1>{{ title }}</h1>
 <p>{% if issues %}<span class="bad">{{ _("The hash chain is broken.") }}</span>{% else %}{{ _("Hash chain intact: %(n)s events checked.", n=checked) }}{% endif %}</p>
 <table>
-  <thead><tr><th>#</th><th>{{ _("Time") }}</th><th>{{ _("Actor") }}</th><th>{{ _("IP address") }}</th><th>{{ _("Event") }}</th><th>{{ _("Details") }}</th></tr></thead>
+  <thead><tr><th class="w8">#</th><th class="w12">{{ _("Time") }}</th><th class="w16">{{ _("Actor") }}</th><th class="w14">{{ _("IP address") }}</th><th class="w16">{{ _("Event") }}</th><th>{{ _("Details") }}</th></tr></thead>
   <tbody>
   {% for e in events %}
     <tr><td>{{ e.seq }}</td><td>{{ e.ts|localtime("%d-%m-%Y %H:%M:%S") }}</td><td>{{ e.actor_label }}</td><td class="mono">{{ e.ip or "" }}</td>

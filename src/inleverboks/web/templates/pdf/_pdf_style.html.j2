@@ -5,22 +5,28 @@
     @bottom-right { content: counter(page) " / " counter(pages); font-size: 7.5pt; color: #5b6770; }
   }
   body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #313131; line-height: 1.35; }
+  /* Long names, file names and hashes must wrap instead of running off the page. */
+  h1, h2, h3, p, dd, li, th, td, .footer { overflow-wrap: anywhere; }
   h1 { color: #005381; font-size: 16pt; margin: 0 0 1mm; }
   .brand { font-weight: bold; color: {{ brand.colors.primary if brand is defined else '#005381' }}; font-size: 9pt; border-bottom: 1.5pt solid {{ brand.colors.accent if brand is defined else '#e73443' }}; padding-bottom: 2mm; margin-bottom: 4mm; }
   h2 { color: #005381; font-size: 11.5pt; margin: 6mm 0 2mm; border-bottom: .5pt solid #c9d3da; padding-bottom: 1mm; }
   h3 { font-size: 10pt; margin: 4mm 0 1mm; }
-  table { width: 100%; border-collapse: collapse; margin: 1mm 0 3mm; }
+  /* A fixed layout keeps every table within the page; the widths come from the header. */
+  table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 1mm 0 3mm; }
   th, td { text-align: left; vertical-align: top; padding: 1mm 1.5mm; border-bottom: .4pt solid #dde3e8; }
   th { background: #e6eef2; color: #005381; font-size: 8pt; }
-  dl { display: grid; grid-template-columns: 45mm 1fr; gap: .8mm 4mm; margin: 0; }
+  dl { display: grid; grid-template-columns: 45mm minmax(0, 1fr); gap: .8mm 4mm; margin: 0; }
   dt { font-weight: bold; }
   dd { margin: 0; }
-  .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 7.5pt; }
+  .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 7.5pt; word-break: break-all; }
+  .w4 { width: 4%; } .w6 { width: 6%; } .w8 { width: 8%; } .w10 { width: 10%; } .w12 { width: 12%; }
+  .w14 { width: 14%; } .w16 { width: 16%; } .w18 { width: 18%; } .w20 { width: 20%; }
+  .w22 { width: 22%; } .w24 { width: 24%; } .w26 { width: 26%; } .w30 { width: 30%; }
   .muted { color: #5b6770; }
   .student { page-break-inside: avoid; border-bottom: .4pt solid #c9d3da; padding-bottom: 2mm; margin-bottom: 2mm; }
   .warn { color: #8a5a00; }
   .bad { color: #b00020; font-weight: bold; }
   .footer { position: running(footer); font-size: 7pt; color: #5b6770; }
-  .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; margin-top: 10mm; page-break-inside: avoid; }
+  .signatures { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10mm; margin-top: 10mm; page-break-inside: avoid; }
   .signature { border-top: .6pt solid #313131; padding-top: 1.5mm; margin-top: 18mm; }
 </style>

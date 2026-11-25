@@ -6,6 +6,13 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Opgelost
+
+- Het proces-verbaal (en ook het ontvangstbewijs en de auditlog-PDF) liep bij lange namen,
+  bestandsnamen en hashes van de pagina af. Tabellen hebben nu een vaste indeling met
+  kolombreedtes, en lange woorden en hashes breken af. Een test controleert met de
+  layout van WeasyPrint dat niets buiten de pagina valt.
+
 ## [0.2.0] - 2026-11-24
 
 Sjablonen op basis van de kwalificatiestructuur van SBB.
