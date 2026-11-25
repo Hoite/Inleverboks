@@ -1,5 +1,6 @@
 {% extends "base.html.j2" %}
 {% from "teacher/_status.html.j2" import status_badge %}
+{% block head_extra %}{% if owners is defined %}<script type="module" src="{{ asset('js/combobox.js') }}"></script>{% endif %}{% endblock %}
 {% block title %}{{ _("Exams") }} · {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -13,7 +14,7 @@
 <form method="get" action="/examens/alle" class="row-form filter-form">
   <div class="field">
     <label for="eigenaar">{{ _("Owner") }}</label>
-    <select id="eigenaar" name="eigenaar">
+    <select id="eigenaar" name="eigenaar" data-combobox data-config="{{ combobox_config() }}">
       <option value="">{{ _("All teachers") }}</option>
       {% for uid, name in owners %}<option value="{{ uid }}"{% if owner_filter == uid %} selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>

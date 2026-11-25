@@ -362,6 +362,7 @@ def test_all_exams_owner_column_and_filter(
     assert '<th scope="col">Eigenaar</th>' in page
     assert "Examen van Anna" in page and "Examen van Bert" in page
     assert f'<option value="{teacher.id}">Anna Eigenaar</option>' in page
+    assert 'id="eigenaar" name="eigenaar" data-combobox' in page
     filtered = admin.get(f"/examens/alle?eigenaar={teacher.id}").text
     assert "Examen van Anna" in filtered and "Examen van Bert" not in filtered
     assert f'<option value="{teacher.id}" selected>' in filtered
