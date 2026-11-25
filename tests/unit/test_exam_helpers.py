@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -15,9 +15,14 @@ from inleverboks.services.classlists import (
     read_rows,
 )
 from inleverboks.services.errors import DomainError
-from inleverboks.services.exams import matches_pattern, pattern_extension
+from inleverboks.services.exams import matches_pattern, pattern_extension, redate_slug
 from inleverboks.services.ipranges import ip_allowed, parse_cidrs
-from inleverboks.services.timeutil import parse_local, round_to_quarter
+from inleverboks.services.timeutil import (
+    default_window,
+    next_working_day,
+    parse_local,
+    round_to_quarter,
+)
 from inleverboks.web.downloads import content_disposition
 
 AMS = ZoneInfo("Europe/Amsterdam")
@@ -51,7 +56,9 @@ def test_invalid_slugs(slug: str) -> None:
         slugs.validate_format(slug)
 
 
-@pytest.mark.parametrize("slug", ["login", "admin", "docent", "static", "healthz", "uitnodiging"])
+@pytest.mark.parametrize(
+    "slug", ["login", "admin", "docent", "examens", "static", "healthz", "uitnodiging"]
+)
 def test_reserved_slugs(slug: str) -> None:
     with pytest.raises(DomainError, match="slug_reserved"):
         slugs.validate_format(slug)
@@ -224,3 +231,44 @@ def test_content_disposition_rfc5987() -> None:
     assert 'filename="Verslag _Jan_ rsted.docx"' in value
     assert "filename*=UTF-8''Verslag%20%22Jan%22%20%C3%98rsted.docx" in value
     assert "\n" not in content_disposition("a\nb.txt")
+
+
+# Default window and suggested link names ---------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("today", "expected"),
+    [
+        (date(2026, 11, 23), date(2026, 11, 24)),  # Monday → Tuesday
+        (date(2026, 11, 26), date(2026, 11, 27)),  # Thursday → Friday
+        (date(2026, 11, 27), date(2026, 11, 30)),  # Friday → Monday
+        (date(2026, 11, 28), date(2026, 11, 30)),  # Saturday → Monday
+        (date(2026, 11, 29), date(2026, 11, 30)),  # Sunday → Monday
+    ],
+)
+def test_next_working_day(today: date, expected: date) -> None:
+    assert next_working_day(today) == expected
+
+
+def test_default_window_is_9_to_17_local_also_around_daylight_saving() -> None:
+    # Friday 27 March 2026, 23:30 local: Monday 30 March is in summer time (UTC+2).
+    start, end = default_window(datetime(2026, 3, 27, 22, 30, tzinfo=UTC), AMS)
+    assert start == datetime(2026, 3, 30, 7, 0, tzinfo=UTC)
+    assert end == datetime(2026, 3, 30, 15, 0, tzinfo=UTC)
+    # After midnight local time it is already the next day.
+    start, _ = default_window(datetime(2026, 11, 26, 23, 30, tzinfo=UTC), AMS)  # Fri 00:30
+    assert start == datetime(2026, 11, 30, 8, 0, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(
+    ("slug", "redated"),
+    [
+        ("27016-b1-k1-16112026", "27016-b1-k1-03122026"),
+        ("27016-b1-k1-w3-16112026-2", "27016-b1-k1-w3-03122026"),
+        ("examen-linux-p3", None),
+        ("code-123456789", None),  # nine digits: not a date
+        ("12345678-examen", None),  # the date must be at the end
+    ],
+)
+def test_redate_slug(slug: str, redated: str | None) -> None:
+    assert redate_slug(slug, "03122026") == redated
