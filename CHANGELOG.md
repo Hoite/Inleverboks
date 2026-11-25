@@ -6,6 +6,8 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-25
+
 ### Opgelost
 
 - **Migraties op SQLite wisten gegevens.** Een migratie die een tabel opnieuw opbouwt (Alembic
