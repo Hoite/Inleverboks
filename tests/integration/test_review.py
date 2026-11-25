@@ -112,7 +112,7 @@ def scenario(
 def test_overview_counters_rows_and_signals(
     teacher_client: TestClient, exam: Exam, scenario: dict[str, Any]
 ) -> None:
-    page = teacher_client.get(f"/docent/examens/{exam.id}")
+    page = teacher_client.get(f"/examens/{exam.id}")
     assert page.status_code == 200
     text = page.text
     counters = re.findall(r'<span class="counter-value">(\d+)</span> ([a-z ]+)</li>', text)
@@ -144,19 +144,17 @@ def test_overview_counters_rows_and_signals(
 def test_overview_filter_sort_and_fragment(
     teacher_client: TestClient, exam: Exam, scenario: dict[str, Any]
 ) -> None:
-    missing = teacher_client.get(f"/docent/examens/{exam.id}?status=missing").text
+    missing = teacher_client.get(f"/examens/{exam.id}?status=missing").text
     assert "Ångström, Zoë" in missing
     assert "Jansen, Piet" not in missing
-    unlisted = teacher_client.get(f"/docent/examens/{exam.id}?status=not_on_list").text
+    unlisted = teacher_client.get(f"/examens/{exam.id}?status=not_on_list").text
     assert "Jansen, Piet" in unlisted
     assert "Vries, Jan de" not in unlisted
-    fragment = teacher_client.get(
-        f"/docent/examens/{exam.id}", headers={"HX-Trigger": "poll-overview"}
-    )
+    fragment = teacher_client.get(f"/examens/{exam.id}", headers={"HX-Trigger": "poll-overview"})
     assert fragment.text.lstrip().startswith("{#") is False
     assert "<html" not in fragment.text
     assert "Vries, Jan de" in fragment.text
-    by_time = teacher_client.get(f"/docent/examens/{exam.id}?sort=time&desc=true").text
+    by_time = teacher_client.get(f"/examens/{exam.id}?sort=time&desc=true").text
     assert by_time.index("Jansen, Piet") < by_time.index("Vries, Jan de")
 
 
@@ -165,7 +163,7 @@ def test_no_polling_when_closed(
 ) -> None:
     clock.set(START + timedelta(hours=5))
     login(teacher_client)
-    assert 'hx-trigger="every 10s"' not in teacher_client.get(f"/docent/examens/{exam.id}").text
+    assert 'hx-trigger="every 10s"' not in teacher_client.get(f"/examens/{exam.id}").text
 
 
 # Permissions ---------------------------------------------------------------------
@@ -181,12 +179,12 @@ def test_other_teacher_has_no_access(
     assert submission is not None
     file = submission.files[0]
     for url in [
-        f"/docent/examens/{exam.id}",
-        f"/docent/examens/{exam.id}/zip",
-        f"/docent/examens/{exam.id}/overzicht.csv",
-        f"/docent/examens/{exam.id}/bestanden/{file.id}",
-        f"/docent/examens/{exam.id}/studenten/123456",
-        f"/docent/examens/{exam.id}/auditlog",
+        f"/examens/{exam.id}",
+        f"/examens/{exam.id}/zip",
+        f"/examens/{exam.id}/overzicht.csv",
+        f"/examens/{exam.id}/bestanden/{file.id}",
+        f"/examens/{exam.id}/studenten/123456",
+        f"/examens/{exam.id}/auditlog",
     ]:
         response = other.get(url)
         assert response.status_code == 404, url
@@ -201,15 +199,15 @@ def test_second_reviewer_reads_but_cannot_change(
     db.commit()
     rc = TestClient(client.app)
     login(rc, "tweede@school.nl")
-    assert rc.get(f"/docent/examens/{exam.id}").status_code == 200
-    assert rc.get(f"/docent/examens/{exam.id}/zip").status_code == 200
-    assert rc.get(f"/docent/examens/{exam.id}/overzicht.csv").status_code == 200
+    assert rc.get(f"/examens/{exam.id}").status_code == 200
+    assert rc.get(f"/examens/{exam.id}/zip").status_code == 200
+    assert rc.get(f"/examens/{exam.id}/overzicht.csv").status_code == 200
     submission = db.scalar(select(Submission).where(Submission.student_number == "123456"))
     assert submission is not None
-    page = rc.get(f"/docent/examens/{exam.id}/studenten/123456").text
+    page = rc.get(f"/examens/{exam.id}/studenten/123456").text
     assert "Inlevering ongedaan maken" not in page
     response = form(
-        rc, f"/docent/examens/{exam.id}/inleveringen/{submission.id}/annuleren", {"reason": "x"}
+        rc, f"/examens/{exam.id}/inleveringen/{submission.id}/annuleren", {"reason": "x"}
     )
     assert response.status_code == 403
 
@@ -229,11 +227,11 @@ def test_admin_may_download_but_not_cancel(
     submission = db.scalar(select(Submission).where(Submission.student_number == "123456"))
     assert submission is not None
     file = submission.files[1]
-    response = ac.get(f"/docent/examens/{exam.id}/bestanden/{file.id}")
+    response = ac.get(f"/examens/{exam.id}/bestanden/{file.id}")
     assert response.status_code == 200
     assert response.content == b"#!/bin/sh\necho gedeeld\n"
     response = form(
-        ac, f"/docent/examens/{exam.id}/inleveringen/{submission.id}/ongeldig", {"reason": "x"}
+        ac, f"/examens/{exam.id}/inleveringen/{submission.id}/ongeldig", {"reason": "x"}
     )
     assert response.status_code == 403
 
@@ -251,7 +249,7 @@ def test_cancel_keeps_files_and_allows_new_attempt(
 ) -> None:
     submission = db.scalar(select(Submission).where(Submission.student_number == "999999"))
     assert submission is not None
-    url = f"/docent/examens/{exam.id}/inleveringen/{submission.id}/annuleren"
+    url = f"/examens/{exam.id}/inleveringen/{submission.id}/annuleren"
     assert (
         form(teacher_client, url, {"reason": "  "})
         .headers["location"]
@@ -277,7 +275,7 @@ def test_cancel_keeps_files_and_allows_new_attempt(
         for s in db.scalars(select(Submission).where(Submission.student_number == "999999"))
     )
     assert attempts == [1, 2]
-    detail = teacher_client.get(f"/docent/examens/{exam.id}/studenten/999999").text
+    detail = teacher_client.get(f"/examens/{exam.id}/studenten/999999").text
     assert "Poging 1" in detail and "Poging 2" in detail
     assert "Student wil verslag vervangen" in detail
 
@@ -294,7 +292,7 @@ def test_invalidate(
     submission = db.scalar(select(Submission).where(Submission.student_number == "999999"))
     assert submission is not None
     data = {"reason": "Fraude vermoed"} | ({"may_resubmit": "true"} if may_resubmit else {})
-    form(teacher_client, f"/docent/examens/{exam.id}/inleveringen/{submission.id}/ongeldig", data)
+    form(teacher_client, f"/examens/{exam.id}/inleveringen/{submission.id}/ongeldig", data)
     db.expire_all()
     assert submission.status == "invalid"
     assert submission.may_resubmit is may_resubmit
@@ -314,7 +312,7 @@ def test_file_download(
     submission = db.scalar(select(Submission).where(Submission.student_number == "123456"))
     assert submission is not None
     file = submission.files[0]
-    response = teacher_client.get(f"/docent/examens/{exam.id}/bestanden/{file.id}")
+    response = teacher_client.get(f"/examens/{exam.id}/bestanden/{file.id}")
     assert response.content == EMPTY_TEMPLATE
     assert response.headers["content-disposition"].startswith('attachment; filename="verslag.docx"')
     assert response.headers["x-content-type-options"] == "nosniff"
@@ -335,7 +333,7 @@ def _manifest(archive: zipfile.ZipFile) -> list[dict[str, str]]:
 def test_zip_structure_and_manifest(
     teacher_client: TestClient, db: Session, exam: Exam, scenario: dict[str, Any]
 ) -> None:
-    response = teacher_client.get(f"/docent/examens/{exam.id}/zip")
+    response = teacher_client.get(f"/examens/{exam.id}/zip")
     assert response.headers["content-disposition"].startswith(
         'attachment; filename="linux-p3_2026-11-13.zip"'
     )
@@ -387,13 +385,13 @@ def test_zip_includes_cancelled_only_on_request(
     assert submission is not None
     form(
         teacher_client,
-        f"/docent/examens/{exam.id}/inleveringen/{submission.id}/annuleren",
+        f"/examens/{exam.id}/inleveringen/{submission.id}/annuleren",
         {"reason": "x"},
     )
-    without = _zip(teacher_client.get(f"/docent/examens/{exam.id}/zip"))
+    without = _zip(teacher_client.get(f"/examens/{exam.id}/zip"))
     assert not any(n.startswith("_geannuleerd/") for n in without.namelist())
     assert not any("Jansen" in n for n in without.namelist())
-    with_cancelled = _zip(teacher_client.get(f"/docent/examens/{exam.id}/zip?geannuleerd=true"))
+    with_cancelled = _zip(teacher_client.get(f"/examens/{exam.id}/zip?geannuleerd=true"))
     assert "_geannuleerd/Jansen, Piet (999999) - poging 1/install.sh" in with_cancelled.namelist()
     assert not any(n.startswith("_ongeldig/") for n in with_cancelled.namelist())
     rows = [m for m in _manifest(with_cancelled) if m["studentnummer"] == "999999"]
@@ -412,7 +410,7 @@ def test_zip_integrity_check_detects_tampering(
     tampered = submission.files[0]
     assert tampered.storage_key is not None
     (Path(settings.storage_path) / tampered.storage_key).write_bytes(b"gemanipuleerd")
-    archive = _zip(teacher_client.get(f"/docent/examens/{exam.id}/zip"))
+    archive = _zip(teacher_client.get(f"/examens/{exam.id}/zip"))
     status = {
         m["bestandsnaam_origineel"] + m["studentnummer"]: m["integriteit_ok"]
         for m in _manifest(archive)
@@ -429,7 +427,7 @@ def test_zip_integrity_check_detects_tampering(
 def test_student_zip(
     teacher_client: TestClient, db: Session, exam: Exam, scenario: dict[str, Any]
 ) -> None:
-    archive = _zip(teacher_client.get(f"/docent/examens/{exam.id}/studenten/123456/zip"))
+    archive = _zip(teacher_client.get(f"/examens/{exam.id}/studenten/123456/zip"))
     assert (
         sorted(n.split("/")[0] for n in archive.namelist() if "/" in n)
         == ["Vries, Jan de (123456)"] * 4
@@ -443,7 +441,7 @@ def test_student_zip(
 def test_overview_csv(
     teacher_client: TestClient, db: Session, exam: Exam, scenario: dict[str, Any]
 ) -> None:
-    response = teacher_client.get(f"/docent/examens/{exam.id}/overzicht.csv")
+    response = teacher_client.get(f"/examens/{exam.id}/overzicht.csv")
     assert response.headers["content-disposition"].startswith(
         'attachment; filename="linux-p3_overzicht_2026-11-13.csv"'
     )
@@ -467,9 +465,7 @@ def test_csv_neutralizes_formulas_in_names(
     rows = list(
         csv.DictReader(
             io.StringIO(
-                teacher_client.get(f"/docent/examens/{exam.id}/overzicht.csv").content.decode(
-                    "utf-8-sig"
-                )
+                teacher_client.get(f"/examens/{exam.id}/overzicht.csv").content.decode("utf-8-sig")
             ),
             delimiter=";",
         )
@@ -503,10 +499,10 @@ def test_proces_verbaal_context_and_record(
     assert submission is not None
     form(
         teacher_client,
-        f"/docent/examens/{exam.id}/inleveringen/{submission.id}/annuleren",
+        f"/examens/{exam.id}/inleveringen/{submission.id}/annuleren",
         {"reason": "Verzoek"},
     )
-    response = form(teacher_client, f"/docent/examens/{exam.id}/proces-verbaal", {})
+    response = form(teacher_client, f"/examens/{exam.id}/proces-verbaal", {})
     assert response.status_code == 200
     assert response.headers["content-disposition"].startswith('attachment; filename="linux-p3_PV-')
     template, context = captured_pdf[0]
@@ -535,7 +531,7 @@ def test_proces_verbaal_renders_with_weasyprint(
         import weasyprint  # noqa: F401, PLC0415
     except OSError:
         pytest.skip("Pango is not installed locally (runs in CI and Docker)")
-    response = form(teacher_client, f"/docent/examens/{exam.id}/proces-verbaal", {})
+    response = form(teacher_client, f"/examens/{exam.id}/proces-verbaal", {})
     assert response.status_code == 200
     assert response.content.startswith(b"%PDF")
 
@@ -548,21 +544,31 @@ def _codes(html: str) -> tuple[str, str]:
     return codes[0], codes[1]
 
 
+def _admin(client: TestClient, db: Session, clock: FrozenClock, services: Services) -> TestClient:
+    admin = create_user(db, clock, "admin@school.nl", admin=True)
+    secret = enable_totp(db, services, admin)
+    other = TestClient(client.app)
+    login(other, "admin@school.nl", secret=secret, clock=clock)
+    return other
+
+
 def test_verify_receipt(
-    teacher_client: TestClient, db: Session, exam: Exam, scenario: dict[str, Any]
-) -> None:
+    client: TestClient, db: Session, clock: FrozenClock, services: Services, exam: Exam,
+    scenario: dict[str, Any],
+) -> None:  # fmt: skip
+    admin = _admin(client, db, clock, services)
     receipt, verification = _codes(scenario["jan_html"])
     page = form(
-        teacher_client,
-        "/docent/ontvangstbewijs",
+        admin,
+        "/admin/ontvangstbewijs",
         {"receipt_code": receipt.lower(), "verification_code": verification},
     )
     assert page.status_code == 200
     assert "De codes horen bij een opgeslagen inlevering" in page.text
     assert "Vries, Jan de" in page.text
     wrong = form(
-        teacher_client,
-        "/docent/ontvangstbewijs",
+        admin,
+        "/admin/ontvangstbewijs",
         {"receipt_code": receipt, "verification_code": "AAAA-AAAA"},
     )
     assert wrong.status_code == 404
@@ -571,20 +577,28 @@ def test_verify_receipt(
     assert checks[0].chain == str(exam.id)
 
 
-def test_verify_receipt_requires_access(
-    client: TestClient, db: Session, clock: FrozenClock, exam: Exam, scenario: dict[str, Any]
-) -> None:
-    create_user(db, clock, "ander@school.nl")
-    other = TestClient(client.app)
-    login(other, "ander@school.nl")
+def test_verify_receipt_is_admin_only(
+    client: TestClient, db: Session, clock: FrozenClock, services: Services,
+    teacher_client: TestClient, exam: Exam, scenario: dict[str, Any],
+) -> None:  # fmt: skip
     receipt, verification = _codes(scenario["jan_html"])
-    response = form(
-        other,
-        "/docent/ontvangstbewijs",
-        {"receipt_code": receipt, "verification_code": verification},
-    )
-    assert response.status_code == 404
+    codes = {"receipt_code": receipt, "verification_code": verification}
+    # Even the owner of the exam: checking receipts is an admin task.
+    assert teacher_client.get("/admin/ontvangstbewijs").status_code == 403
+    response = form(teacher_client, "/admin/ontvangstbewijs", codes)
+    assert response.status_code == 403
     assert "Vries" not in response.text
+    assert "Ontvangstbewijs controleren" not in teacher_client.get("/examens").text
+    # The old teacher URL moved to the admin area.
+    old = teacher_client.get("/docent/ontvangstbewijs", follow_redirects=False)
+    assert (old.status_code, old.headers["location"]) == (301, "/admin/ontvangstbewijs")
+    assert teacher_client.get("/docent/ontvangstbewijs").status_code == 403
+    admin = _admin(client, db, clock, services)
+    assert admin.get("/docent/ontvangstbewijs").status_code == 200
+    assert (
+        'href="/admin/ontvangstbewijs" aria-current="page"'
+        in admin.get("/admin/ontvangstbewijs").text
+    )
 
 
 # Audit log -----------------------------------------------------------------------
@@ -593,18 +607,16 @@ def test_verify_receipt_requires_access(
 def test_exam_audit_log_view_and_export(
     teacher_client: TestClient, db: Session, exam: Exam, scenario: dict[str, Any], captured_pdf: Any
 ) -> None:
-    page = teacher_client.get(f"/docent/examens/{exam.id}/auditlog?event=submission")
+    page = teacher_client.get(f"/examens/{exam.id}/auditlog?event=submission")
     assert page.status_code == 200
     assert "Hash-keten intact" in page.text
     assert "submission.completed" in page.text
     assert "exam.created" not in page.text
-    export = teacher_client.get(f"/docent/examens/{exam.id}/auditlog?format=csv")
+    export = teacher_client.get(f"/examens/{exam.id}/auditlog?format=csv")
     rows = list(csv.DictReader(io.StringIO(export.content.decode("utf-8-sig")), delimiter=";"))
     assert rows[0]["gebeurtenis"] == "exam.created"
     assert rows[-1]["gebeurtenis"] == "export.audit"
-    assert teacher_client.get(f"/docent/examens/{exam.id}/auditlog?format=pdf").content.startswith(
-        b"%PDF"
-    )
+    assert teacher_client.get(f"/examens/{exam.id}/auditlog?format=pdf").content.startswith(b"%PDF")
 
 
 def test_admin_system_log_export(

@@ -545,7 +545,7 @@ def test_no_student_route_returns_files(
         f"/static/../files/{key}",
         f"/static/%2e%2e/files/{key}",
         f"/files/{key}",
-        f"/docent/examens/{exam.id}",
+        f"/examens/{exam.id}",
     ]
     for url in candidates:
         response = client.get(url, follow_redirects=False)

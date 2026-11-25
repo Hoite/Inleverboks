@@ -87,7 +87,7 @@ def require_stage(stage: Stage):  # type: ignore[no-untyped-def]  # dependency f
         if ctx is None:
             raise _login_redirect(request)
         if ctx.stage is not stage:
-            raise RedirectError(STAGE_PATHS.get(ctx.stage, "/docent"))
+            raise RedirectError(STAGE_PATHS.get(ctx.stage, "/examens"))
         return ctx
 
     return dependency
@@ -112,3 +112,13 @@ def require_admin(ctx: Teacher) -> AuthContext:
 
 
 Admin = Annotated[AuthContext, Depends(require_admin)]
+
+
+def require_receipt_checker(ctx: Teacher) -> AuthContext:
+    """Checking a receipt is an admin task (it shows any exam's hand-in)."""
+    if not can(ctx.user, SystemAction.VERIFY_RECEIPT):
+        raise ForbiddenError
+    return ctx
+
+
+ReceiptChecker = Annotated[AuthContext, Depends(require_receipt_checker)]

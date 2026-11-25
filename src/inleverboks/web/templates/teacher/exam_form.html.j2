@@ -6,12 +6,12 @@
 {% set is_template = mode == "template" %}
 {% if is_template %}
   {% set heading = _("Edit exam template") if exam_template else _("New exam template") %}
-  {% set form_action = "/docent/sjablonen/%s/bewerken"|format(exam_template.id) if exam_template else "/docent/sjablonen/nieuw" %}
-  {% set cancel_url = "/docent/sjablonen/%s"|format(exam_template.id) if exam_template else "/docent/sjablonen" %}
+  {% set form_action = "/examens/sjablonen/%s/bewerken"|format(exam_template.id) if exam_template else "/examens/sjablonen/nieuw" %}
+  {% set cancel_url = "/examens/sjablonen/%s"|format(exam_template.id) if exam_template else "/examens/sjablonen" %}
 {% else %}
   {% set heading = _("Edit exam") if exam else _("New exam") %}
-  {% set form_action = "/docent/examens/%s/bewerken"|format(exam.id) if exam else "/docent/examens/nieuw" %}
-  {% set cancel_url = "/docent/examens/%s/instellingen"|format(exam.id) if exam else "/docent" %}
+  {% set form_action = "/examens/%s/bewerken"|format(exam.id) if exam else "/examens/nieuw" %}
+  {% set cancel_url = "/examens/%s/instellingen"|format(exam.id) if exam else "/examens" %}
 {% endif %}
 {% block body_class %}{{ "mode-template" if mode == "template" else "" }}{% endblock %}
 {% block title %}{{ heading }} · {{ app_name }}{% endblock %}
@@ -28,7 +28,7 @@
   <p class="mono small">{{ values.roster_numbers|join(", ") }}</p></div></div>
 {% endif %}
 {% if not is_template and not exam and templates and not resit_from %}
-<form method="get" action="/docent/examens/nieuw" class="template-picker">
+<form method="get" action="/examens/nieuw" class="template-picker">
   <div class="field grow">
     <label for="sjabloon">{{ _("Start from an exam template") }}</label>
     <select id="sjabloon" name="sjabloon">

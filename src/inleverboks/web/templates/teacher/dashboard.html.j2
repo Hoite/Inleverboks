@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-head">
   <h1>{{ _("Exams") }}</h1>
-  <a class="button" href="/docent/examens/nieuw">{{ _("New exam") }}</a>
+  <a class="button" href="/examens/nieuw">{{ _("New exam") }}</a>
 </div>
 {% include "teacher/_tabs.html.j2" %}
 {% if ok is defined and ok == "deleted" %}<div class="alert alert-success" role="status"><span class="alert-icon" aria-hidden="true">✓</span><div><p>{{ _("The exam has been deleted permanently.") }}</p></div></div>{% endif %}
@@ -24,7 +24,7 @@
   <tbody>
   {% for row in rows %}
     <tr>
-      <td><a href="/docent/examens/{{ row.exam.id }}">{{ row.exam.name }}</a>
+      <td><a href="/examens/{{ row.exam.id }}">{{ row.exam.name }}</a>
         {% if row.retention.warning(now) %}<br><span class="signal"><span aria-hidden="true">!</span> {{ _("Files are deleted on %(d)s", d=row.retention.due|localtime("%d-%m-%Y")) }}</span>{% endif %}
         {% if row.retention.held %}<br><span class="signal signal-extension"><span aria-hidden="true">i</span> {{ _("Retention hold") }}</span>{% endif %}</td>
       <td>{{ status_badge(row.status, status_labels) }}</td>

@@ -30,7 +30,6 @@ class ExamAction(StrEnum):
     SET_HOLD = "set_hold"
     TRANSFER_OWNERSHIP = "transfer_ownership"
     DELETE_FINALIZED = "delete_finalized"
-    VERIFY_RECEIPT = "verify_receipt"
     DELETE_CONCEPT = "delete_concept"
     DUPLICATE = "duplicate"  # duplicate and save as exam template
 
@@ -43,6 +42,7 @@ class SystemAction(StrEnum):
     MANAGE_IP_PRESETS = "manage_ip_presets"
     MANAGE_BRANDING = "manage_branding"
     VIEW_SYSTEM_AUDIT = "view_system_audit"
+    VERIFY_RECEIPT = "verify_receipt"  # admin only, for any exam
 
 
 _A, _O, _S, _T = (
@@ -63,7 +63,6 @@ EXAM_MATRIX: dict[ExamAction, frozenset[ExamRole]] = {
     ExamAction.SET_HOLD: frozenset({_A, _O}),
     ExamAction.TRANSFER_OWNERSHIP: frozenset({_A}),
     ExamAction.DELETE_FINALIZED: frozenset({_A}),
-    ExamAction.VERIFY_RECEIPT: frozenset({_A, _O, _S}),
     ExamAction.DELETE_CONCEPT: frozenset({_O}),
     ExamAction.DUPLICATE: frozenset({_O}),
 }

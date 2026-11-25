@@ -62,7 +62,7 @@ def test_bootstrap_admin_with_generated_password(
         # Forced: change password, then set up TOTP, then full access.
         response = login(client, "beheer@school.nl", password)
         assert response.headers["location"] == "/account/wachtwoord"
-        assert client.get("/docent", follow_redirects=False).headers["location"] == (
+        assert client.get("/examens", follow_redirects=False).headers["location"] == (
             "/account/wachtwoord"
         )
         response = post(
@@ -79,7 +79,7 @@ def test_bootstrap_admin_with_generated_password(
         response = post(client, "/account/tweestaps", {"code": pyotp.TOTP(secret).at(clock.now())})
         assert response.status_code == 200
         assert "Herstelcodes" in response.text
-        assert client.get("/docent").status_code == 200
+        assert client.get("/examens").status_code == 200
 
     # A second start does not create another admin and logs no password.
     capsys.readouterr()
@@ -105,16 +105,16 @@ def test_login_and_logout(client: TestClient, db: Session, clock: FrozenClock) -
     create_user(db, clock)
     response = login(client)
     assert response.status_code == 303
-    assert response.headers["location"] == "/docent"
+    assert response.headers["location"] == "/examens"
     cookie = response.headers["set-cookie"]
     assert "ib_session=" in cookie
     assert "httponly" in cookie.lower()
     assert "samesite=lax" in cookie.lower()
-    assert client.get("/docent").status_code == 200
+    assert client.get("/examens").status_code == 200
     assert len(events(db, "login.succeeded")) == 1
 
     post(client, "/logout")
-    assert client.get("/docent", follow_redirects=False).status_code == 303
+    assert client.get("/examens", follow_redirects=False).status_code == 303
     assert len(events(db, "logout")) == 1
 
 
@@ -176,7 +176,7 @@ def test_open_redirect_is_prevented(client: TestClient, db: Session, clock: Froz
         response = post(
             client, "/login", {"email": "docent@school.nl", "password": PASSWORD, "next": target}
         )
-        assert response.headers["location"] == "/docent"
+        assert response.headers["location"] == "/examens"
         post(client, "/logout")
     response = post(
         client, "/login", {"email": "docent@school.nl", "password": PASSWORD, "next": "/account"}
@@ -198,11 +198,11 @@ def test_login_requires_whitelist_every_time(
 ) -> None:
     user = create_user(db, clock)
     login(client)
-    assert client.get("/docent").status_code == 200
+    assert client.get("/examens").status_code == 200
     db.query(WhitelistEntry).delete()
     db.commit()
     # Existing session stops working, and a new login is refused.
-    assert client.get("/docent", follow_redirects=False).status_code == 303
+    assert client.get("/examens", follow_redirects=False).status_code == 303
     response = login(client)
     assert response.status_code == 400
     assert events(db, "login.failed")[-1].details["reason"] == "not_whitelisted"
@@ -218,7 +218,7 @@ def test_local_admin_is_exempt_from_whitelist(
     admin = create_user(db, clock, "admin@elders.nl", local_admin=True, whitelist=False)
     secret = enable_totp(db, services, admin)
     response = login(client, "admin@elders.nl", secret=secret, clock=clock)
-    assert response.headers["location"] == "/docent"
+    assert response.headers["location"] == "/examens"
 
 
 def test_deactivated_user_cannot_log_in(
@@ -236,11 +236,11 @@ def test_idle_timeout(client: TestClient, db: Session, clock: FrozenClock) -> No
     create_user(db, clock)
     login(client)
     clock.advance(hours=1, minutes=59)
-    assert client.get("/docent").status_code == 200
+    assert client.get("/examens").status_code == 200
     clock.advance(hours=1, minutes=59)
-    assert client.get("/docent").status_code == 200
+    assert client.get("/examens").status_code == 200
     clock.advance(hours=2)
-    assert client.get("/docent", follow_redirects=False).status_code == 303
+    assert client.get("/examens", follow_redirects=False).status_code == 303
 
 
 def test_absolute_timeout(client: TestClient, db: Session, clock: FrozenClock) -> None:
@@ -248,7 +248,7 @@ def test_absolute_timeout(client: TestClient, db: Session, clock: FrozenClock) -
     login(client)
     for _ in range(12):
         clock.advance(hours=1)
-        response = client.get("/docent", follow_redirects=False)
+        response = client.get("/examens", follow_redirects=False)
     assert response.status_code == 303
 
 
@@ -259,9 +259,9 @@ def test_polling_does_not_extend_session(
     login(client)
     for _ in range(12):
         clock.advance(minutes=10)
-        assert client.get("/docent", headers={"HX-Trigger": "poll-overview"}).status_code == 200
+        assert client.get("/examens", headers={"HX-Trigger": "poll-overview"}).status_code == 200
     clock.advance(minutes=1)
-    assert client.get("/docent", follow_redirects=False).status_code == 303
+    assert client.get("/examens", follow_redirects=False).status_code == 303
 
 
 def test_session_token_is_stored_hashed(
@@ -287,11 +287,11 @@ def test_totp_login(
     response = login(client)
     assert response.headers["location"] == "/login/code"
     # Not yet authenticated.
-    assert client.get("/docent", follow_redirects=False).headers["location"] == "/login/code"
+    assert client.get("/examens", follow_redirects=False).headers["location"] == "/login/code"
     assert post(client, "/login/code", {"code": "123456"}).status_code == 400
     response = post(client, "/login/code", {"code": totp_code(secret, clock)})
-    assert response.headers["location"] == "/docent"
-    assert client.get("/docent").status_code == 200
+    assert response.headers["location"] == "/examens"
+    assert client.get("/examens").status_code == 200
 
     # The same code cannot be used again for a new login.
     post(client, "/logout")
@@ -331,7 +331,7 @@ def test_recovery_code_works_once(
     clock.advance(minutes=1)
 
     login(client)
-    assert post(client, "/login/code", {"code": codes[0]}).headers["location"] == "/docent"
+    assert post(client, "/login/code", {"code": codes[0]}).headers["location"] == "/examens"
     assert events(db, "totp.recovery_code_used")
     post(client, "/logout")
     login(client)
@@ -351,13 +351,13 @@ def test_require_totp_for_everyone(
 ) -> None:
     create_user(db, clock)
     login(client)
-    assert client.get("/docent").status_code == 200
+    assert client.get("/examens").status_code == 200
     settings = services.settings.load(db)
     settings.require_totp_all = True
     services.settings.save(db, settings, by=None)
     db.commit()
     # Enforced on the running session as well.
-    assert client.get("/docent", follow_redirects=False).headers["location"] == (
+    assert client.get("/examens", follow_redirects=False).headers["location"] == (
         "/account/tweestaps"
     )
 
@@ -386,7 +386,7 @@ def admin_client(
     admin = create_user(db, clock, "admin@school.nl", name="Beheer", local_admin=True)
     secret = enable_totp(db, services, admin)
     assert login(client, "admin@school.nl", secret=secret, clock=clock).headers["location"] == (
-        "/docent"
+        "/examens"
     )
     return client
 
@@ -422,7 +422,7 @@ def test_invite_flow(
     assert events(db, "invite.used")
     # The link works only once.
     assert teacher.get(link).status_code == 404
-    assert login(teacher, "nieuw@school.nl", NEW_PASSWORD).headers["location"] == "/docent"
+    assert login(teacher, "nieuw@school.nl", NEW_PASSWORD).headers["location"] == "/examens"
 
 
 def test_invite_requires_whitelist(admin_client: TestClient, db: Session) -> None:
@@ -471,7 +471,7 @@ def test_password_reset_flow(
     user = create_user(db, clock)
     teacher = TestClient(admin_client.app)
     login(teacher)
-    assert teacher.get("/docent").status_code == 200
+    assert teacher.get("/examens").status_code == 200
 
     response = post(admin_client, f"/admin/gebruikers/{user.id}/reset")
     assert response.status_code == 200
@@ -482,7 +482,7 @@ def test_password_reset_flow(
     response = post(anonymous, link, {"password": NEW_PASSWORD, "confirm": NEW_PASSWORD})
     assert response.status_code == 200
     # Old sessions are revoked, the old password no longer works, the link is single-use.
-    assert teacher.get("/docent", follow_redirects=False).status_code == 303
+    assert teacher.get("/examens", follow_redirects=False).status_code == 303
     assert login(anonymous).status_code == 400
     assert login(anonymous, password=NEW_PASSWORD).status_code == 303
     assert TestClient(admin_client.app).get(link).status_code == 404
@@ -514,7 +514,7 @@ def test_deactivate_and_activate(admin_client: TestClient, db: Session, clock: F
     login(teacher)
     response = post(admin_client, f"/admin/gebruikers/{user.id}/actief")
     assert response.headers["location"] == "/admin/gebruikers?ok=saved"
-    assert teacher.get("/docent", follow_redirects=False).status_code == 303
+    assert teacher.get("/examens", follow_redirects=False).status_code == 303
     assert login(teacher).status_code == 400
     post(admin_client, f"/admin/gebruikers/{user.id}/actief", {"active": "true"})
     assert login(teacher).status_code == 303
@@ -671,7 +671,7 @@ def test_post_from_other_origin_is_refused(
 def test_teacher_pages_are_not_cached(client: TestClient, db: Session, clock: FrozenClock) -> None:
     create_user(db, clock)
     login(client)
-    assert client.get("/docent").headers["cache-control"] == "no-store"
+    assert client.get("/examens").headers["cache-control"] == "no-store"
 
 
 def test_audit_chain_stays_valid_after_flow(

@@ -134,18 +134,18 @@ def test_teacher_and_admin_pages(
         db, owner, qualification, ["B1-K1"], shared=False, ip=None
     )[0]
     urls = [
-        "/docent", "/docent/afgerond", "/docent/sjablonen", "/docent/examens/nieuw",
-        f"/docent/examens/{exam.id}", f"/docent/examens/{exam.id}/instellingen",
-        f"/docent/examens/{exam.id}/bewerken", f"/docent/examens/{exam.id}/auditlog",
-        f"/docent/examens/{exam.id}/studenten/123456", "/docent/ontvangstbewijs",
-        "/docent/klassenlijsten", "/docent/klassenlijsten/nieuw", "/account",
-        "/account/wachtwoord", "/account/tweestaps", "/docent/sjablonen/nieuw",
-        f"/docent/sjablonen/{template.id}", f"/docent/sjablonen/{template.id}/bewerken",
-        f"/docent/examens/nieuw?sjabloon={template.id}",
-        "/docent/sjablonen/crebo?q=27016", f"/docent/sjablonen/crebo/{qualification.id}",
-        f"/docent/sjablonen/{crebo_template.id}",
-        f"/docent/examens/nieuw?sjabloon={crebo_template.id}&wp=B1-K1-W3",
-        f"/docent/examens/{exam.id}/herkansing",
+        "/examens", "/examens/afgerond", "/examens/sjablonen", "/examens/nieuw",
+        f"/examens/{exam.id}", f"/examens/{exam.id}/instellingen",
+        f"/examens/{exam.id}/bewerken", f"/examens/{exam.id}/auditlog",
+        f"/examens/{exam.id}/studenten/123456",
+        "/examens/klassenlijsten", "/examens/klassenlijsten/nieuw", "/account",
+        "/account/wachtwoord", "/account/tweestaps", "/examens/sjablonen/nieuw",
+        f"/examens/sjablonen/{template.id}", f"/examens/sjablonen/{template.id}/bewerken",
+        f"/examens/nieuw?sjabloon={template.id}",
+        "/examens/sjablonen/crebo?q=27016", f"/examens/sjablonen/crebo/{qualification.id}",
+        f"/examens/sjablonen/{crebo_template.id}",
+        f"/examens/nieuw?sjabloon={crebo_template.id}&wp=B1-K1-W3",
+        f"/examens/{exam.id}/herkansing",
     ]  # fmt: skip
     problems = [p for url in urls for p in audit(teacher, url)]
 
@@ -155,7 +155,8 @@ def test_teacher_and_admin_pages(
     login(ac, "admin@school.nl", secret=secret, clock=clock)
     admin_urls = [
         "/admin/gebruikers", "/admin/whitelist", "/admin/ip-presets", "/admin/instellingen",
-        "/admin/huisstijl", "/admin/kwalificaties", "/admin/auditlog", "/docent/alle",
+        "/admin/huisstijl", "/admin/kwalificaties", "/admin/auditlog", "/examens/alle",
+        "/admin/ontvangstbewijs",
     ]  # fmt: skip
     problems += [p for url in admin_urls for p in audit(ac, url)]
     assert problems == []

@@ -3,7 +3,7 @@
 {% from "teacher/_status.html.j2" import status_badge %}
 {% block title %}{{ exam.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent">{{ _("Exams") }}</a></p>
+<p class="breadcrumb"><a href="/examens">{{ _("Exams") }}</a></p>
 <div class="page-head">
   <div>
     <h1>{{ exam.name }}</h1>
@@ -11,11 +11,11 @@
   </div>
   <div class="button-row">
     {% if perms.edit_settings and status != "finalized" %}
-    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/bewerken">{{ _("Edit") }}</a>
+    <a class="button button-secondary" href="/examens/{{ exam.id }}/bewerken">{{ _("Edit") }}</a>
     {% endif %}
-    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}/presentatie">{{ _("Presentation mode") }}</a>
+    <a class="button button-secondary" href="/examens/{{ exam.id }}/presentatie">{{ _("Presentation mode") }}</a>
     {% if perms.edit_settings and status == "concept" %}
-    <form method="post" action="/docent/examens/{{ exam.id }}/publiceren" class="inline-form">{{ csrf() }}<button type="submit" class="button">{{ _("Publish") }}</button></form>
+    <form method="post" action="/examens/{{ exam.id }}/publiceren" class="inline-form">{{ csrf() }}<button type="submit" class="button">{{ _("Publish") }}</button></form>
     {% endif %}
   </div>
 </div>
@@ -47,14 +47,14 @@
     <div class="qr-row">
       <div class="qr qr-small" role="img" aria-label="{{ _('QR code of the hand-in link') }}">{{ qr_svg|safe }}</div>
       <p>
-        <a href="/docent/examens/{{ exam.id }}/qr.png">{{ _("Download QR (PNG)") }}</a><br>
-        <a href="/docent/examens/{{ exam.id }}/qr.svg">{{ _("Download QR (SVG)") }}</a>
+        <a href="/examens/{{ exam.id }}/qr.png">{{ _("Download QR (PNG)") }}</a><br>
+        <a href="/examens/{{ exam.id }}/qr.svg">{{ _("Download QR (SVG)") }}</a>
       </p>
     </div>
     {% if exam.access_code_enabled %}
     <p>{{ _("Access code") }}: <strong class="access-code mono">{{ exam.access_code }}</strong></p>
     {% if perms.edit_settings %}
-    <form method="post" action="/docent/examens/{{ exam.id }}/code" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-secondary">{{ _("Generate new code") }}</button></form>
+    <form method="post" action="/examens/{{ exam.id }}/code" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-secondary">{{ _("Generate new code") }}</button></form>
     {% endif %}
     {% else %}
     <p class="muted">{{ _("No access code.") }}</p>
@@ -96,13 +96,13 @@
         <td>{% if slot.extensions %}<span class="mono">{{ slot.extensions|join(", ") }}</span>{% else %}<span class="muted">{{ _("All allowed extensions") }}</span>{% endif %}</td>
         <td>
           {% if slot.template_file %}
-          <a href="/docent/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon">{{ slot.template_file.original_name }}</a>
+          <a href="/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon">{{ slot.template_file.original_name }}</a>
           <br><span class="mono small" title="SHA-256">{{ slot.template_file.sha256[:16] }}…</span>
           {% if perms.edit_settings and not locked %}
-          <form method="post" action="/docent/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button></form>
+          <form method="post" action="/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button></form>
           {% endif %}
           {% elif perms.edit_settings and not locked %}
-          <form method="post" action="/docent/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon" enctype="multipart/form-data" class="upload-form">
+          <form method="post" action="/examens/{{ exam.id }}/vakjes/{{ slot.id }}/sjabloon" enctype="multipart/form-data" class="upload-form">
             {{ csrf() }}
             <label class="visually-hidden" for="tpl-{{ slot.id }}">{{ _("Template file for %(label)s", label=slot.label) }}</label>
             <input id="tpl-{{ slot.id }}" type="file" name="file" required>
@@ -137,7 +137,7 @@
   <p class="muted">{{ _("No class list. Students enter their name and student number themselves.") }}</p>
   {% endif %}
   {% if perms.edit_settings and status != "finalized" %}
-  <form method="post" action="/docent/examens/{{ exam.id }}/klassenlijst" class="row-form top-gap">
+  <form method="post" action="/examens/{{ exam.id }}/klassenlijst" class="row-form top-gap">
     {{ csrf() }}
     <div class="field grow">
       <label for="class_list_id">{{ _("Use class list") }}</label>
@@ -147,7 +147,7 @@
       </select>
     </div>
     <button type="submit" class="button button-secondary">{{ _("Apply") }}</button>
-    <a href="/docent/klassenlijsten/nieuw">{{ _("Import class list") }}</a>
+    <a href="/examens/klassenlijsten/nieuw">{{ _("Import class list") }}</a>
   </form>
   {% endif %}
 </section>
@@ -164,7 +164,7 @@
       <tr>
         <td class="mono">{{ g.student_number }}</td>
         <td>{{ g.ends_at|localtime }}</td>
-        <td class="actions">{% if perms.manage_submissions %}<form method="post" action="/docent/examens/{{ exam.id }}/verlengingen/{{ g.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button></form>{% endif %}</td>
+        <td class="actions">{% if perms.manage_submissions %}<form method="post" action="/examens/{{ exam.id }}/verlengingen/{{ g.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-small button-danger">{{ _("Remove") }}</button></form>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -174,7 +174,7 @@
   <p class="muted">{{ _("No time extensions granted yet.") }}</p>
   {% endif %}
   {% if perms.manage_submissions and status != "finalized" %}
-  <form method="post" action="/docent/examens/{{ exam.id }}/verlengingen" class="row-form top-gap">
+  <form method="post" action="/examens/{{ exam.id }}/verlengingen" class="row-form top-gap">
     {{ csrf() }}
     <div class="field">
       <label for="ext-number">{{ _("Student number") }}</label>
@@ -190,17 +190,17 @@
   <h2>{{ _("More") }}</h2>
   <div class="button-row">
     {% if perms.duplicate %}
-    <form method="post" action="/docent/examens/{{ exam.id }}/dupliceren" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Duplicate") }}</button></form>
+    <form method="post" action="/examens/{{ exam.id }}/dupliceren" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Duplicate") }}</button></form>
     {% endif %}
     {% if perms.edit_settings and status == "scheduled" and not submissions %}
-    <form method="post" action="/docent/examens/{{ exam.id }}/concept" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Back to concept") }}</button></form>
+    <form method="post" action="/examens/{{ exam.id }}/concept" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Back to concept") }}</button></form>
     {% endif %}
     {% if perms.delete_concept and status == "concept" %}
-    <form method="post" action="/docent/examens/{{ exam.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Delete concept") }}</button></form>
+    <form method="post" action="/examens/{{ exam.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Delete concept") }}</button></form>
     {% endif %}
   </div>
   {% if perms.duplicate %}
-  <form method="post" action="/docent/examens/{{ exam.id }}/sjabloon-opslaan" class="row-form top-gap">
+  <form method="post" action="/examens/{{ exam.id }}/sjabloon-opslaan" class="row-form top-gap">
     {{ csrf() }}
     <div class="field grow">
       <label for="template-name">{{ _("Save as exam template") }}</label>
@@ -211,7 +211,7 @@
   </form>
   {% endif %}
   {% if perms.transfer_ownership %}
-  <form method="post" action="/docent/examens/{{ exam.id }}/eigenaar" class="row-form top-gap">
+  <form method="post" action="/examens/{{ exam.id }}/eigenaar" class="row-form top-gap">
     {{ csrf() }}
     <div class="field grow">
       <label for="owner_id">{{ _("Transfer ownership to") }}</label>

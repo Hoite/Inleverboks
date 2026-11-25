@@ -2,10 +2,10 @@
 {% from "_macros.html.j2" import csrf, errors_box with context %}
 {% block title %}{{ _("Import class list") }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent/klassenlijsten">{{ _("Class lists") }}</a></p>
+<p class="breadcrumb"><a href="/examens/klassenlijsten">{{ _("Class lists") }}</a></p>
 <h1>{{ _("Import class list") }}</h1>
 {{ errors_box(errors) }}
-<form method="post" action="/docent/klassenlijsten/importeren" class="stack">
+<form method="post" action="/examens/klassenlijsten/importeren" class="stack">
   {{ csrf() }}
   <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
   <input type="hidden" name="delimiter" value="{{ delimiter }}">

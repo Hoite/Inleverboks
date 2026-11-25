@@ -6,15 +6,15 @@
   <li class="template-card{% if t.shared %} template-card-shared{% endif %}">
     <div class="template-card-head">
       <span class="badge-row">{{ template_badge(_("Template")) }}{% if t.shared %} <span class="badge badge-neutral">{{ _("Shared") }}</span>{% endif %}{% if t.id in outdated %} <span class="badge badge-warning"><span aria-hidden="true">!</span> {{ _("Dossier replaced") }}</span>{% endif %}</span>
-      <h3><a href="/docent/sjablonen/{{ t.id }}">{{ t.name }}</a></h3>
+      <h3><a href="/examens/sjablonen/{{ t.id }}">{{ t.name }}</a></h3>
     </div>
     <p class="muted small">
       {% if t.slots %}{{ t.slots|length }} {{ _("expected files") }}{% else %}{{ _("No expected files") }}{% endif %}
       · <span class="mono">{{ (t.config.get("extensions") or [])|join(", ") }}</span>
     </p>
     <div class="button-row">
-      <a class="button button-small" href="/docent/examens/nieuw?sjabloon={{ t.id }}">{{ _("New exam") }}<span class="visually-hidden"> {{ _("from %(name)s", name=t.name) }}</span></a>
-      <a class="button button-small button-secondary" href="/docent/sjablonen/{{ t.id }}">{{ _("View") }}<span class="visually-hidden"> {{ t.name }}</span></a>
+      <a class="button button-small" href="/examens/nieuw?sjabloon={{ t.id }}">{{ _("New exam") }}<span class="visually-hidden"> {{ _("from %(name)s", name=t.name) }}</span></a>
+      <a class="button button-small button-secondary" href="/examens/sjablonen/{{ t.id }}">{{ _("View") }}<span class="visually-hidden"> {{ t.name }}</span></a>
     </div>
   </li>
 {% endmacro %}
@@ -22,9 +22,9 @@
 <div class="page-head">
   <h1>{{ _("Exams") }}</h1>
   <div class="button-row">
-    <a class="button" href="/docent/examens/nieuw">{{ _("New exam") }}</a>
-    <a class="button button-template" href="/docent/sjablonen/crebo">{{ _("Template from crebo") }}</a>
-    <a class="button button-secondary" href="/docent/sjablonen/nieuw">{{ _("New empty template") }}</a>
+    <a class="button" href="/examens/nieuw">{{ _("New exam") }}</a>
+    <a class="button button-template" href="/examens/sjablonen/crebo">{{ _("Template from crebo") }}</a>
+    <a class="button button-secondary" href="/examens/sjablonen/nieuw">{{ _("New empty template") }}</a>
   </div>
 </div>
 {% include "teacher/_tabs.html.j2" %}

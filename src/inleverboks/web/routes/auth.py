@@ -35,10 +35,10 @@ PasswordStage = Annotated[AuthContext, Depends(require_stage(Stage.CHANGE_PASSWO
 def _safe_next(target: str | None) -> str:
     """Only allow local redirects (no open redirect)."""
     if not target:
-        return "/docent"
+        return "/examens"
     parts = urlsplit(target)
     if parts.scheme or parts.netloc or not target.startswith("/") or target.startswith("//"):
-        return "/docent"
+        return "/examens"
     return target
 
 

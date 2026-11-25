@@ -2,16 +2,16 @@
 {% from "_macros.html.j2" import csrf, errors_box with context %}
 {% block title %}{{ qualification.crebo }} {{ qualification.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent/sjablonen">{{ _("Exam templates") }}</a> › <a href="/docent/sjablonen/crebo">{{ _("Template from a qualification") }}</a></p>
+<p class="breadcrumb"><a href="/examens/sjablonen">{{ _("Exam templates") }}</a> › <a href="/examens/sjablonen/crebo">{{ _("Template from a qualification") }}</a></p>
 <h1><span class="mono">{{ qualification.crebo }}</span> {{ qualification.name }}</h1>
 <p class="muted">{% if qualification.level %}{{ _("level %(n)s", n=qualification.level) }} · {% endif %}{{ _("dossier %(v)s", v=qualification.dossier_version) }}{% if qualification.dossier_name %} ({{ qualification.dossier_name }}){% endif %}</p>
 {% if status.outdated %}
 <div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">!</span>
   <div><p>{{ _("This dossier version is no longer current.") }}{% if status.replaced_by %}
-    <a href="/docent/sjablonen/crebo/{{ status.replaced_by.id }}">{{ _("Go to the current version: %(c)s %(name)s (dossier %(v)s)", c=status.replaced_by.crebo, name=status.replaced_by.name, v=status.replaced_by.dossier_version) }}</a>{% endif %}</p></div></div>
+    <a href="/examens/sjablonen/crebo/{{ status.replaced_by.id }}">{{ _("Go to the current version: %(c)s %(name)s (dossier %(v)s)", c=status.replaced_by.crebo, name=status.replaced_by.name, v=status.replaced_by.dossier_version) }}</a>{% endif %}</p></div></div>
 {% endif %}
 {{ errors_box(errors) }}
-<form method="post" action="/docent/sjablonen/crebo/{{ qualification.id }}" class="stack">
+<form method="post" action="/examens/sjablonen/crebo/{{ qualification.id }}" class="stack">
   {{ csrf() }}
   <fieldset>
     <legend>{{ _("Core tasks and work processes") }}</legend>
@@ -30,7 +30,7 @@
   {% endif %}
   <div class="form-actions">
     <button type="submit" class="button button-template">{{ _("Create templates") }}</button>
-    <a class="button button-secondary" href="/docent/sjablonen/crebo">{{ _("Back") }}</a>
+    <a class="button button-secondary" href="/examens/sjablonen/crebo">{{ _("Back") }}</a>
   </div>
 </form>
 {% endblock %}

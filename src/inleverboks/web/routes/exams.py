@@ -42,7 +42,7 @@ from inleverboks.web.exam_form import (
 from inleverboks.web.messages import describe
 from inleverboks.web.templating import render
 
-router = APIRouter(prefix="/docent")
+router = APIRouter(prefix="/examens")
 
 UPLOAD_CHUNK = 64 * 1024
 
@@ -157,7 +157,7 @@ def delete_exam_template(
 ) -> Response:
     keys = services.exams.delete_template(db, ctx.user, template_id, ip=client_ip(request))
     _delete_unreferenced(db, services, list(keys))
-    return _redirect("/docent/sjablonen?ok=deleted")
+    return _redirect("/examens/sjablonen?ok=deleted")
 
 
 @router.get("/sjablonen/nieuw")
@@ -231,8 +231,8 @@ def templates_from_qualification(
         )
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/sjablonen/crebo/{qualification.id}?error={exc.code}")
-    return _redirect(f"/docent/sjablonen?ok=created_from_crebo&n={len(created)}")
+        return _redirect(f"/examens/sjablonen/crebo/{qualification.id}?error={exc.code}")
+    return _redirect(f"/examens/sjablonen?ok=created_from_crebo&n={len(created)}")
 
 
 @router.get("/sjablonen/{template_id}")
@@ -272,7 +272,7 @@ def share_exam_template(
 ) -> Response:  # fmt: skip
     template = services.exams.get_template(db, ctx.user, template_id)
     services.exams.set_template_shared(db, ctx.user, template, shared, ip=client_ip(request))
-    return _redirect(f"/docent/sjablonen/{template.id}?ok={'shared' if shared else 'unshared'}")
+    return _redirect(f"/examens/sjablonen/{template.id}?ok={'shared' if shared else 'unshared'}")
 
 
 @router.post("/sjablonen/{template_id}/kopie")
@@ -281,7 +281,7 @@ def copy_exam_template(
 ) -> Response:
     template = services.exams.get_template(db, ctx.user, template_id)
     copy = services.exams.copy_template(db, ctx.user, template, ip=client_ip(request))
-    return _redirect(f"/docent/sjablonen/{copy.id}?ok=copied")
+    return _redirect(f"/examens/sjablonen/{copy.id}?ok=copied")
 
 
 @router.get("/sjablonen/{template_id}/bewerken")
@@ -321,7 +321,7 @@ def _handle_template_form(
     try:
         if template is None:
             template = services.exams.create_template(db, user, parsed.data, ip=client_ip(request))
-            return _redirect(f"/docent/sjablonen/{template.id}?ok=created")
+            return _redirect(f"/examens/sjablonen/{template.id}?ok=created")
         removed = services.exams.update_template(
             db, user, template, parsed.data, ip=client_ip(request)
         )
@@ -332,7 +332,7 @@ def _handle_template_form(
             template=template, problems=exc.problems, status=400,
         )  # fmt: skip
     _delete_unreferenced(db, services, list(removed))
-    return _redirect(f"/docent/sjablonen/{template.id}?ok=saved")
+    return _redirect(f"/examens/sjablonen/{template.id}?ok=saved")
 
 
 @router.post("/sjablonen/{template_id}/vakjes/{slot_id}/sjabloon")
@@ -341,7 +341,7 @@ def upload_template_slot_file(
     services: Svc, file: Annotated[UploadFile, File()],
 ) -> Response:  # fmt: skip
     template = services.exams.get_managed_template(db, ctx.user, template_id)
-    back = f"/docent/sjablonen/{template.id}"
+    back = f"/examens/sjablonen/{template.id}"
     filename = (file.filename or "sjabloon").replace("\\", "/").rsplit("/", 1)[-1]
     max_bytes = int(template.config.get("max_file_mb", services.env.max_file_mb)) * MB
 
@@ -373,7 +373,7 @@ def remove_template_slot_file(
         db, ctx.user, template, slot_id, ip=client_ip(request)
     )
     _delete_unreferenced(db, services, [key])
-    return _redirect(f"/docent/sjablonen/{template.id}?ok=template_removed")
+    return _redirect(f"/examens/sjablonen/{template.id}?ok=template_removed")
 
 
 @router.get("/sjablonen/{template_id}/vakjes/{slot_id}/sjabloon")
@@ -453,7 +453,7 @@ def _render_form(
     )
 
 
-@router.get("/examens/nieuw")
+@router.get("/nieuw")
 def new_exam(
     request: Request, ctx: Teacher, db: Db, services: Svc, sjabloon: uuid.UUID | None = None,
     wp: Annotated[list[str] | None, Query()] = None,
@@ -468,7 +468,7 @@ def new_exam(
     return _render_form(request, db, services, ctx.user, data, exam=None)
 
 
-@router.get("/examens/{exam_id}/herkansing")
+@router.get("/{exam_id:uuid}/herkansing")
 def resit_selection(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -489,7 +489,7 @@ def resit_selection(
     )  # fmt: skip
 
 
-@router.post("/examens/{exam_id}/herkansing")
+@router.post("/{exam_id:uuid}/herkansing")
 def new_resit(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
     student_number: Annotated[list[str] | None, Form()] = None,
@@ -502,7 +502,7 @@ def new_resit(
             db, ctx.user, exam, (student_number or [])[:200], name_suffix=_("resit")
         )
     except DomainError as exc:
-        return _redirect(f"/docent/examens/{exam.id}?error={exc.code}")
+        return _redirect(f"/examens/{exam.id}?error={exc.code}")
     return _render_form(request, db, services, ctx.user, data, exam=None, resit_from=exam)
 
 
@@ -538,19 +538,19 @@ def _handle_form(
         )  # fmt: skip
     if exam is None:
         created = services.exams.create(db, user, parsed.data, ip=client_ip(request))
-        return _redirect(f"/docent/examens/{created.id}/instellingen")
+        return _redirect(f"/examens/{created.id}/instellingen")
     services.exams.update(db, user, exam, parsed.data, ip=client_ip(request))
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=saved")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=saved")
 
 
-@router.post("/examens/nieuw")
+@router.post("/nieuw")
 def create_exam(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
     if not can(ctx.user, SystemAction.CREATE_EXAM):
         raise PermissionDeniedError()
     return _handle_form(request, db, services, ctx.user, None)
 
 
-@router.get("/examens/{exam_id}/bewerken")
+@router.get("/{exam_id:uuid}/bewerken")
 def edit_exam(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -559,7 +559,7 @@ def edit_exam(
     return _render_form(request, db, services, ctx.user, data, exam=exam)
 
 
-@router.post("/examens/{exam_id}/bewerken")
+@router.post("/{exam_id:uuid}/bewerken")
 def update_exam(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -583,7 +583,7 @@ def _qr_svg(url: str, *, scale: int = 4, omit_size: bool = True) -> str:
     return buffer.getvalue().decode()
 
 
-@router.get("/examens/{exam_id}/instellingen")
+@router.get("/{exam_id:uuid}/instellingen")
 def exam_settings(
     request: Request,
     exam_id: uuid.UUID,
@@ -639,11 +639,11 @@ def _action(
         fn(exam)
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={exc.code}")
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok={ok}")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok={ok}")
 
 
-@router.post("/examens/{exam_id}/publiceren")
+@router.post("/{exam_id:uuid}/publiceren")
 def publish(request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc) -> Response:
     return _action(
         request, exam_id, db, services, ctx.user, ExamAction.EDIT_SETTINGS,
@@ -651,7 +651,7 @@ def publish(request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services
     )  # fmt: skip
 
 
-@router.post("/examens/{exam_id}/concept")
+@router.post("/{exam_id:uuid}/concept")
 def unpublish(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -661,7 +661,7 @@ def unpublish(
     )  # fmt: skip
 
 
-@router.post("/examens/{exam_id}/code")
+@router.post("/{exam_id:uuid}/code")
 def regenerate_code(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -671,16 +671,16 @@ def regenerate_code(
     )  # fmt: skip
 
 
-@router.post("/examens/{exam_id}/dupliceren")
+@router.post("/{exam_id:uuid}/dupliceren")
 def duplicate(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.DUPLICATE)
     copy = services.exams.duplicate(db, ctx.user, exam, ip=client_ip(request))
-    return _redirect(f"/docent/examens/{copy.id}/bewerken")
+    return _redirect(f"/examens/{copy.id}/bewerken")
 
 
-@router.post("/examens/{exam_id}/sjabloon-opslaan")
+@router.post("/{exam_id:uuid}/sjabloon-opslaan")
 def save_template(
     request: Request,
     exam_id: uuid.UUID,
@@ -691,10 +691,10 @@ def save_template(
 ) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.DUPLICATE)
     template = services.exams.save_as_template(db, ctx.user, exam, name, ip=client_ip(request))
-    return _redirect(f"/docent/sjablonen/{template.id}?ok=saved_from_exam")
+    return _redirect(f"/examens/sjablonen/{template.id}?ok=saved_from_exam")
 
 
-@router.post("/examens/{exam_id}/verwijderen")
+@router.post("/{exam_id:uuid}/verwijderen")
 def delete_exam(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -703,12 +703,12 @@ def delete_exam(
         keys = services.exams.delete_concept(db, ctx.user, exam, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={exc.code}")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
     _delete_unreferenced(db, services, list(keys))
-    return _redirect("/docent")
+    return _redirect("/examens")
 
 
-@router.post("/examens/{exam_id}/klassenlijst")
+@router.post("/{exam_id:uuid}/klassenlijst")
 def set_roster(
     request: Request,
     exam_id: uuid.UUID,
@@ -723,11 +723,11 @@ def set_roster(
         services.exams.set_roster(db, ctx.user, exam, target, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={exc.code}")
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=roster")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=roster")
 
 
-@router.post("/examens/{exam_id}/verlengingen")
+@router.post("/{exam_id:uuid}/verlengingen")
 def grant_extension(
     request: Request,
     exam_id: uuid.UUID,
@@ -750,20 +750,20 @@ def grant_extension(
         )
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={exc.code}#verlengingen")
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=extension#verlengingen")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}#verlengingen")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=extension#verlengingen")
 
 
-@router.post("/examens/{exam_id}/verlengingen/{grant_id}/verwijderen")
+@router.post("/{exam_id:uuid}/verlengingen/{grant_id}/verwijderen")
 def revoke_extension(
     request: Request, exam_id: uuid.UUID, grant_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.MANAGE_SUBMISSIONS)
     services.exams.revoke_extension(db, ctx.user, exam, grant_id, ip=client_ip(request))
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=extension_removed#verlengingen")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=extension_removed#verlengingen")
 
 
-@router.post("/examens/{exam_id}/eigenaar")
+@router.post("/{exam_id:uuid}/eigenaar")
 def transfer_ownership(
     request: Request,
     exam_id: uuid.UUID,
@@ -780,14 +780,14 @@ def transfer_ownership(
     except (DomainError, ValueError) as exc:
         db.rollback()
         code = exc.code if isinstance(exc, DomainError) else "owner_invalid"
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={code}")
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=owner")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={code}")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=owner")
 
 
 # Template files ------------------------------------------------------------------
 
 
-@router.post("/examens/{exam_id}/vakjes/{slot_id}/sjabloon")
+@router.post("/{exam_id:uuid}/vakjes/{slot_id}/sjabloon")
 def upload_template_file(
     request: Request,
     exam_id: uuid.UUID,
@@ -799,7 +799,7 @@ def upload_template_file(
 ) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.EDIT_SETTINGS)
     if services.exams.has_submissions(db, exam):
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error=requirements_locked")
+        return _redirect(f"/examens/{exam.id}/instellingen?error=requirements_locked")
     filename = (file.filename or "sjabloon").replace("\\", "/").rsplit("/", 1)[-1]
 
     async def chunks() -> AsyncIterator[bytes]:
@@ -815,12 +815,12 @@ def upload_template_file(
         )
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={exc.code}")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
     _delete_unreferenced(db, services, [replaced])
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=template_uploaded")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=template_uploaded")
 
 
-@router.post("/examens/{exam_id}/vakjes/{slot_id}/sjabloon/verwijderen")
+@router.post("/{exam_id:uuid}/vakjes/{slot_id}/sjabloon/verwijderen")
 def remove_template_file(
     request: Request, exam_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -831,12 +831,12 @@ def remove_template_file(
         )
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}/instellingen?error={exc.code}")
+        return _redirect(f"/examens/{exam.id}/instellingen?error={exc.code}")
     _delete_unreferenced(db, services, [key])
-    return _redirect(f"/docent/examens/{exam.id}/instellingen?ok=template_removed")
+    return _redirect(f"/examens/{exam.id}/instellingen?ok=template_removed")
 
 
-@router.get("/examens/{exam_id}/vakjes/{slot_id}/sjabloon")
+@router.get("/{exam_id:uuid}/vakjes/{slot_id}/sjabloon")
 def download_template_file(
     exam_id: uuid.UUID, slot_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -853,14 +853,14 @@ def download_template_file(
 # QR and presentation -------------------------------------------------------------
 
 
-@router.get("/examens/{exam_id}/qr.svg")
+@router.get("/{exam_id:uuid}/qr.svg")
 def qr_svg(exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
     svg = _qr_svg(public_url(services, exam), scale=10, omit_size=False)
     return bytes_download(svg.encode(), f"{exam.slug}-qr.svg", "image/svg+xml")
 
 
-@router.get("/examens/{exam_id}/qr.png")
+@router.get("/{exam_id:uuid}/qr.png")
 def qr_png(exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc) -> Response:
     exam = _load(db, services, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
     buffer = io.BytesIO()
@@ -882,7 +882,7 @@ def _ms(value: datetime) -> int:
     return int(value.timestamp() * 1000)
 
 
-@router.get("/examens/{exam_id}/presentatie")
+@router.get("/{exam_id:uuid}/presentatie")
 def presentation(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -903,7 +903,7 @@ def presentation(
     )
 
 
-@router.get("/examens/{exam_id}/presentatie/teller")
+@router.get("/{exam_id:uuid}/presentatie/teller")
 def presentation_counter(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:

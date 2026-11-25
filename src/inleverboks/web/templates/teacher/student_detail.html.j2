@@ -2,14 +2,14 @@
 {% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
 {% block title %}{{ student_number }} · {{ exam.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent/examens/{{ exam.id }}">{{ exam.name }}</a></p>
+<p class="breadcrumb"><a href="/examens/{{ exam.id }}">{{ exam.name }}</a></p>
 <div class="page-head">
   <div>
     <h1>{% if row %}{{ row.display_name }}{% elif roster %}{{ roster.last_name }}, {{ roster.first_name }}{% endif %}</h1>
     <p><span class="mono">{{ student_number }}</span>{% if row %} · {{ row_status_labels[row.status] }}{% endif %}{% if roster and roster.class_name %} · {{ roster.class_name }}{% endif %}</p>
   </div>
   {% if perms.download_files and attempts %}
-  <a class="button" href="/docent/examens/{{ exam.id }}/studenten/{{ student_number }}/zip">{{ _("Download student (zip)") }}</a>
+  <a class="button" href="/examens/{{ exam.id }}/studenten/{{ student_number }}/zip">{{ _("Download student (zip)") }}</a>
   {% endif %}
 </div>
 {% if ok == "cancelled" %}{{ ok_box(_("The hand-in has been undone. The student can hand in again.")) }}{% endif %}
@@ -38,7 +38,7 @@
     <tbody>
     {% for f in s.files|sort(attribute="position") %}
       <tr>
-        <td>{% if perms.download_files and f.storage_key %}<a href="/docent/examens/{{ exam.id }}/bestanden/{{ f.id }}">{{ f.original_name }}</a>{% else %}{{ f.original_name }}{% endif %}
+        <td>{% if perms.download_files and f.storage_key %}<a href="/examens/{{ exam.id }}/bestanden/{{ f.id }}">{{ f.original_name }}</a>{% else %}{{ f.original_name }}{% endif %}
           {% if f.integrity_ok == false %}<br><span class="signal"><span aria-hidden="true">✕</span> {{ _("Integrity check failed") }}</span>{% endif %}</td>
         <td>{{ slot_labels.get(f.expected_file_id, _("Extra file")) if f.expected_file_id else _("Extra file") }}</td>
         <td>{{ f.size }} B</td>
@@ -51,7 +51,7 @@
   </div>
   {% if s.status == "active" and perms.manage_submissions %}
   <div class="grid-2 top-gap">
-    <form method="post" action="/docent/examens/{{ exam.id }}/inleveringen/{{ s.id }}/annuleren" class="stack review-form">
+    <form method="post" action="/examens/{{ exam.id }}/inleveringen/{{ s.id }}/annuleren" class="stack review-form">
       {{ csrf() }}
       <h3>{{ _("Undo hand-in") }}</h3>
       <p class="hint">{{ _("At the student's request. The files are kept; the student can hand in again.") }}</p>
@@ -61,7 +61,7 @@
       </div>
       <button type="submit" class="button button-secondary">{{ _("Undo hand-in") }}</button>
     </form>
-    <form method="post" action="/docent/examens/{{ exam.id }}/inleveringen/{{ s.id }}/ongeldig" class="stack review-form">
+    <form method="post" action="/examens/{{ exam.id }}/inleveringen/{{ s.id }}/ongeldig" class="stack review-form">
       {{ csrf() }}
       <h3>{{ _("Declare invalid") }}</h3>
       <p class="hint">{{ _("The files are kept as a separate invalid hand-in.") }}</p>

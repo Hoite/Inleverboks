@@ -48,9 +48,9 @@ def test_seed_creates_realistic_data(
     # The demo teacher can log in with the printed password and sees the exams.
     teacher = TestClient(client.app)
     login(teacher, DEMO_TEACHER, password=result.password)
-    page = teacher.get("/docent").text
+    page = teacher.get("/examens").text
     assert "Demo: Netwerken P2" in page
-    overview = teacher.get(f"/docent/examens/{closed.id}").text
+    overview = teacher.get(f"/examens/{closed.id}").text
     assert "Identiek aan" in overview
     # Running it again changes nothing.
     assert not seed(settings, services.storage, app.state.sessionmaker, clock.now()).created

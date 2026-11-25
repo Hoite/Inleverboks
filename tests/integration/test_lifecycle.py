@@ -166,15 +166,15 @@ def test_finalized_exam_pages(
     services.lifecycle.run(db, fake_render)
     teacher = TestClient(client.app)
     login(teacher)
-    assert handed_in.name in teacher.get("/docent/afgerond").text
-    assert handed_in.name not in teacher.get("/docent").text
-    page = teacher.get(f"/docent/examens/{handed_in.id}").text
+    assert handed_in.name in teacher.get("/examens/afgerond").text
+    assert handed_in.name not in teacher.get("/examens").text
+    page = teacher.get(f"/examens/{handed_in.id}").text
     assert "Dit examen is afgerond" in page
     assert "Alles downloaden" not in page
     pv = db.scalar(select(ProcesVerbaal))
     assert pv is not None
     assert pv.document_id in page
-    download = teacher.get(f"/docent/examens/{handed_in.id}/proces-verbalen/{pv.id}")
+    download = teacher.get(f"/examens/{handed_in.id}/proces-verbalen/{pv.id}")
     assert download.content.startswith(b"%PDF")
     assert download.headers["content-disposition"].startswith("attachment;")
 
@@ -185,10 +185,10 @@ def test_dashboard_warns_seven_days_before(
     teacher = TestClient(client.app)
     clock.set(datetime(2027, 1, 5, 22, 0, tzinfo=UTC))
     login(teacher)
-    assert "Bestanden worden verwijderd op" not in teacher.get("/docent").text
+    assert "Bestanden worden verwijderd op" not in teacher.get("/examens").text
     clock.set(datetime(2027, 1, 6, 9, 0, tzinfo=UTC))
     login(teacher)
-    page = teacher.get("/docent").text
+    page = teacher.get("/examens").text
     assert "Bestanden worden verwijderd op 13-01-2027" in page
 
 
@@ -200,7 +200,7 @@ def test_hold_blocks_deletion_and_grace_after_removal(
 ) -> None:
     teacher = TestClient(client.app)
     login(teacher)
-    url = f"/docent/examens/{handed_in.id}/bewaren"
+    url = f"/examens/{handed_in.id}/bewaren"
     assert "error=reason_required" in form(teacher, url, {"reason": ""}).headers["location"]
     assert "ok=hold_set" in form(teacher, url, {"reason": "Bezwaar ingediend"}).headers["location"]
     assert events(db, "exam.hold_set")[0].details["reason"] == "Bezwaar ingediend"
@@ -231,16 +231,14 @@ def test_hold_permissions(
     db.commit()
     rc = TestClient(client.app)
     login(rc, "tweede@school.nl")
-    assert form(rc, f"/docent/examens/{handed_in.id}/bewaren", {"reason": "x"}).status_code == 403
+    assert form(rc, f"/examens/{handed_in.id}/bewaren", {"reason": "x"}).status_code == 403
     admin = create_user(db, clock, "admin@school.nl", admin=True)
     secret = enable_totp(db, services, admin)
     ac = TestClient(client.app)
     login(ac, "admin@school.nl", secret=secret, clock=clock)
     assert (
         "ok=hold_set"
-        in form(ac, f"/docent/examens/{handed_in.id}/bewaren", {"reason": "Beroep"}).headers[
-            "location"
-        ]
+        in form(ac, f"/examens/{handed_in.id}/bewaren", {"reason": "Beroep"}).headers["location"]
     )
 
 
@@ -255,7 +253,7 @@ def test_permanent_deletion_by_admin(
     ac = TestClient(client.app)
     login(ac, "admin@school.nl", secret=secret, clock=clock)
     exam_id, slug = handed_in.id, handed_in.slug
-    url = f"/docent/examens/{exam_id}/definitief-verwijderen"
+    url = f"/examens/{exam_id}/definitief-verwijderen"
     # Not before it is finalized.
     assert "error=not_finalized" in form(ac, url, {"reason": "x"}).headers["location"]
     clock.set(AMS_MIDNIGHT_13_JAN)
@@ -266,7 +264,7 @@ def test_permanent_deletion_by_admin(
     assert form(teacher, url, {"reason": "x"}).status_code == 403
     assert "error=reason_required" in form(ac, url, {"reason": ""}).headers["location"]
     response = form(ac, url, {"reason": "Termijn voor bezwaar verstreken"})
-    assert response.headers["location"] == "/docent/afgerond?ok=deleted"
+    assert response.headers["location"] == "/examens/afgerond?ok=deleted"
     db.expire_all()
     assert db.get(Exam, exam_id) is None
     assert not db.scalars(select(Submission)).all()

@@ -1,5 +1,5 @@
-"""Teacher side after handing in: overview, student detail, actions, downloads, exports,
-receipt verification and the exam audit log (spec §6, §7, §8)."""
+"""Teacher side after handing in: overview, student detail, actions, downloads, exports
+and the exam audit log (spec §6, §7, §8). Receipt verification is in ``admin.py``."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ from inleverboks.web.routes.exams import status_labels
 from inleverboks.web.routes.student import warning_labels
 from inleverboks.web.templating import render
 
-router = APIRouter(prefix="/docent")
+router = APIRouter(prefix="/examens")
 
 AUDIT_PAGE_SIZE = 200
 
@@ -97,7 +97,7 @@ def _audit(
 # Overview ----------------------------------------------------------------------------
 
 
-@router.get("/examens/{exam_id}")
+@router.get("/{exam_id:uuid}")
 def overview(
     request: Request,
     exam_id: uuid.UUID,
@@ -147,7 +147,7 @@ def overview(
 # Student detail and actions ----------------------------------------------------------
 
 
-@router.get("/examens/{exam_id}/studenten/{student_number}")
+@router.get("/{exam_id:uuid}/studenten/{student_number}")
 def student_detail(
     request: Request,
     exam_id: uuid.UUID,
@@ -188,10 +188,10 @@ def student_detail(
 
 
 def _student_url(exam: Exam, number: str) -> str:
-    return f"/docent/examens/{exam.id}/studenten/{number}"
+    return f"/examens/{exam.id}/studenten/{number}"
 
 
-@router.post("/examens/{exam_id}/inleveringen/{submission_id}/annuleren")
+@router.post("/{exam_id:uuid}/inleveringen/{submission_id}/annuleren")
 def cancel_submission(
     request: Request,
     exam_id: uuid.UUID,
@@ -212,7 +212,7 @@ def cancel_submission(
     return _redirect(f"{_student_url(exam, number)}?ok=cancelled")
 
 
-@router.post("/examens/{exam_id}/inleveringen/{submission_id}/ongeldig")
+@router.post("/{exam_id:uuid}/inleveringen/{submission_id}/ongeldig")
 def invalidate_submission(
     request: Request,
     exam_id: uuid.UUID,
@@ -245,7 +245,7 @@ def invalidate_submission(
 # Downloads ---------------------------------------------------------------------------
 
 
-@router.get("/examens/{exam_id}/bestanden/{file_id}")
+@router.get("/{exam_id:uuid}/bestanden/{file_id}")
 def download_file(
     request: Request, exam_id: uuid.UUID, file_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -333,7 +333,7 @@ def _zip_date(exam: Exam, services: Services) -> str:
     return exam.starts_at.astimezone(services.env.timezone).strftime("%Y-%m-%d")
 
 
-@router.get("/examens/{exam_id}/zip")
+@router.get("/{exam_id:uuid}/zip")
 def download_zip(
     request: Request,
     exam_id: uuid.UUID,
@@ -359,7 +359,7 @@ def download_zip(
     )
 
 
-@router.get("/examens/{exam_id}/studenten/{student_number}/zip")
+@router.get("/{exam_id:uuid}/studenten/{student_number}/zip")
 def download_student_zip(
     request: Request, exam_id: uuid.UUID, student_number: str, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -410,7 +410,7 @@ STATUS_CSV = {
 }
 
 
-@router.get("/examens/{exam_id}/overzicht.csv")
+@router.get("/{exam_id:uuid}/overzicht.csv")
 def overview_csv(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -485,7 +485,7 @@ def generate_pv(
     return pdf, pv.document_id
 
 
-@router.post("/examens/{exam_id}/proces-verbaal")
+@router.post("/{exam_id:uuid}/proces-verbaal")
 def proces_verbaal(
     request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -494,7 +494,7 @@ def proces_verbaal(
     return bytes_download(pdf, f"{exam.slug}_{document_id}.pdf", "application/pdf")
 
 
-@router.get("/examens/{exam_id}/proces-verbalen/{pv_id}")
+@router.get("/{exam_id:uuid}/proces-verbalen/{pv_id}")
 def download_pv(
     request: Request, exam_id: uuid.UUID, pv_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
@@ -511,7 +511,7 @@ def download_pv(
 # Hold flag and permanent deletion ------------------------------------------------------
 
 
-@router.post("/examens/{exam_id}/bewaren")
+@router.post("/{exam_id:uuid}/bewaren")
 def set_hold(
     request: Request,
     exam_id: uuid.UUID,
@@ -529,13 +529,13 @@ def set_hold(
             services.lifecycle.set_hold(db, ctx.user, exam, reason, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}?error={exc.code}#bewaartermijn")
+        return _redirect(f"/examens/{exam.id}?error={exc.code}#bewaartermijn")
     return _redirect(
-        f"/docent/examens/{exam.id}?ok={'hold_removed' if remove else 'hold_set'}#bewaartermijn"
+        f"/examens/{exam.id}?ok={'hold_removed' if remove else 'hold_set'}#bewaartermijn"
     )
 
 
-@router.post("/examens/{exam_id}/definitief-verwijderen")
+@router.post("/{exam_id:uuid}/definitief-verwijderen")
 def delete_permanently(
     request: Request,
     exam_id: uuid.UUID,
@@ -549,84 +549,8 @@ def delete_permanently(
         services.lifecycle.delete_permanently(db, ctx.user, exam, reason, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return _redirect(f"/docent/examens/{exam.id}?error={exc.code}")
-    return _redirect("/docent/afgerond?ok=deleted")
-
-
-# Receipt verification ----------------------------------------------------------------
-
-
-@router.get("/ontvangstbewijs")
-def verify_receipt_form(request: Request, ctx: Teacher) -> Response:
-    return render(request, "teacher/verify_receipt.html.j2", result=None, errors=[], code="")
-
-
-@router.post("/ontvangstbewijs")
-def verify_receipt(
-    request: Request,
-    ctx: Teacher,
-    db: Db,
-    services: Svc,
-    receipt_code: Annotated[str, Form(max_length=32)] = "",
-    verification_code: Annotated[str, Form(max_length=32)] = "",
-) -> Response:
-    key = f"verify:{ctx.user.id}"
-    if services.limiter.status("token", key).blocked:
-        return render(
-            request,
-            "teacher/verify_receipt.html.j2",
-            status_code=429,
-            result=None,
-            errors=[_("Too many attempts. Try again later.")],
-            code=receipt_code,
-        )
-    code = receipt_code.strip().upper().replace(" ", "")
-    submission = db.scalar(select(Submission).where(Submission.receipt_code == code))
-    exam = db.get(Exam, submission.exam_id) if submission else None
-    allowed = exam is not None and can_exam(ctx.user, ExamAction.VERIFY_RECEIPT, _ref(exam))
-    valid = bool(
-        submission
-        and allowed
-        and services.submissions.verification_matches(submission, verification_code)
-    )
-    if exam is not None and allowed:
-        services.audit.append(
-            db,
-            "receipt.verified",
-            actor=Actor.for_user(ctx.user),
-            chain=exam.id,
-            ip=client_ip(request),
-            details={"receipt_code": code, "valid": valid},
-        )
-    else:
-        services.audit.append(
-            db,
-            "receipt.verified",
-            actor=Actor.for_user(ctx.user),
-            ip=client_ip(request),
-            details={"receipt_code": code, "valid": False},
-        )
-    db.commit()
-    if not valid or submission is None or exam is None:
-        services.limiter.fail("token", key)
-        return render(
-            request,
-            "teacher/verify_receipt.html.j2",
-            status_code=404,
-            result=None,
-            errors=[_("No hand-in found with this combination of codes.")],
-            code=receipt_code,
-        )
-    return render(
-        request,
-        "teacher/verify_receipt.html.j2",
-        result=submission,
-        exam=exam,
-        files=services.submissions.receipt_files(exam, submission),
-        status_label=row_status_labels().get(submission.status, submission.status),
-        errors=[],
-        code=receipt_code,
-    )
+        return _redirect(f"/examens/{exam.id}?error={exc.code}")
+    return _redirect("/examens/afgerond?ok=deleted")
 
 
 # Audit log ---------------------------------------------------------------------------
@@ -697,7 +621,7 @@ def audit_export(
     return bytes_download(pdf, f"{filename}.pdf", "application/pdf")
 
 
-@router.get("/examens/{exam_id}/auditlog")
+@router.get("/{exam_id:uuid}/auditlog")
 def exam_audit(
     request: Request,
     exam_id: uuid.UUID,

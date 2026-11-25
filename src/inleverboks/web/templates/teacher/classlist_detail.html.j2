@@ -2,10 +2,10 @@
 {% from "_macros.html.j2" import csrf with context %}
 {% block title %}{{ class_list.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent/klassenlijsten">{{ _("Class lists") }}</a></p>
+<p class="breadcrumb"><a href="/examens/klassenlijsten">{{ _("Class lists") }}</a></p>
 <div class="page-head">
   <h1>{{ class_list.name }}</h1>
-  <form method="post" action="/docent/klassenlijsten/{{ class_list.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Remove") }}</button></form>
+  <form method="post" action="/examens/klassenlijsten/{{ class_list.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Remove") }}</button></form>
 </div>
 <p>{{ _("%(n)s students. Exams that use this list keep their own copy.", n=entries|length) }}</p>
 <div class="table-wrap">

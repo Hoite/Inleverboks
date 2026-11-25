@@ -33,7 +33,6 @@ EXPECTED: dict[ExamAction, tuple[bool, bool, bool, bool]] = {
     A.SET_HOLD: (True, True, False, False),
     A.TRANSFER_OWNERSHIP: (True, False, False, False),
     A.DELETE_FINALIZED: (True, False, False, False),
-    A.VERIFY_RECEIPT: (True, True, True, False),
     A.DELETE_CONCEPT: (False, True, False, False),
     A.DUPLICATE: (False, True, False, False),
 }

@@ -41,6 +41,7 @@ from inleverboks.web.routes import (
     classlists,
     exams,
     health,
+    legacy,
     public,
     review,
     student,
@@ -111,7 +112,9 @@ def create_app(
 
     app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
     # The student page at /{slug} is a catch-all and must come last.
-    for module in (health, public, branding, auth, exams, review, classlists, admin, student):
+    for module in (
+        health, public, branding, auth, exams, review, classlists, admin, legacy, student,
+    ):  # fmt: skip
         app.include_router(module.router)
 
     @app.exception_handler(RedirectError)

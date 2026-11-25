@@ -6,6 +6,15 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Gewijzigd
+
+- De docentpagina's staan nu onder `/examens` in plaats van `/docent`: `/examens/{id}`,
+  `/examens/sjablonen`, `/examens/klassenlijsten`, `/examens/gedeeld` enzovoort. Oude
+  `/docent/…`-adressen sturen permanent door naar het nieuwe adres (301 voor GET, 308 voor
+  formulieren), met behoud van de querystring.
+- *Ontvangstbewijs controleren* is een admintaak geworden: een tabblad onder *Admin*
+  (`/admin/ontvangstbewijs`). Docenten zien de link niet meer in de kop en krijgen 403.
+
 ### Opgelost
 
 - Het proces-verbaal (en ook het ontvangstbewijs en de auditlog-PDF) liep bij lange namen,

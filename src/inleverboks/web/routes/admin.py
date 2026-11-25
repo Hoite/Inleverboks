@@ -1,5 +1,5 @@
-"""Admin screens: users and invitations, whitelist, settings, SBB qualifications and the
-system audit log."""
+"""Admin screens: users and invitations, whitelist, settings, SBB qualifications, receipt
+verification and the system audit log."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select, update
 
-from inleverboks.db.models import AuditEvent, Exam, Invite, IpPreset, User
+from inleverboks.db.models import AuditEvent, Exam, Invite, IpPreset, Submission, User
 from inleverboks.db.models.audit import SYSTEM_CHAIN
 from inleverboks.i18n import gettext as _
 from inleverboks.services import sbb
@@ -20,9 +20,9 @@ from inleverboks.services.errors import DomainError
 from inleverboks.services.ipranges import parse_cidrs
 from inleverboks.services.system_settings import SettingsValidationError, parse_extensions
 from inleverboks.services.whitelist import WhitelistError
-from inleverboks.web.deps import Admin, Db, Svc, client_ip
+from inleverboks.web.deps import Admin, Db, ReceiptChecker, Svc, client_ip
 from inleverboks.web.messages import describe
-from inleverboks.web.routes.review import audit_export
+from inleverboks.web.routes.review import audit_export, row_status_labels
 from inleverboks.web.templating import render
 
 router = APIRouter(prefix="/admin")
@@ -473,3 +473,61 @@ def qualifications_import(
         db.rollback()
         return _qualifications_page(request, db, services, errors=describe(exc), status=400)
     return _redirect(f"/admin/kwalificaties?created={result.created}&updated={result.updated}")
+
+
+# Receipt verification ----------------------------------------------------------------
+
+RECEIPT_TEMPLATE = "admin/verify_receipt.html.j2"
+
+
+@router.get("/ontvangstbewijs")
+def verify_receipt_form(request: Request, ctx: ReceiptChecker) -> Response:
+    return render(request, RECEIPT_TEMPLATE, result=None, errors=[], code="")
+
+
+@router.post("/ontvangstbewijs")
+def verify_receipt(
+    request: Request,
+    ctx: ReceiptChecker,
+    db: Db,
+    services: Svc,
+    receipt_code: Annotated[str, Form(max_length=32)] = "",
+    verification_code: Annotated[str, Form(max_length=32)] = "",
+) -> Response:
+    key = f"verify:{ctx.user.id}"
+    if services.limiter.status("token", key).blocked:
+        return render(
+            request, RECEIPT_TEMPLATE, status_code=429, result=None,
+            errors=[_("Too many attempts. Try again later.")], code=receipt_code,
+        )  # fmt: skip
+    code = receipt_code.strip().upper().replace(" ", "")
+    submission = db.scalar(select(Submission).where(Submission.receipt_code == code))
+    exam = db.get(Exam, submission.exam_id) if submission else None
+    valid = bool(
+        submission and services.submissions.verification_matches(submission, verification_code)
+    )
+    services.audit.append(
+        db,
+        "receipt.verified",
+        actor=Actor.for_user(ctx.user),
+        chain=exam.id if exam is not None else SYSTEM_CHAIN,
+        ip=client_ip(request),
+        details={"receipt_code": code, "valid": valid},
+    )
+    db.commit()
+    if not valid or submission is None or exam is None:
+        services.limiter.fail("token", key)
+        return render(
+            request, RECEIPT_TEMPLATE, status_code=404, result=None,
+            errors=[_("No hand-in found with this combination of codes.")], code=receipt_code,
+        )  # fmt: skip
+    return render(
+        request,
+        RECEIPT_TEMPLATE,
+        result=submission,
+        exam=exam,
+        files=services.submissions.receipt_files(exam, submission),
+        status_label=row_status_labels().get(submission.status, submission.status),
+        errors=[],
+        code=receipt_code,
+    )

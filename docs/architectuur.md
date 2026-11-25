@@ -159,7 +159,7 @@ sequenceDiagram
     A-->>B: stage=change_password → /account/wachtwoord
     A-->>B: stage=setup_totp → /account/tweestaps → herstelcodes
   end
-  A-->>B: stage=full → /docent
+  A-->>B: stage=full → /examens
 ```
 
 - De cookie `ib_session` bevat een willekeurige token, met de vlaggen HttpOnly, SameSite=Lax en
@@ -192,10 +192,12 @@ downloaden en exporteren.
 | Bewaren-vlag | ✓ | ✓ | ✗ | ✗ |
 | Eigendom overdragen | ✓ | ✗ | ✗ | ✗ |
 | Afgerond examen definitief verwijderen | ✓ | ✗ | ✗ | ✗ |
-| Ontvangstbewijs controleren | ✓ | ✓ | ✓ | ✗ |
 | Concept verwijderen, dupliceren, als sjabloon opslaan | ✗ | ✓ | ✗ | ✗ |
 
 Een admin die zelf eigenaar is van een examen heeft daarop ook alle rechten van een eigenaar.
+Een ontvangstbewijs controleren (*Admin → Ontvangstbewijs controleren*,
+`/admin/ontvangstbewijs`) mag alleen een admin; dat kan voor elk examen
+(`SystemAction.VERIFY_RECEIPT`).
 Studenten hebben geen account. Er bestaat **geen enkele route** waarmee een student ingeleverde
 bestanden kan opvragen.
 

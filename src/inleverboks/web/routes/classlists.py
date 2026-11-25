@@ -26,7 +26,7 @@ from inleverboks.services.errors import DomainError
 from inleverboks.web.deps import Db, Svc, Teacher, client_ip
 from inleverboks.web.templating import render
 
-router = APIRouter(prefix="/docent/klassenlijsten")
+router = APIRouter(prefix="/examens/klassenlijsten")
 
 PREVIEW_ROWS = 20
 DELIMITERS = {";": ";", ",": ",", "tab": "\t"}
@@ -167,9 +167,9 @@ def import_rows(request: Request, ctx: Teacher, db: Db, services: Svc) -> Respon
     try:
         text = base64.b64decode(text_field("csv_b64"), validate=True).decode()
     except binascii.Error, UnicodeDecodeError:
-        return _redirect("/docent/klassenlijsten/nieuw")
+        return _redirect("/examens/klassenlijsten/nieuw")
     if len(text.encode()) > MAX_CSV_BYTES:
-        return _redirect("/docent/klassenlijsten/nieuw")
+        return _redirect("/examens/klassenlijsten/nieuw")
     delimiter = DELIMITERS.get(text_field("delimiter"), ";")
     has_header = text_field("has_header") == "true"
     name = text_field("name").strip()
@@ -187,7 +187,7 @@ def import_rows(request: Request, ctx: Teacher, db: Db, services: Svc) -> Respon
         )  # fmt: skip
         if text_field("action") == "save":
             class_list = services.classlists.save(db, ctx.user, name, result, ip=client_ip(request))
-            return _redirect(f"/docent/klassenlijsten/{class_list.id}")
+            return _redirect(f"/examens/klassenlijsten/{class_list.id}")
     except DomainError as exc:
         db.rollback()
         errors.append(import_messages().get(exc.code, exc.code))
@@ -213,4 +213,4 @@ def delete(
     request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
     services.classlists.delete(db, ctx.user, class_list_id, ip=client_ip(request))
-    return _redirect("/docent/klassenlijsten")
+    return _redirect("/examens/klassenlijsten")

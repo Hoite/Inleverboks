@@ -69,7 +69,7 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   statisch of inline geserveerd.
 - **Tijd:** sla alles op in UTC (`DateTime(timezone=True)`) en toon in `APP_TIMEZONE`. Gebruik
   (vanaf fase 2) de `Clock`-adapter, nooit `datetime.now()` direct.
-- **URL's:** de UI-paden zijn Nederlands (`/docent`, `/account/wachtwoord`, `/admin/gebruikers`,
+- **URL's:** de UI-paden zijn Nederlands (`/examens`, `/account/wachtwoord`, `/admin/gebruikers`,
   `/uitnodiging/{token}`). Inleverlinks komen in fase 3 direct onder `/` (`/{slug}`). Elk nieuw
   pad op het hoogste niveau moet dus op de lijst met gereserveerde slugs.
 - **Routes** zijn sync `def` (FastAPI draait ze in een threadpool), omdat SQLAlchemy sync is.

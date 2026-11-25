@@ -23,7 +23,7 @@
   <div class="demo-banner" role="status">{{ _("Demo environment: do not use for real exams.") }}</div>
   {% endif %}
   <header class="site-header">
-    <a class="brand" href="{{ '/docent' if current_user else '/' }}">
+    <a class="brand" href="{{ '/examens' if current_user else '/' }}">
       {% if brand.logo %}
       <img class="brand-logo" src="/huisstijl/logo.png?v={{ brand.version }}" alt="">
       {% else %}
@@ -34,8 +34,7 @@
     {% block header_nav %}
     {% if current_user and auth.stage == "full" %}
     <nav class="header-nav" aria-label="{{ _('Main menu') }}">
-      <a href="/docent"{% if current_path.startswith('/docent') %} aria-current="page"{% endif %}>{{ _("Exams") }}</a>
-      <a href="/docent/ontvangstbewijs"{% if current_path.startswith('/docent/ontvangstbewijs') %} aria-current="page"{% endif %}>{{ _("Check receipt") }}</a>
+      <a href="/examens"{% if current_path.startswith('/examens') %} aria-current="page"{% endif %}>{{ _("Exams") }}</a>
       {% if current_user.is_admin %}
       <a href="/admin/gebruikers"{% if current_path.startswith('/admin') %} aria-current="page"{% endif %}>{{ _("Admin") }}</a>
       {% endif %}

@@ -1,18 +1,18 @@
 {% extends "base.html.j2" %}
 {% block title %}{{ _("Template from a qualification") }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent/sjablonen">{{ _("Exam templates") }}</a></p>
+<p class="breadcrumb"><a href="/examens/sjablonen">{{ _("Exam templates") }}</a></p>
 <h1>{{ _("Template from a qualification") }}</h1>
 <p class="hint">{{ _("Search the qualification (outflow) by crebo number or name, then choose the core tasks. Every core task becomes a template with an expected file per work process.") }}</p>
 {% if not imported %}
 <div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">!</span>
   <div><p>{{ _("The qualification structure of SBB has not been imported yet. Ask the admin.") }}</p></div></div>
 {% endif %}
-<form method="get" action="/docent/sjablonen/crebo" class="row-form" role="search">
+<form method="get" action="/examens/sjablonen/crebo" class="row-form" role="search">
   <div class="field grow">
     <label for="q">{{ _("Crebo number or name") }}</label>
     <input id="q" name="q" type="search" value="{{ query }}" minlength="2" maxlength="100" autocomplete="off" placeholder="{{ _('e.g. 27016 or system engineer') }}"
-      hx-get="/docent/sjablonen/crebo" hx-trigger="input changed delay:300ms, search" hx-target="#qualification-results" hx-swap="innerHTML" autofocus>
+      hx-get="/examens/sjablonen/crebo" hx-trigger="input changed delay:300ms, search" hx-target="#qualification-results" hx-swap="innerHTML" autofocus>
   </div>
   <button type="submit" class="button">{{ _("Search") }}</button>
 </form>

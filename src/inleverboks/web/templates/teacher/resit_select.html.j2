@@ -2,10 +2,10 @@
 {% from "_macros.html.j2" import csrf with context %}
 {% block title %}{{ _("Resit") }} · {{ exam.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/docent">{{ _("Exams") }}</a> › <a href="/docent/examens/{{ exam.id }}">{{ exam.name }}</a></p>
+<p class="breadcrumb"><a href="/examens">{{ _("Exams") }}</a> › <a href="/examens/{{ exam.id }}">{{ exam.name }}</a></p>
 <h1>{{ _("Resit for several students") }}</h1>
 <p class="hint">{{ _("Choose the students for one resit. The new exam gets only the expected files that are still open for at least one of them, and only these students can hand in. Students who need something else get their own resit.") }}</p>
-<form method="post" action="/docent/examens/{{ exam.id }}/herkansing" class="stack">
+<form method="post" action="/examens/{{ exam.id }}/herkansing" class="stack">
   {{ csrf() }}
   <fieldset>
     <legend>{{ _("Students") }}</legend>
@@ -19,7 +19,7 @@
   </fieldset>
   <div class="form-actions">
     <button type="submit" class="button">{{ _("Make resit") }}</button>
-    <a class="button button-secondary" href="/docent/examens/{{ exam.id }}">{{ _("Cancel") }}</a>
+    <a class="button button-secondary" href="/examens/{{ exam.id }}">{{ _("Cancel") }}</a>
   </div>
 </form>
 {% endblock %}

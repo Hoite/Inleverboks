@@ -83,8 +83,12 @@ een beveiligde context (HTTPS, of `localhost` tijdens het ontwikkelen).
 Op de examenpagina zien docenten live wie heeft ingeleverd, met signalen zoals "leeg sjabloon"
 of "identiek aan een andere student". Ze kunnen een inlevering ongedaan maken of ongeldig
 verklaren (met een reden), alles downloaden als zip (met `manifest.csv` en een
-integriteitscontrole), het overzicht als CSV exporteren, een proces-verbaal (PDF) maken en een
-ontvangstbewijs van een student controleren. Elke download en export komt in het auditlog.
+integriteitscontrole), het overzicht als CSV exporteren en een proces-verbaal (PDF) maken.
+Elke download en export komt in het auditlog. Een ontvangstbewijs van een student controleren
+doet een admin, onder *Admin → Ontvangstbewijs controleren*.
+
+De docentpagina's staan onder `/examens` (tot versie 0.2 was dat `/docent`; oude links en
+bladwijzers worden permanent doorgestuurd).
 
 **Examensjablonen** (tabblad *Examensjablonen*) bewaren de verwachte bestanden,
 sjabloonbestanden, extensies, limieten en toegangsinstellingen. Je maakt ze daar zelf, of slaat

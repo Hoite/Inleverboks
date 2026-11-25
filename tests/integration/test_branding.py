@@ -167,7 +167,7 @@ def test_logo_upload_serve_and_remove(
     )
     assert response.headers["location"] == "/admin/huisstijl?ok=logo"
     brand = services.branding.load(db)
-    page = admin_client.get("/docent").text
+    page = admin_client.get("/examens").text
     assert f'src="/huisstijl/logo.png?v={brand.version}"' in page
     assert f'href="/huisstijl/favicon.png?v={brand.version}"' in page
     logo = admin_client.get(f"/huisstijl/logo.png?v={brand.version}")

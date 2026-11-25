@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-24 16:57+0100\n"
+"POT-Creation-Date: 2026-11-25 13:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -262,6 +262,9 @@ msgstr "Er bestaat al een preset met deze naam."
 msgid "Too many attempts. Try again later."
 msgstr "Te veel pogingen. Probeer het later opnieuw."
 
+msgid "No hand-in found with this combination of codes."
+msgstr "Geen inlevering gevonden met deze combinatie van codes."
+
 msgid "E-mail address or password is incorrect."
 msgstr "E-mailadres of wachtwoord klopt niet."
 
@@ -436,9 +439,6 @@ msgstr "Ongeldig"
 
 msgid "Not handed in yet"
 msgstr "Nog niet ingeleverd"
-
-msgid "No hand-in found with this combination of codes."
-msgstr "Geen inlevering gevonden met deze combinatie van codes."
 
 msgid "Audit log"
 msgstr "Auditlog"
@@ -644,9 +644,6 @@ msgstr "Hoofdmenu"
 msgid "Exams"
 msgstr "Examens"
 
-msgid "Check receipt"
-msgstr "Ontvangstbewijs controleren"
-
 msgid "Admin"
 msgstr "Admin"
 
@@ -685,6 +682,9 @@ msgstr "Kwalificaties"
 
 msgid "House style"
 msgstr "Huisstijl"
+
+msgid "Check receipt"
+msgstr "Ontvangstbewijs controleren"
 
 msgid "Filter on event"
 msgstr "Filteren op gebeurtenis"
@@ -1027,6 +1027,27 @@ msgstr "Ook tweestapsverificatie resetten"
 msgid "Create reset link"
 msgstr "Resetlink maken"
 
+msgid "Compare a printed or shown receipt with what was stored."
+msgstr "Vergelijk een geprint of getoond ontvangstbewijs met wat is opgeslagen."
+
+msgid "Verification code"
+msgstr "Verificatiecode"
+
+msgid "Check"
+msgstr "Controleren"
+
+msgid "The codes match a stored hand-in."
+msgstr "De codes horen bij een opgeslagen inlevering."
+
+msgid "Exam"
+msgstr "Examen"
+
+msgid "Handed in at"
+msgstr "Ingeleverd om"
+
+msgid "Files"
+msgstr "Bestanden"
+
 msgid "Added."
 msgstr "Toegevoegd."
 
@@ -1172,9 +1193,6 @@ msgstr "Document-ID"
 msgid "Final version, made before the files were deleted."
 msgstr "Definitieve versie, gemaakt vóór het verwijderen van de bestanden."
 
-msgid "Exam"
-msgstr "Examen"
-
 msgid "Qualification"
 msgstr "Kwalificatie"
 
@@ -1256,9 +1274,6 @@ msgstr "Gestart"
 msgid "Completed"
 msgstr "Voltooid"
 
-msgid "Files"
-msgstr "Bestanden"
-
 msgid "Work processes"
 msgstr "Werkprocessen"
 
@@ -1335,12 +1350,6 @@ msgstr "Examinator"
 
 msgid "Receipt"
 msgstr "Ontvangstbewijs"
-
-msgid "Verification code"
-msgstr "Verificatiecode"
-
-msgid "Handed in at"
-msgstr "Ingeleverd om"
 
 msgid "server time"
 msgstr "servertijd"
@@ -1482,9 +1491,6 @@ msgstr "Klas"
 
 msgid "Import class list"
 msgstr "Klassenlijst importeren"
-
-msgid "Check"
-msgstr "Controleren"
 
 msgid "Columns"
 msgstr "Kolommen"
@@ -2226,10 +2232,4 @@ msgid ""
 msgstr ""
 "Nog geen examensjablonen. Maak er hier een, of sla een bestaand examen op als sjabloon via de "
 "pagina met instellingen."
-
-msgid "Compare a printed or shown receipt with what was stored."
-msgstr "Vergelijk een geprint of getoond ontvangstbewijs met wat is opgeslagen."
-
-msgid "The codes match a stored hand-in."
-msgstr "De codes horen bij een opgeslagen inlevering."
 
