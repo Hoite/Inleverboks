@@ -1096,3 +1096,29 @@ def test_advanced_tab_permissions(tclient: TestClient, db: Session, clock: Froze
     assert "Alleen de eigenaar van het examen kan deze acties gebruiken." in page
     assert f"/examens/{exam.id}/dupliceren" not in page
     assert f"/examens/{exam.id}/bewaren" not in page
+
+
+def test_delete_concept_made_from_template_after_unpublish(
+    tclient: TestClient, db: Session
+) -> None:
+    exam = create_exam(tclient, access_code_enabled="", allow_unlisted="")
+    ids = _slot_ids(db, exam)
+    _upload(tclient, exam, ids[0], b"sjabloon", "leeg.docx")
+    post(tclient, f"/examens/{exam.id}/sjabloon-opslaan", {"name": "Linux P3"})
+    template = db.scalar(select(ExamTemplate))
+    assert template is not None
+    response = post(
+        tclient, "/examens/nieuw",
+        form(name="Linux P3 vanuit sjabloon", access_code_enabled="", allow_unlisted="",
+             source_template_id=str(template.id)),
+    )  # fmt: skip
+    assert response.status_code == 303, response.text[:500]
+    new_id = response.headers["location"].split("/")[2]
+    assert post(tclient, f"/examens/{new_id}/publiceren").status_code == 303
+    assert post(tclient, f"/examens/{new_id}/concept").status_code == 303
+
+    response = post(tclient, f"/examens/{new_id}/verwijderen")
+
+    assert response.status_code == 303
+    db.expire_all()
+    assert db.get(Exam, uuid.UUID(new_id)) is None

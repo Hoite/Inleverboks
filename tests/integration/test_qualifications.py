@@ -658,3 +658,18 @@ def test_kept_suggested_slug_follows_the_start_date(
     response = post(teacher, "/examens/nieuw", exam_form(**common, **own))
     exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
     assert exam is not None and exam.slug == "mijn-eigen-link"
+
+
+def test_delete_concept_from_qualification_template_after_unpublish(
+    teacher: TestClient, db: Session, qualification: Qualification
+) -> None:
+    make_templates(teacher, qualification, "B1-K1")
+    exam_id = create_exam_from(teacher, db, template_named(db, "B1-K1"), []).id
+    assert post(teacher, f"/examens/{exam_id}/publiceren").status_code == 303
+    assert post(teacher, f"/examens/{exam_id}/concept").status_code == 303
+
+    response = post(teacher, f"/examens/{exam_id}/verwijderen")
+
+    assert response.status_code == 303
+    db.expire_all()
+    assert db.get(Exam, exam_id) is None
