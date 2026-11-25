@@ -30,7 +30,7 @@ from inleverboks.db.models import (
     TemplateFile,
     User,
 )
-from inleverboks.policy import ExamAction, ExamRef, can_exam
+from inleverboks.policy import ClassListAction, ExamAction, ExamRef, can_class_list, can_exam
 from inleverboks.services import slugs
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
@@ -559,8 +559,11 @@ class ExamService:
         self._validate_limits(data, problems)
         self._validate_slots(db, data, problems)
         if data.class_list_id is not None:
+            # Every teacher may use every class list (PLAN B60); the policy decides.
             class_list = db.get(ClassList, data.class_list_id)
-            if class_list is None or class_list.owner_id != owner_id:
+            if class_list is None or not can_class_list(
+                db.get(User, owner_id), ClassListAction.USE, class_list.owner_id
+            ):
                 problems["class_list_id"] = "invalid"
         if problems:
             raise ExamValidationError(problems)
@@ -1342,7 +1345,9 @@ class ExamService:
         class_list = None
         if class_list_id is not None:
             class_list = db.get(ClassList, class_list_id)
-            if class_list is None or class_list.owner_id != user.id:
+            if class_list is None or not can_class_list(
+                user, ClassListAction.USE, class_list.owner_id
+            ):
                 raise NotFoundError("class_list_not_found")
         count = self._set_roster(db, exam, class_list)
         self.audit.append(

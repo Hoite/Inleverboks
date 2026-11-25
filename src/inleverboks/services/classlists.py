@@ -1,4 +1,4 @@
-"""Class list import (CSV) and the teacher's personal library of class lists."""
+"""Class list import (CSV) and the shared library of class lists (PLAN B60)."""
 
 from __future__ import annotations
 
@@ -13,8 +13,9 @@ from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import Clock
 from inleverboks.db.models import ClassList, ClassListEntry, User
+from inleverboks.policy import ClassListAction, can_class_list
 from inleverboks.services.audit import Actor, AuditService
-from inleverboks.services.errors import DomainError, NotFoundError
+from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
 
 MAX_CSV_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 2000
@@ -160,43 +161,70 @@ def apply_mapping(
     return result
 
 
+def _entries(result: ImportResult) -> list[ClassListEntry]:
+    return [
+        ClassListEntry(
+            student_number=e.student_number,
+            first_name=e.first_name,
+            infix=e.infix,
+            last_name=e.last_name,
+            class_name=e.class_name,
+        )
+        for e in result.entries
+    ]
+
+
+def _valid_name(name: str) -> str:
+    name = name.strip()
+    if not name or len(name) > 200:
+        raise DomainError("class_list_name_invalid")
+    return name
+
+
 class ClassListService:
+    """Every teacher sees and uses every class list; the owner and admins change them
+    (PLAN B60, ``policy.CLASS_LIST_MATRIX``)."""
+
     def __init__(self, clock: Clock, audit: AuditService) -> None:
         self.clock = clock
         self.audit = audit
 
-    def library(self, db: Session, owner: User) -> list[ClassList]:
-        return list(
-            db.scalars(
-                select(ClassList).where(ClassList.owner_id == owner.id).order_by(ClassList.name)
-            )
-        )
+    def library(self, db: Session, user: User, *, everyone: bool = False) -> list[ClassList]:
+        """The user's own lists, or (``everyone``) all lists: own lists first, then by name."""
+        query = select(ClassList)
+        if not everyone:
+            query = query.where(ClassList.owner_id == user.id)
+        lists = list(db.scalars(query.order_by(ClassList.name, ClassList.created_at)))
+        return sorted(lists, key=lambda cl: cl.owner_id != user.id)
 
-    def get_owned(self, db: Session, owner: User, class_list_id: uuid.UUID) -> ClassList:
+    def get(
+        self, db: Session, user: User, class_list_id: uuid.UUID, action: ClassListAction
+    ) -> ClassList:
         class_list = db.get(ClassList, class_list_id)
-        if class_list is None or class_list.owner_id != owner.id:
+        if class_list is None or not can_class_list(
+            user, ClassListAction.VIEW, class_list.owner_id
+        ):
             raise NotFoundError("class_list_not_found")
+        if not can_class_list(user, action, class_list.owner_id):
+            raise PermissionDeniedError()
         return class_list
+
+    def _details(self, class_list: ClassList, **extra: object) -> dict[str, object]:
+        return {
+            "class_list_id": str(class_list.id),
+            "owner_id": str(class_list.owner_id),
+            "name": class_list.name,
+            **extra,
+        }
 
     def save(
         self, db: Session, owner: User, name: str, result: ImportResult, *, ip: str | None
     ) -> ClassList:
-        name = name.strip()
-        if not name or len(name) > 200:
-            raise DomainError("class_list_name_invalid")
+        name = _valid_name(name)
         if not result.ok:
             raise DomainError("class_list_has_errors")
         class_list = ClassList(owner_id=owner.id, name=name, created_at=self.clock.now())
-        class_list.entries = [
-            ClassListEntry(
-                student_number=e.student_number,
-                first_name=e.first_name,
-                infix=e.infix,
-                last_name=e.last_name,
-                class_name=e.class_name,
-            )
-            for e in result.entries
-        ]
+        class_list.entries = _entries(result)
         db.add(class_list)
         db.flush()
         self.audit.append(
@@ -213,14 +241,99 @@ class ClassListService:
         db.commit()
         return class_list
 
-    def delete(self, db: Session, owner: User, class_list_id: uuid.UUID, *, ip: str | None) -> None:
-        class_list = self.get_owned(db, owner, class_list_id)
+    def copy(
+        self, db: Session, user: User, class_list_id: uuid.UUID, *, ip: str | None
+    ) -> ClassList:
+        """A copy in the user's own lists, which they can then change."""
+        source = self.get(db, user, class_list_id, ClassListAction.COPY)
+        copy = ClassList(
+            owner_id=user.id, name=f"{source.name} (kopie)"[:200], created_at=self.clock.now()
+        )
+        copy.entries = [
+            ClassListEntry(
+                student_number=e.student_number, first_name=e.first_name, infix=e.infix,
+                last_name=e.last_name, class_name=e.class_name,
+            )
+            for e in source.entries
+        ]  # fmt: skip
+        db.add(copy)
+        db.flush()
+        self.audit.append(
+            db,
+            "class_list.copied",
+            actor=Actor.for_user(user),
+            ip=ip,
+            details={
+                "class_list_id": str(copy.id),
+                "source_class_list_id": str(source.id),
+                "source_owner_id": str(source.owner_id),
+                "rows": len(copy.entries),
+            },
+        )
+        db.commit()
+        return copy
+
+    def rename(
+        self, db: Session, user: User, class_list_id: uuid.UUID, name: str, *, ip: str | None
+    ) -> ClassList:
+        class_list = self.get(db, user, class_list_id, ClassListAction.RENAME)
+        name = _valid_name(name)
+        if name == class_list.name:
+            return class_list
+        self.audit.append(
+            db,
+            "class_list.renamed",
+            actor=Actor.for_user(user),
+            ip=ip,
+            details=self._details(class_list, new_name=name),
+        )
+        class_list.name = name
+        db.commit()
+        return class_list
+
+    def replace(
+        self,
+        db: Session,
+        user: User,
+        class_list_id: uuid.UUID,
+        name: str,
+        result: ImportResult,
+        *,
+        ip: str | None,
+    ) -> ClassList:
+        """New entries from a fresh import. Exams keep their own snapshot."""
+        class_list = self.get(db, user, class_list_id, ClassListAction.REPLACE)
+        name = _valid_name(name)
+        if not result.ok:
+            raise DomainError("class_list_has_errors")
+        extra: dict[str, object] = {
+            "old_rows": len(class_list.entries),
+            "rows": len(result.entries),
+        }
+        if name != class_list.name:
+            extra["new_name"] = name
+        self.audit.append(
+            db,
+            "class_list.replaced",
+            actor=Actor.for_user(user),
+            ip=ip,
+            details=self._details(class_list, **extra),
+        )
+        class_list.name = name
+        class_list.entries.clear()
+        db.flush()  # the unique (list, student number) needs the old rows gone first
+        class_list.entries.extend(_entries(result))
+        db.commit()
+        return class_list
+
+    def delete(self, db: Session, user: User, class_list_id: uuid.UUID, *, ip: str | None) -> None:
+        class_list = self.get(db, user, class_list_id, ClassListAction.DELETE)
         self.audit.append(
             db,
             "class_list.deleted",
-            actor=Actor.for_user(owner),
+            actor=Actor.for_user(user),
             ip=ip,
-            details={"class_list_id": str(class_list.id), "name": class_list.name},
+            details=self._details(class_list),
         )
         db.delete(class_list)
         db.commit()

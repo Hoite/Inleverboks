@@ -64,6 +64,13 @@ class UserService:
     def list_users(self, db: Session) -> list[User]:
         return list(db.scalars(select(User).order_by(User.name, User.email)))
 
+    def names(self, db: Session) -> dict[uuid.UUID, str]:
+        """Display names by id, for owner columns."""
+        return {
+            row.id: row.name or row.email
+            for row in db.execute(select(User.id, User.name, User.email))
+        }
+
     def teachers(self, db: Session) -> list[User]:
         return list(db.scalars(select(User).where(User.is_active.is_(True)).order_by(User.name)))
 

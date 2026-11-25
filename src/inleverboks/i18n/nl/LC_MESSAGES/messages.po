@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 13:31+0100\n"
+"POT-Creation-Date: 2026-11-25 13:42+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -1504,15 +1504,52 @@ msgstr "Klassenlijsten"
 msgid "All exams"
 msgstr "Alle examens"
 
+msgid "Owner"
+msgstr "Eigenaar"
+
+msgid "You"
+msgstr "Jij"
+
+msgid "Imported"
+msgstr "Geïmporteerd"
+
+msgid "Copy to my lists"
+msgstr "Kopiëren naar mijn lijsten"
+
+msgid "Replace list"
+msgstr "Lijst vervangen"
+
+msgid "This is your own copy of the class list. You can change it."
+msgstr "Dit is je eigen kopie van de klassenlijst. Die kun je aanpassen."
+
+msgid "The name has been changed."
+msgstr "De naam is gewijzigd."
+
+msgid "The class list has been replaced. Exams that already use it keep their own copy."
+msgstr "De klassenlijst is vervangen. Examens die de lijst al gebruiken, houden hun eigen kopie."
+
 #, python-format
 msgid "%(n)s students. Exams that use this list keep their own copy."
 msgstr "%(n)s studenten. Examens die deze lijst gebruiken, houden hun eigen kopie."
 
+msgid "Rename"
+msgstr "Naam wijzigen"
+
 msgid "Class"
 msgstr "Klas"
 
+msgid "Replace class list"
+msgstr "Klassenlijst vervangen"
+
 msgid "Import class list"
 msgstr "Klassenlijst importeren"
+
+msgid ""
+"The new file replaces all students of this list. Exams that already use the list keep their own "
+"copy."
+msgstr ""
+"Het nieuwe bestand vervangt alle studenten van deze lijst. Examens die de lijst al gebruiken, "
+"houden hun eigen kopie."
 
 msgid "Columns"
 msgstr "Kolommen"
@@ -1522,6 +1559,10 @@ msgstr "De eerste rij bevat kolomnamen"
 
 msgid "(none)"
 msgstr "(geen)"
+
+#, python-format
+msgid "Replace class list (%(n)s students)"
+msgstr "Klassenlijst vervangen (%(n)s studenten)"
 
 #, python-format
 msgid "Save class list (%(n)s students)"
@@ -1557,11 +1598,27 @@ msgstr "CSV-bestand"
 msgid "Separated by ; or , in UTF-8 or Windows-1252. You choose the columns in the next step."
 msgstr "Gescheiden door ; of , in UTF-8 of Windows-1252. In de volgende stap kies je de kolommen."
 
-msgid "Imported"
-msgstr "Geïmporteerd"
+msgid ""
+"Every teacher can view and use every class list. Only the owner and admins can change or remove "
+"one."
+msgstr ""
+"Elke docent kan alle klassenlijsten bekijken en gebruiken. Alleen de eigenaar en admins kunnen "
+"een lijst wijzigen of verwijderen."
+
+msgid "Show class lists"
+msgstr "Klassenlijsten tonen"
+
+msgid "My lists"
+msgstr "Mijn lijsten"
+
+msgid "All lists"
+msgstr "Alle lijsten"
 
 msgid "No class lists yet."
 msgstr "Nog geen klassenlijsten."
+
+msgid "You have no class lists yet. Import one, or copy one from all lists."
+msgstr "Je hebt nog geen klassenlijsten. Importeer er een, of kopieer er een uit alle lijsten."
 
 msgid "New exam"
 msgstr "Nieuw examen"
@@ -1942,9 +1999,6 @@ msgstr "Nieuwe code maken"
 
 msgid "No access code."
 msgstr "Geen toegangscode."
-
-msgid "Owner"
-msgstr "Eigenaar"
 
 msgid "Maximum size"
 msgstr "Maximale grootte"

@@ -1,4 +1,7 @@
-"""Class list library: CSV import with column mapping and preview."""
+"""Class list library: CSV import with column mapping and preview.
+
+Every teacher sees and uses every list; the owner and admins rename, replace and delete
+(PLAN B60, ``policy.CLASS_LIST_MATRIX``)."""
 
 from __future__ import annotations
 
@@ -11,7 +14,9 @@ from anyio import from_thread
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 
+from inleverboks.db.models import ClassList, User
 from inleverboks.i18n import gettext as _
+from inleverboks.policy import ClassListAction, can_class_list
 from inleverboks.services.classlists import (
     FIELDS,
     MAX_CSV_BYTES,
@@ -22,7 +27,8 @@ from inleverboks.services.classlists import (
     guess_mapping,
     read_rows,
 )
-from inleverboks.services.errors import DomainError
+from inleverboks.services.container import Services
+from inleverboks.services.errors import DomainError, NotFoundError
 from inleverboks.web.deps import Db, Svc, Teacher, client_ip
 from inleverboks.web.templating import render
 
@@ -62,16 +68,40 @@ def field_labels() -> dict[str, str]:
 
 
 @router.get("")
-def library(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
+def library(request: Request, ctx: Teacher, db: Db, services: Svc, toon: str = "") -> Response:
+    everyone = toon == "alle"
     return render(
-        request, "teacher/classlists.html.j2", tab="classlists",
-        class_lists=services.classlists.library(db, ctx.user),
+        request, "teacher/classlists.html.j2", tab="classlists", everyone=everyone,
+        class_lists=services.classlists.library(db, ctx.user, everyone=everyone),
+        owner_names=services.users.names(db),
     )  # fmt: skip
+
+
+def _replace_target(db: Db, services: Services, user: User, replace_id: str) -> ClassList | None:
+    """The list to replace when the import started from "Replace list"; checked again on
+    every step, so a hidden field never grants anything."""
+    if not replace_id:
+        return None
+    try:
+        class_list_id = uuid.UUID(replace_id)
+    except ValueError:
+        raise NotFoundError("class_list_not_found") from None
+    return services.classlists.get(db, user, class_list_id, ClassListAction.REPLACE)
 
 
 @router.get("/nieuw")
 def upload_form(request: Request, ctx: Teacher) -> Response:
-    return render(request, "teacher/classlist_upload.html.j2", errors=[], name="")
+    return render(request, "teacher/classlist_upload.html.j2", errors=[], name="", target=None)
+
+
+@router.get("/{class_list_id}/vervangen")
+def replace_form(
+    request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    target = services.classlists.get(db, ctx.user, class_list_id, ClassListAction.REPLACE)
+    return render(
+        request, "teacher/classlist_upload.html.j2", errors=[], name=target.name, target=target
+    )
 
 
 def _mapping_page(
@@ -84,6 +114,7 @@ def _mapping_page(
     mapping: dict[str, int | None],
     result: ImportResult | None,
     errors: list[str],
+    target: ClassList | None,
     status: int = 200,
 ) -> Response:
     rows = read_rows(text, delimiter)
@@ -114,6 +145,7 @@ def _mapping_page(
         preview=(result.entries[:PREVIEW_ROWS] if result else []),
         messages=import_messages(),
         errors=errors,
+        target=target,
     )
 
 
@@ -121,9 +153,13 @@ def _mapping_page(
 def upload(
     request: Request,
     ctx: Teacher,
+    db: Db,
+    services: Svc,
     name: Annotated[str, Form(max_length=200)] = "",
+    replace_id: Annotated[str, Form(max_length=36)] = "",
     file: Annotated[UploadFile | None, File()] = None,
 ) -> Response:
+    target = _replace_target(db, services, ctx.user, replace_id)
     if file is None:
         return render(
             request,
@@ -131,6 +167,7 @@ def upload(
             status_code=400,
             errors=[import_messages()["csv_empty"]],
             name=name,
+            target=target,
         )
     data = from_thread.run(file.read, MAX_CSV_BYTES + 1)
     try:
@@ -142,13 +179,14 @@ def upload(
     except DomainError as exc:
         return render(
             request, "teacher/classlist_upload.html.j2", status_code=400,
-            errors=[import_messages().get(exc.code, exc.code)], name=name,
+            errors=[import_messages().get(exc.code, exc.code)], name=name, target=target,
         )  # fmt: skip
     mapping = guess_mapping(rows[0])
     has_header = any(v is not None for v in mapping.values())
     return _mapping_page(
         request, name=name or (file.filename or "").rsplit(".", 1)[0], text=text,
         delimiter=delimiter, has_header=has_header, mapping=mapping, result=None, errors=[],
+        target=target,
     )  # fmt: skip
 
 
@@ -164,6 +202,7 @@ def import_rows(request: Request, ctx: Teacher, db: Db, services: Svc) -> Respon
         value = form.get(key)
         return value if isinstance(value, str) else ""
 
+    target = _replace_target(db, services, ctx.user, text_field("replace_id"))
     try:
         text = base64.b64decode(text_field("csv_b64"), validate=True).decode()
     except binascii.Error, UnicodeDecodeError:
@@ -186,6 +225,11 @@ def import_rows(request: Request, ctx: Teacher, db: Db, services: Svc) -> Respon
             student_number_regex=services.settings.load(db).student_number_regex,
         )  # fmt: skip
         if text_field("action") == "save":
+            if target is not None:
+                class_list = services.classlists.replace(
+                    db, ctx.user, target.id, name, result, ip=client_ip(request)
+                )
+                return _redirect(f"/examens/klassenlijsten/{class_list.id}?ok=replaced")
             class_list = services.classlists.save(db, ctx.user, name, result, ip=client_ip(request))
             return _redirect(f"/examens/klassenlijsten/{class_list.id}")
     except DomainError as exc:
@@ -193,19 +237,48 @@ def import_rows(request: Request, ctx: Teacher, db: Db, services: Svc) -> Respon
         errors.append(import_messages().get(exc.code, exc.code))
     return _mapping_page(
         request, name=name, text=text, delimiter=delimiter, has_header=has_header,
-        mapping=mapping, result=result, errors=errors, status=400 if errors else 200,
+        mapping=mapping, result=result, errors=errors, target=target,
+        status=400 if errors else 200,
     )  # fmt: skip
 
 
 @router.get("/{class_list_id}")
 def detail(
-    request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
-) -> Response:
-    class_list = services.classlists.get_owned(db, ctx.user, class_list_id)
+    request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    ok: str | None = None, error: str | None = None,
+) -> Response:  # fmt: skip
+    class_list = services.classlists.get(db, ctx.user, class_list_id, ClassListAction.VIEW)
     entries = sorted(class_list.entries, key=lambda e: (e.last_name.lower(), e.first_name.lower()))
     return render(
-        request, "teacher/classlist_detail.html.j2", class_list=class_list, entries=entries
-    )
+        request, "teacher/classlist_detail.html.j2", class_list=class_list, entries=entries,
+        owner_name=services.users.names(db).get(class_list.owner_id, ""),
+        own=class_list.owner_id == ctx.user.id,
+        perms={a.value: can_class_list(ctx.user, a, class_list.owner_id) for a in ClassListAction},
+        ok=ok, errors=[import_messages().get(error, error)] if error else [],
+    )  # fmt: skip
+
+
+@router.post("/{class_list_id}/kopie")
+def copy(
+    request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
+) -> Response:
+    class_list = services.classlists.copy(db, ctx.user, class_list_id, ip=client_ip(request))
+    return _redirect(f"/examens/klassenlijsten/{class_list.id}?ok=copied")
+
+
+@router.post("/{class_list_id}/naam")
+def rename(
+    request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    name: Annotated[str, Form(max_length=200)] = "",
+) -> Response:  # fmt: skip
+    try:
+        services.classlists.rename(db, ctx.user, class_list_id, name, ip=client_ip(request))
+    except DomainError as exc:
+        if exc.code != "class_list_name_invalid":
+            raise  # not found / not allowed: the app's handlers answer 404 / 403
+        db.rollback()
+        return _redirect(f"/examens/klassenlijsten/{class_list_id}?error={exc.code}")
+    return _redirect(f"/examens/klassenlijsten/{class_list_id}?ok=renamed")
 
 
 @router.post("/{class_list_id}/verwijderen")

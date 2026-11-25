@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from inleverboks.adapters.clock import FrozenClock
 from inleverboks.db.models import Exam, User
 from inleverboks.services.audit import Actor
+from inleverboks.services.classlists import ImportResult, ParsedEntry
 from inleverboks.services.container import Services
 from tests.conftest import create_user, enable_totp, login
 from tests.integration.test_qualifications import record
@@ -133,6 +134,12 @@ def test_teacher_and_admin_pages(
     crebo_template = services.exams.templates_from_qualification(
         db, owner, qualification, ["B1-K1"], shared=False, ip=None
     )[0]
+    class_list = services.classlists.save(
+        db, owner, "ICT-2A", ImportResult(entries=[ParsedEntry(
+            row_number=2, student_number="123456", first_name="Jan", infix="de",
+            last_name="Vries", class_name="ICT-2A",
+        )]), ip=None,
+    )  # fmt: skip
     urls = [
         "/examens", "/examens/afgerond", "/examens/sjablonen", "/examens/nieuw",
         f"/examens/{exam.id}", f"/examens/{exam.id}/instellingen",
@@ -147,6 +154,8 @@ def test_teacher_and_admin_pages(
         f"/examens/sjablonen/{crebo_template.id}",
         f"/examens/nieuw?sjabloon={crebo_template.id}&wp=B1-K1-W3",
         f"/examens/{exam.id}/herkansing",
+        "/examens/klassenlijsten?toon=alle",
+        f"/examens/klassenlijsten/{class_list.id}", f"/examens/klassenlijsten/{class_list.id}/vervangen",
     ]  # fmt: skip
     problems = [p for url in urls for p in audit(teacher, url)]
 

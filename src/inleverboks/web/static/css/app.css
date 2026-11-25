@@ -163,6 +163,14 @@ a:hover { color: var(--color-primary-strong); }
   border-bottom: 3px solid var(--color-primary);
 }
 
+/* My/all switch above a list (server-side filter, no JS); same colours as .tabs. */
+.view-switch { display: flex; flex-wrap: wrap; gap: .25rem; margin: 0 0 1rem; }
+.view-switch a {
+  padding: .3rem .8rem; border: 1px solid var(--color-primary); border-radius: var(--radius);
+  color: var(--color-primary); text-decoration: none;
+}
+.view-switch a[aria-current="page"] { background: var(--color-primary-tint); font-weight: 600; }
+
 /* Forms ---------------------------------------------------------------------- */
 
 /* Searchable select (js/combobox.js); the plain <select> works without JavaScript. */
@@ -197,6 +205,7 @@ a:hover { color: var(--color-primary-strong); }
 .stack > * + * { margin-top: 1rem; }
 .row-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; }
 .row-form .grow { flex: 1 1 16rem; }
+.rename-form { margin-bottom: 1rem; }
 .field { display: flex; flex-direction: column; gap: .3rem; }
 label { font-weight: 600; }
 .checkbox { display: flex; align-items: center; gap: .5rem; font-weight: 400; }

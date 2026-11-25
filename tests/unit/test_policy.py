@@ -10,11 +10,14 @@ import pytest
 
 from inleverboks.db.models import User
 from inleverboks.policy import (
+    CLASS_LIST_MATRIX,
     EXAM_MATRIX,
+    ClassListAction,
     ExamAction,
     ExamRef,
     SystemAction,
     can,
+    can_class_list,
     can_exam,
     exam_roles,
 )
@@ -104,3 +107,33 @@ def test_system_actions(people: dict[str, User]) -> None:
         assert can(people[ADMIN], action)
     assert not can(None, SystemAction.CREATE_EXAM)
     assert not can(_user(admin=True, active=False), SystemAction.MANAGE_USERS)
+
+
+# Class lists (PLAN B60) --------------------------------------------------------------
+
+C = ClassListAction
+
+# action: (owner, other teacher, admin on someone else's list)
+CLASS_LIST_EXPECTED: dict[ClassListAction, tuple[bool, bool, bool]] = {
+    C.VIEW: (True, True, True),
+    C.USE: (True, True, True),
+    C.COPY: (True, True, True),
+    C.RENAME: (True, False, True),
+    C.REPLACE: (True, False, True),
+    C.DELETE: (True, False, True),
+}
+
+
+def test_class_list_matrix_covers_every_action() -> None:
+    assert set(CLASS_LIST_EXPECTED) == set(ClassListAction) == set(CLASS_LIST_MATRIX)
+
+
+@pytest.mark.parametrize("action", list(ClassListAction))
+def test_class_list_matrix(action: ClassListAction, people: dict[str, User]) -> None:
+    owner, other, admin = CLASS_LIST_EXPECTED[action]
+    owner_id = people[OWNER].id
+    assert can_class_list(people[OWNER], action, owner_id) is owner
+    assert can_class_list(people[OTHER], action, owner_id) is other
+    assert can_class_list(people[ADMIN], action, owner_id) is admin
+    assert not can_class_list(None, action, owner_id)
+    assert not can_class_list(_user(active=False), action, owner_id)

@@ -1,12 +1,14 @@
 {% extends "base.html.j2" %}
 {% from "_macros.html.j2" import csrf, errors_box with context %}
-{% block title %}{{ _("Import class list") }} · {{ app_name }}{% endblock %}
+{% block title %}{% if target %}{{ _("Replace class list") }}{% else %}{{ _("Import class list") }}{% endif %} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/examens/klassenlijsten">{{ _("Class lists") }}</a></p>
-<h1>{{ _("Import class list") }}</h1>
+<p class="breadcrumb"><a href="/examens/klassenlijsten">{{ _("Class lists") }}</a>{% if target %} › <a href="/examens/klassenlijsten/{{ target.id }}">{{ target.name }}</a>{% endif %}</p>
+<h1>{% if target %}{{ _("Replace class list") }}{% else %}{{ _("Import class list") }}{% endif %}</h1>
+{% if target %}<p>{{ _("The new file replaces all students of this list. Exams that already use the list keep their own copy.") }}</p>{% endif %}
 {{ errors_box(errors) }}
 <form method="post" action="/examens/klassenlijsten/importeren" class="stack">
   {{ csrf() }}
+  {% if target %}<input type="hidden" name="replace_id" value="{{ target.id }}">{% endif %}
   <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
   <input type="hidden" name="delimiter" value="{{ delimiter }}">
   {# Enter submits "check", never "save". #}
@@ -33,7 +35,7 @@
   <div class="form-actions">
     <button type="submit" name="action" value="check" class="button button-secondary">{{ _("Check") }}</button>
     {% if result and result.ok %}
-    <button type="submit" name="action" value="save" class="button">{{ _("Save class list (%(n)s students)", n=result.entries|length) }}</button>
+    <button type="submit" name="action" value="save" class="button">{% if target %}{{ _("Replace class list (%(n)s students)", n=result.entries|length) }}{% else %}{{ _("Save class list (%(n)s students)", n=result.entries|length) }}{% endif %}</button>
     {% endif %}
   </div>
 </form>

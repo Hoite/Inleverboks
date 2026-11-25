@@ -1,4 +1,5 @@
 {% extends "base.html.j2" %}
+{% from "teacher/_view_switch.html.j2" import view_switch %}
 {% block title %}{{ _("Class lists") }} · {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -6,18 +7,22 @@
   <a class="button" href="/examens/klassenlijsten/nieuw">{{ _("Import class list") }}</a>
 </div>
 {% include "teacher/_tabs.html.j2" %}
+<p class="hint">{{ _("Every teacher can view and use every class list. Only the owner and admins can change or remove one.") }}</p>
+{{ view_switch(_("Show class lists"), "/examens/klassenlijsten", everyone, _("My lists"), _("All lists")) }}
 {% if class_lists %}
 <div class="table-wrap">
 <table>
-  <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Students") }}</th><th scope="col">{{ _("Imported") }}</th></tr></thead>
+  <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Owner") }}</th><th scope="col">{{ _("Students") }}</th><th scope="col">{{ _("Imported") }}</th></tr></thead>
   <tbody>
   {% for cl in class_lists %}
-    <tr><td><a href="/examens/klassenlijsten/{{ cl.id }}">{{ cl.name }}</a></td><td>{{ cl.entries|length }}</td><td>{{ cl.created_at|localtime }}</td></tr>
+    <tr><td><a href="/examens/klassenlijsten/{{ cl.id }}">{{ cl.name }}</a></td><td>{% if cl.owner_id == current_user.id %}{{ _("You") }}{% else %}{{ owner_names.get(cl.owner_id, "") }}{% endif %}</td><td>{{ cl.entries|length }}</td><td>{{ cl.created_at|localtime }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
-{% else %}
+{% elif everyone %}
 <p class="muted">{{ _("No class lists yet.") }}</p>
+{% else %}
+<p class="muted">{{ _("You have no class lists yet. Import one, or copy one from all lists.") }}</p>
 {% endif %}
 {% endblock %}

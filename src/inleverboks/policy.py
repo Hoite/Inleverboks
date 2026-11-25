@@ -96,6 +96,51 @@ def can_exam(user: User | None, action: ExamAction, exam: ExamRef) -> bool:
     return bool(exam_roles(user, exam) & EXAM_MATRIX[action])
 
 
+# Class lists (PLAN B60) ------------------------------------------------------------
+
+
+class ClassListRole(StrEnum):
+    ADMIN = "admin"  # admin looking at someone else's list
+    OWNER = "owner"
+    OTHER_TEACHER = "other_teacher"
+
+
+class ClassListAction(StrEnum):
+    VIEW = "view"  # library, detail page (names and student numbers)
+    USE = "use"  # snapshot into an exam
+    COPY = "copy"  # copy to one's own lists
+    RENAME = "rename"
+    REPLACE = "replace"  # import a new CSV over the entries
+    DELETE = "delete"
+
+
+_CA, _CO, _CT = ClassListRole.ADMIN, ClassListRole.OWNER, ClassListRole.OTHER_TEACHER
+
+CLASS_LIST_MATRIX: dict[ClassListAction, frozenset[ClassListRole]] = {
+    # PLAN B60: every teacher sees and uses every class list; only the owner and admins
+    # change or delete one.
+    ClassListAction.VIEW: frozenset({_CA, _CO, _CT}),
+    ClassListAction.USE: frozenset({_CA, _CO, _CT}),
+    ClassListAction.COPY: frozenset({_CA, _CO, _CT}),
+    ClassListAction.RENAME: frozenset({_CA, _CO}),
+    ClassListAction.REPLACE: frozenset({_CA, _CO}),
+    ClassListAction.DELETE: frozenset({_CA, _CO}),
+}
+
+
+def class_list_roles(user: User, owner_id: uuid.UUID) -> frozenset[ClassListRole]:
+    roles = {ClassListRole.OWNER if owner_id == user.id else ClassListRole.OTHER_TEACHER}
+    if user.is_admin:
+        roles.add(ClassListRole.ADMIN)
+    return frozenset(roles)
+
+
+def can_class_list(user: User | None, action: ClassListAction, owner_id: uuid.UUID) -> bool:
+    if user is None or not user.is_active:
+        return False
+    return bool(class_list_roles(user, owner_id) & CLASS_LIST_MATRIX[action])
+
+
 def can(user: User | None, action: SystemAction) -> bool:
     if user is None or not user.is_active:
         return False

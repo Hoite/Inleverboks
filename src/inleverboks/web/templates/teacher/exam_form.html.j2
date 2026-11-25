@@ -243,7 +243,7 @@
       <label for="class_list_id">{{ _("Class list (optional)") }}</label>
       <select id="class_list_id" name="class_list_id"{{ invalid("class_list_id") }} data-combobox data-config="{{ combobox_config() }}">
         <option value="">{{ _("No class list") }}</option>
-        {% for cl in class_lists %}<option value="{{ cl.id }}"{% if values.class_list_id == cl.id|string %} selected{% endif %}>{{ cl.name }} ({{ cl.entries|length }})</option>{% endfor %}
+        {% for cl in class_lists %}<option value="{{ cl.id }}"{% if values.class_list_id == cl.id|string %} selected{% endif %}>{{ cl.name }} ({{ cl.entries|length }}){% if cl.owner_id != current_user.id %} · {{ owner_names.get(cl.owner_id, "") }}{% endif %}</option>{% endfor %}
       </select>
       {{ err("class_list_id") }}
     </div>

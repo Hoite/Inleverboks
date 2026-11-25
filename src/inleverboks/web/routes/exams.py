@@ -400,7 +400,8 @@ def _form_context(db: Session, services: Services, user: User) -> dict[str, Any]
     return {
         "teachers": teachers,
         "presets": presets,
-        "class_lists": services.classlists.library(db, user),
+        "class_lists": services.classlists.library(db, user, everyone=True),
+        "owner_names": services.users.names(db),
         "field_messages": field_messages(),
         "env": services.env,
     }
@@ -622,7 +623,8 @@ def exam_settings(
         perms=_perms(ctx.user, exam),
         locked=services.exams.has_submissions(db, exam),
         roster=services.exams.roster(db, exam),
-        class_lists=services.classlists.library(db, ctx.user),
+        class_lists=services.classlists.library(db, ctx.user, everyone=True),
+        owner_names=services.users.names(db),
         extensions=services.exams.extensions(db, exam),
         submissions=services.exams.submission_count(db, exam),
         ok=ok,

@@ -1,0 +1,7 @@
+{# Two links that switch a list between "mine" and "all" (query param, no JS). #}
+{% macro view_switch(label, base, everyone, mine_label, all_label) %}
+<nav class="view-switch" aria-label="{{ label }}">
+  <a href="{{ base }}"{% if not everyone %} aria-current="page"{% endif %}>{{ mine_label }}</a>
+  <a href="{{ base }}?toon=alle"{% if everyone %} aria-current="page"{% endif %}>{{ all_label }}</a>
+</nav>
+{% endmacro %}

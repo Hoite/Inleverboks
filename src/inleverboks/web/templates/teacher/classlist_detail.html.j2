@@ -1,13 +1,37 @@
 {% extends "base.html.j2" %}
-{% from "_macros.html.j2" import csrf with context %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
 {% block title %}{{ class_list.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/examens/klassenlijsten">{{ _("Class lists") }}</a></p>
+<p class="breadcrumb"><a href="/examens/klassenlijsten{% if not own %}?toon=alle{% endif %}">{{ _("Class lists") }}</a></p>
 <div class="page-head">
-  <h1>{{ class_list.name }}</h1>
-  <form method="post" action="/examens/klassenlijsten/{{ class_list.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Remove") }}</button></form>
+  <div>
+    <h1>{{ class_list.name }}</h1>
+    <p class="muted">{{ _("Owner") }}: {% if own %}{{ _("You") }}{% else %}{{ owner_name }}{% endif %} · {{ _("Imported") }} {{ class_list.created_at|localtime }}</p>
+  </div>
+  <div class="button-row">
+    <form method="post" action="/examens/klassenlijsten/{{ class_list.id }}/kopie" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Copy to my lists") }}</button></form>
+    {% if perms.replace %}<a class="button button-secondary" href="/examens/klassenlijsten/{{ class_list.id }}/vervangen">{{ _("Replace list") }}</a>{% endif %}
+    {% if perms.delete %}<form method="post" action="/examens/klassenlijsten/{{ class_list.id }}/verwijderen" class="inline-form">{{ csrf() }}<button type="submit" class="button button-danger">{{ _("Remove") }}</button></form>{% endif %}
+  </div>
 </div>
+{% set ok_messages = {
+  "copied": _("This is your own copy of the class list. You can change it."),
+  "renamed": _("The name has been changed."),
+  "replaced": _("The class list has been replaced. Exams that already use it keep their own copy."),
+} %}
+{% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
+{{ errors_box(errors) }}
 <p>{{ _("%(n)s students. Exams that use this list keep their own copy.", n=entries|length) }}</p>
+{% if perms.rename %}
+<form method="post" action="/examens/klassenlijsten/{{ class_list.id }}/naam" class="row-form rename-form">
+  {{ csrf() }}
+  <div class="field grow">
+    <label for="name">{{ _("Name") }}</label>
+    <input id="name" name="name" type="text" maxlength="200" required value="{{ class_list.name }}">
+  </div>
+  <button type="submit" class="button button-secondary">{{ _("Rename") }}</button>
+</form>
+{% endif %}
 <div class="table-wrap">
 <table>
   <thead><tr><th scope="col">{{ _("Student number") }}</th><th scope="col">{{ _("Last name") }}</th><th scope="col">{{ _("Infix") }}</th><th scope="col">{{ _("First name") }}</th><th scope="col">{{ _("Class") }}</th></tr></thead>
