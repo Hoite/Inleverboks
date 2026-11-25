@@ -179,6 +179,20 @@ class UserService:
             raise NotFoundError("invite_invalid")
         return invite
 
+    def rename(self, db: Session, user: User, name: str, *, ip: str | None) -> bool:
+        """Change the display name (a typo, or "Admin" after the first setup). The e-mail
+        address stays the login. Returns False when nothing changed."""
+        name = " ".join(name.split())
+        if not name or len(name) > MAX_NAME_LENGTH:
+            raise DomainError("invalid_name")
+        if name == user.name:
+            return False
+        user.name = name
+        # No names in the audit log details (ids only); the user row holds the new name.
+        self.audit.append(db, "user.renamed", actor=Actor.for_user(user), ip=ip)
+        db.commit()
+        return True
+
     def accept_invite(
         self, db: Session, token: str, *, name: str, password: str, ip: str | None
     ) -> User:

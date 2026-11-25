@@ -5,6 +5,6 @@
   <a href="/examens/sjablonen"{% if tab == "templates" %} aria-current="page"{% endif %}>{{ _("Exam templates") }}</a>
   <a href="/examens/klassenlijsten"{% if tab == "classlists" %} aria-current="page"{% endif %}>{{ _("Class lists") }}</a>
   {% if current_user.is_admin %}
-  <a href="/examens/alle"{% if tab == "all" %} aria-current="page"{% endif %}>{{ _("All exams") }}</a>
+  <a class="admin-tab" href="/examens/alle"{% if tab == "all" %} aria-current="page"{% endif %}>{% include "_admin_crown.html.j2" %}{{ _("All exams") }}</a>
   {% endif %}
 </nav>

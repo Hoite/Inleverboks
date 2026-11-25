@@ -37,7 +37,7 @@
     <nav class="header-nav" aria-label="{{ _('Main menu') }}">
       <a href="/examens"{% if current_path.startswith('/examens') %} aria-current="page"{% endif %}>{{ _("Exams") }}</a>
       {% if current_user.is_admin %}
-      <a href="/admin/gebruikers"{% if current_path.startswith('/admin') %} aria-current="page"{% endif %}>{{ _("Admin") }}</a>
+      <a class="admin-link" href="/admin/gebruikers"{% if current_path.startswith('/admin') %} aria-current="page"{% endif %}>{% include "_admin_crown.html.j2" %}{{ _("Admin") }}</a>
       {% endif %}
       {% set on_account = current_path.startswith('/account') %}
       <details class="account-menu" data-menu>

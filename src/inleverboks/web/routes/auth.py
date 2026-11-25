@@ -213,7 +213,28 @@ def account(
         ok=ok,
         totp_required=services.auth.totp_required(db, ctx.user),
         errors=[],
+        name_value=ctx.user.name,
     )
+
+
+@router.post("/account/naam")
+def change_name(
+    request: Request,
+    ctx: Teacher,
+    services: Svc,
+    db: Db,
+    name: Annotated[str, Form(max_length=1024)] = "",
+) -> Response:
+    try:
+        changed = services.users.rename(db, ctx.user, name, ip=client_ip(request))
+    except DomainError as exc:
+        db.rollback()
+        return render(
+            request, "auth/account.html.j2", ok=None,
+            totp_required=services.auth.totp_required(db, ctx.user),
+            errors=describe(exc), name_value=name, status_code=400,
+        )  # fmt: skip
+    return _redirect("/account?ok=name" if changed else "/account")
 
 
 def _totp_page(
@@ -301,6 +322,7 @@ def totp_disable(
             ok=None,
             totp_required=services.auth.totp_required(db, ctx.user),
             errors=describe(exc),
+            name_value=ctx.user.name,
         )
     return _redirect("/account?ok=totp_disabled")
 

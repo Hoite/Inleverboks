@@ -81,6 +81,9 @@ def pair_labels() -> dict[str, str]:
         "table_headers": _("Primary colour on the light tint (table headers, tabs)"),
         "text_on_tint": _("Text on the light tint"),
         "accent_lines": _("Accent lines (not text, at least 3:1)"),
+        "admin_link": _("Admin link in the header (fixed colours)"),
+        "admin_tabs": _("Admin tabs on the background"),
+        "admin_tab_current": _("Admin tab on the light tint (current tab)"),
     }
 
 

@@ -19,6 +19,9 @@
   /* Exam templates: a fixed colour of their own, so a template never looks like an exam. */
   --color-template: #6a3d9a;
   --color-template-bg: #f3edf9;
+  --color-admin: #7a5200;
+  --color-admin-bg: #f6c445;
+  --color-admin-text: #2b2100;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -162,6 +165,18 @@ a:hover { color: var(--color-primary-strong); }
   background: var(--color-primary-tint); font-weight: 600;
   border-bottom: 3px solid var(--color-primary);
 }
+
+/* Admin-only functions: a crown and a gold colour, the same in every house style
+   (fixed colours, so the contrast does not depend on the brand; see CONTRAST_PAIRS). */
+.admin-crown { flex: none; vertical-align: -.15em; margin-right: .3rem; }
+.site-header .admin-link {
+  display: inline-flex; align-items: center; padding: .2rem .6rem; border-radius: 999px;
+  background: var(--color-admin-bg); color: var(--color-admin-text);
+}
+.site-header .admin-link:hover { color: var(--color-admin-text); }
+.tabs a.admin-tab, .view-switch a.admin-tab { color: var(--color-admin); }
+.tabs a.admin-tab[aria-current="page"] { border-bottom-color: var(--color-admin); }
+.view-switch a.admin-tab { border-color: var(--color-admin); }
 
 /* My/all switch above a list (server-side filter, no JS); same colours as .tabs. */
 .view-switch { display: flex; flex-wrap: wrap; gap: .25rem; margin: 0 0 1rem; }

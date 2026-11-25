@@ -32,7 +32,7 @@
 {% if ok == "deleted" %}{{ ok_box(_("The template has been deleted.")) }}{% endif %}
 {% if ok == "created_from_crebo" %}{{ ok_box(_("Templates created: %(n)s. Upload the template files on each template page.", n=created)) }}{% endif %}
 <p class="hint">{{ _("A template holds the expected files, template files, extensions, limits and access settings. Times, link name and class list are chosen per exam.") }}</p>
-{% if current_user.is_admin %}{{ view_switch(_("Show templates"), "/examens/sjablonen", everyone, _("Shared and mine"), _("All templates")) }}{% endif %}
+{% if current_user.is_admin %}{{ view_switch(_("Show templates"), "/examens/sjablonen", everyone, _("Shared and mine"), _("All templates"), admin=true) }}{% endif %}
 
 {% if everyone %}
 <section aria-labelledby="all-title">

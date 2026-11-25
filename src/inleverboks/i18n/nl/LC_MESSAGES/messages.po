@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 13:44+0100\n"
+"POT-Creation-Date: 2026-11-25 16:50+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -316,6 +316,15 @@ msgstr "Tekst op de lichte tint"
 
 msgid "Accent lines (not text, at least 3:1)"
 msgstr "Accentlijnen (geen tekst, minimaal 3:1)"
+
+msgid "Admin link in the header (fixed colours)"
+msgstr "Admin-link in de kopregel (vaste kleuren)"
+
+msgid "Admin tabs on the background"
+msgstr "Admin-tabbladen op de achtergrond"
+
+msgid "Admin tab on the light tint (current tab)"
+msgstr "Admin-tabblad op de lichte tint (huidig tabblad)"
 
 msgid "Primary colour"
 msgstr "Hoofdkleur"
@@ -1096,6 +1105,22 @@ msgstr "De whitelist is leeg. Alleen de local admin kan inloggen."
 
 msgid "Two-step verification has been disabled."
 msgstr "Tweestapsverificatie is uitgezet."
+
+msgid "Your name has been changed."
+msgstr "Je naam is gewijzigd."
+
+msgid "Your name"
+msgstr "Je naam"
+
+msgid ""
+"Colleagues see this name, for example when they choose a second reviewer. You log in with your "
+"e-mail address."
+msgstr ""
+"Collega's zien deze naam, bijvoorbeeld als ze een tweede beoordelaar kiezen. Je logt in met je "
+"e-mailadres."
+
+msgid "Save name"
+msgstr "Naam opslaan"
 
 msgid "Password"
 msgstr "Wachtwoord"

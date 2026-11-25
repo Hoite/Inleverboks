@@ -5,12 +5,25 @@
 <h1>{{ _("Account") }}</h1>
 {% if ok == "password" %}{{ ok_box(_("Your password has been changed.")) }}{% endif %}
 {% if ok == "totp_disabled" %}{{ ok_box(_("Two-step verification has been disabled.")) }}{% endif %}
+{% if ok == "name" %}{{ ok_box(_("Your name has been changed.")) }}{% endif %}
 {{ errors_box(errors) }}
 <dl class="details">
-  <dt>{{ _("Name") }}</dt><dd>{{ current_user.name }}</dd>
   <dt>{{ _("E-mail address") }}</dt><dd>{{ current_user.email }}</dd>
   <dt>{{ _("Role") }}</dt><dd>{{ _("Admin") if current_user.is_admin else _("Teacher") }}</dd>
 </dl>
+
+<section class="card">
+  <h2>{{ _("Name") }}</h2>
+  <form method="post" action="/account/naam" class="row-form">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="account-name">{{ _("Your name") }}</label>
+      <input id="account-name" name="name" type="text" required maxlength="200" autocomplete="name" value="{{ name_value }}" aria-describedby="account-name-hint">
+      <p class="hint" id="account-name-hint">{{ _("Colleagues see this name, for example when they choose a second reviewer. You log in with your e-mail address.") }}</p>
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Save name") }}</button>
+  </form>
+</section>
 
 <section class="card">
   <h2>{{ _("Password") }}</h2>

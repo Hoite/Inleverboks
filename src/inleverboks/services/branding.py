@@ -53,6 +53,9 @@ CACHE_SECONDS = 30.0
 
 _HEX = re.compile(r"^#[0-9a-f]{6}$")
 _WHITE = "#ffffff"
+ADMIN = "#7a5200"  # keep in sync with --color-admin* in app.css
+ADMIN_BG = "#f6c445"
+ADMIN_TEXT = "#2b2100"
 
 
 @dataclass(frozen=True)
@@ -73,6 +76,10 @@ CONTRAST_PAIRS = (
     ContrastPair("table_headers", "primary", "primary_tint", 4.5),
     ContrastPair("text_on_tint", "text", "primary_tint", 4.5),
     ContrastPair("accent_lines", "accent", "bg", 3.0),  # non-text: WCAG 1.4.11
+    # Admin functions (fixed colours in app.css: --color-admin, -admin-bg, -admin-text).
+    ContrastPair("admin_link", ADMIN_TEXT, ADMIN_BG, 4.5),
+    ContrastPair("admin_tabs", ADMIN, "bg", 4.5),
+    ContrastPair("admin_tab_current", ADMIN, "primary_tint", 4.5),
 )
 
 

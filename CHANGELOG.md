@@ -6,6 +6,15 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Toegevoegd
+
+- Op de accountpagina kun je je eigen naam wijzigen, bijvoorbeeld na een typefout of om het
+  beheeraccount "Admin" een echte naam te geven (en zo als tweede beoordelaar te kiezen). Je
+  logt nog steeds in met je e-mailadres. De wijziging komt in het auditlog (`user.renamed`).
+- Adminfuncties hebben een kroontje en een vaste goudkleur: de link *Admin* in de kopregel, het
+  tabblad *Alle examens* en de keuze *Alle sjablonen*. De kleuren staan in de contrastcontrole
+  van de huisstijl.
+
 ## [0.3.1] - 2026-11-25
 
 ### Opgelost

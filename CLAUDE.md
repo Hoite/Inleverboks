@@ -121,6 +121,9 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   zet nooit kleuren of de appnaam vast in een template. Nieuwe kleurcombinaties in `app.css`
   horen ook in `CONTRAST_PAIRS` (`services/branding.py`) en in de controle in
   `static/js/admin/branding.js`. PDF's krijgen `brand` via `PdfRenderer`.
+  Adminfuncties markeer je met `{% include "_admin_crown.html.j2" %}` en de klasse
+  `admin-link` (kopregel) of `admin-tab` (tabbladen); de vaste kleuren staan als `ADMIN*` in
+  `services/branding.py`.
 - **Kwalificaties (SBB):** `services/qualifications.py` (import van records, zoeken, dossierstatus)
   en de modellen in `db/models/qualifications.py`. `services/sbb.py` leest het SBB-bestand
   (streaming, geen DOCTYPE) en maakt er records van; testdata met dezelfde structuur staat in
