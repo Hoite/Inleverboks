@@ -6,6 +6,8 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-25
+
 ### Toegevoegd
 
 - Op de accountpagina kun je je eigen naam wijzigen, bijvoorbeeld na een typefout of om het
