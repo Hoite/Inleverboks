@@ -15,7 +15,10 @@
 {% endif %}
 {% block body_class %}{{ "mode-template" if mode == "template" else "" }}{% endblock %}
 {% block title %}{{ heading }} · {{ app_name }}{% endblock %}
-{% block head_extra %}<script type="module" src="{{ asset('js/teacher/exam_form.js') }}"></script>{% endblock %}
+{% block head_extra %}
+<script type="module" src="{{ asset('js/combobox.js') }}"></script>
+<script type="module" src="{{ asset('js/teacher/exam_form.js') }}"></script>
+{% endblock %}
 {% block content %}
 {% if is_template %}
 <div class="template-banner" role="note">{{ template_badge(_("Exam template")) }}
@@ -31,7 +34,7 @@
 <form method="get" action="/examens/nieuw" class="template-picker">
   <div class="field grow">
     <label for="sjabloon">{{ _("Start from an exam template") }}</label>
-    <select id="sjabloon" name="sjabloon">
+    <select id="sjabloon" name="sjabloon" data-combobox data-config="{{ combobox_config() }}">
       <option value="">{{ _("No template (empty exam)") }}</option>
       {% for t in templates %}<option value="{{ t.id }}"{% if values.source_template_id == t.id|string %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
     </select>
@@ -59,7 +62,7 @@
   <div><p>{{ _("Students have handed in. The file requirements can no longer be changed.") }}</p></div></div>
 {% endif %}
 
-<form method="post" action="{{ form_action }}" class="exam-form" novalidate>
+<form method="post" action="{{ form_action }}" class="exam-form" novalidate data-exam-form{% if not exam and not is_template %} data-new{% endif %}>
   {{ csrf() }}
   {# Enter in a text field triggers the first submit button: make that "save". #}
   <button type="submit" name="action" value="save" class="visually-hidden" tabindex="-1" aria-hidden="true">{{ _("Save") }}</button>
@@ -94,7 +97,7 @@
     </div>
     <div class="field">
       <label for="second_reviewer_id">{{ _("Second reviewer (optional)") }}</label>
-      <select id="second_reviewer_id" name="second_reviewer_id"{{ invalid("second_reviewer_id") }}>
+      <select id="second_reviewer_id" name="second_reviewer_id"{{ invalid("second_reviewer_id") }} data-combobox data-config="{{ combobox_config() }}">
         <option value="">{{ _("None") }}</option>
         {% for t in teachers %}<option value="{{ t.id }}"{% if values.second_reviewer_id == t.id|string %} selected{% endif %}>{{ t.name }} ({{ t.email }})</option>{% endfor %}
       </select>
@@ -102,9 +105,15 @@
     </div>
     <div class="field">
       <label for="slug">{{ _("Link name") }}</label>
-      <div class="input-prefix"><span class="mono" aria-hidden="true">{{ base_url }}/</span>
+      {% set short_base = base_url.split("://", 1)[-1] %}
+      {# Both variants: js/teacher/exam_form.js shows the short one (without the scheme) when the
+         full one does not fit; a prefix that is still too long is cut off on the left. #}
+      <div class="input-prefix" title="{{ base_url }}/">
+        <span class="mono prefix prefix-full" aria-hidden="true"><bdi>{{ base_url }}/</bdi></span>
+        {% if short_base != base_url %}<span class="mono prefix prefix-short" aria-hidden="true" hidden><bdi>{{ short_base }}/</bdi></span>{% endif %}
         <input id="slug" name="slug" type="text" maxlength="80" class="mono" value="{{ values.slug }}" aria-describedby="slug-hint{% if problems.get('slug') %} slug-error{% endif %}"{% if problems.get('slug') %} aria-invalid="true"{% endif %} autocomplete="off">
       </div>
+      {% if not exam %}<input type="hidden" name="suggested_slug" value="{{ values.suggested_slug }}">{% endif %}
       <p class="hint" id="slug-hint">{{ _("Leave empty to derive it from the name. a-z, 0-9 and dashes.") }}</p>
       {{ err("slug") }}
     </div>
@@ -115,6 +124,32 @@
     <legend>{{ _("Expected files") }}</legend>
     <input type="hidden" name="slot_count" value="{{ values.slots|length }}">
     {{ err("slots") }}
+    {% if slot_template %}
+    {# From a template: the server takes the slots from the template, not from this form. #}
+    {% for slot in values.slots %}
+    <input type="hidden" name="slot_id_{{ loop.index0 }}" value="{{ slot.id }}">
+    <input type="hidden" name="slot_wp_{{ loop.index0 }}" value="{{ slot.work_process_code }}">
+    {% endfor %}
+    <p class="slots-from-template" id="slots-from-template">{{ template_badge(_("Template")) }}
+      {{ _("These expected files come from the exam template") }}
+      {% if slot_template_link %}<a href="/examens/sjablonen/{{ slot_template.id }}">{{ slot_template.name }}</a>{% else %}<strong>{{ slot_template.name }}</strong>{% endif %}.
+      {{ _("You change them in the template.") }}</p>
+    {% if values.slots %}
+    <div class="table-wrap">
+    <table aria-describedby="slots-from-template">
+      <thead><tr><th scope="col">#</th><th scope="col">{{ _("Label") }}</th><th scope="col">{{ _("Expected file name") }}</th><th scope="col">{{ _("Extensions") }}</th></tr></thead>
+      <tbody>
+      {% for slot in values.slots %}
+        <tr><td>{{ loop.index }}</td><td>{{ slot.label }}</td><td class="mono">{{ slot.pattern }}</td>
+          <td>{% if slot.extensions %}<span class="mono">{{ slot.extensions }}</span>{% else %}<span class="muted">{{ _("All allowed extensions") }}</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="muted">{{ _("No expected files; students hand in extra files only.") }}</p>
+    {% endif %}
+    {% else %}
     {% for slot in values.slots %}
     {% set i = loop.index0 %}
     <div class="slot-row">
@@ -141,7 +176,10 @@
     </div>
     {% endfor %}
     <p><button type="submit" name="action" value="add_slot" class="button button-small button-secondary" formnovalidate>{{ _("Add expected file") }}</button></p>
+    {% endif %}
+    {% if not slot_template %}
     <p class="hint">{% if is_template %}{{ _("Use * as wildcard in the expected name. Template files can be uploaded on the template page after saving.") }}{% else %}{{ _("Use * as wildcard in the expected name. Template files can be uploaded on the exam page after saving.") }}{% endif %}</p>
+    {% endif %}
     <label class="checkbox"><input type="checkbox" name="allow_extra_file" value="true"{% if values.allow_extra_file %} checked{% endif %}> {{ _("Allow extra files") }}</label>
     <div class="field">
       <label for="extensions">{{ _("Allowed extensions") }}</label>
@@ -203,7 +241,7 @@
     {% if not exam and not is_template and not resit_from %}
     <div class="field">
       <label for="class_list_id">{{ _("Class list (optional)") }}</label>
-      <select id="class_list_id" name="class_list_id"{{ invalid("class_list_id") }}>
+      <select id="class_list_id" name="class_list_id"{{ invalid("class_list_id") }} data-combobox data-config="{{ combobox_config() }}">
         <option value="">{{ _("No class list") }}</option>
         {% for cl in class_lists %}<option value="{{ cl.id }}"{% if values.class_list_id == cl.id|string %} selected{% endif %}>{{ cl.name }} ({{ cl.entries|length }})</option>{% endfor %}
       </select>

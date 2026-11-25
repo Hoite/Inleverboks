@@ -106,16 +106,32 @@ def create_exam(tclient: TestClient, **overrides: Any) -> Exam:
 # Create --------------------------------------------------------------------------
 
 
-def test_new_exam_form_defaults(tclient: TestClient, clock: FrozenClock) -> None:
-    clock.set(datetime(2026, 11, 13, 9, 7, tzinfo=UTC))  # 10:07 local
+@pytest.mark.parametrize(
+    ("now", "day"),
+    [
+        (datetime(2026, 11, 13, 9, 7, tzinfo=UTC), "2026-11-16"),  # Friday → Monday
+        (datetime(2026, 11, 12, 23, 30, tzinfo=UTC), "2026-11-16"),  # Fri 00:30 local → Mon
+        (datetime(2026, 11, 14, 12, 0, tzinfo=UTC), "2026-11-16"),  # Saturday → Monday
+        (datetime(2026, 11, 15, 12, 0, tzinfo=UTC), "2026-11-16"),  # Sunday → Monday
+    ],
+)
+def test_new_exam_form_defaults(
+    tclient: TestClient, clock: FrozenClock, now: datetime, day: str
+) -> None:
+    clock.set(now)
+    login(tclient)  # a new session at that time
     page = tclient.get("/examens/nieuw")
     assert page.status_code == 200
-    # A date field plus a 24-hour time field (never AM/PM), rounded to the quarter.
-    assert 'name="starts_at_date" type="date" required value="2026-11-13"' in page.text
-    assert 'name="starts_at_time" type="text" required value="10:00"' in page.text
-    assert 'name="ends_at_time" type="text" required value="12:00"' in page.text  # 2 hours
+    # The next working day from 09:00 to 17:00, as a date field plus a 24-hour time field.
+    assert f'name="starts_at_date" type="date" required value="{day}"' in page.text
+    assert 'name="starts_at_time" type="text" required value="09:00"' in page.text
+    assert f'name="ends_at_date" type="date" required value="{day}"' in page.text
+    assert 'name="ends_at_time" type="text" required value="17:00"' in page.text
     assert 'type="datetime-local"' not in page.text
     assert "docx, xlsx, pptx, pdf" in page.text  # default extensions
+    # Searchable selects are plain selects for the server (js/combobox.js enhances them).
+    assert '<select id="second_reviewer_id" name="second_reviewer_id" data-combobox' in page.text
+    assert "&#34;noResults&#34;: &#34;Geen resultaten&#34;" in page.text
 
 
 def test_create_exam(tclient: TestClient, db: Session) -> None:
@@ -461,7 +477,8 @@ def test_duplicate_exam(tclient: TestClient, db: Session, clock: FrozenClock) ->
     assert copy.slug == "examen-linux-p3-kopie"
     assert copy.access_code != exam.access_code
     assert copy.published_at is None
-    assert copy.starts_at == datetime(2026, 11, 16, 9, 0, tzinfo=UTC)
+    # The next working day (Tuesday) at 09:00 local, with the duration of the original.
+    assert copy.starts_at == datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
     assert copy.ends_at - copy.starts_at == timedelta(hours=2)
     assert [s.label for s in copy.expected_files] == ["Verslag", "Script"]
     assert events(db, "exam.duplicated", str(copy.id))[0].details["source_exam_id"] == str(exam.id)
@@ -507,7 +524,7 @@ def test_save_as_template_and_create_from_it(tclient: TestClient, db: Session) -
     assert "Linux P3" in tclient.get("/examens/sjablonen").text
 
     page = tclient.get(f"/examens/nieuw?sjabloon={template.id}")
-    assert 'value="Examen_Linux_P3_*.docx"' in page.text
+    assert '<td class="mono">Examen_Linux_P3_*.docx</td>' in page.text  # read-only
     assert f'value="{template.id}"' in page.text
     response = post(
         tclient, "/examens/nieuw",
@@ -934,10 +951,12 @@ def test_template_editor_create_edit_and_use(
         == "Python P1 (2026)"
     )
 
-    # New exam: the picker is at the top and the file follows its slot by id.
+    # New exam: the picker is at the top; the expected files come from the template
+    # (read-only), so removing one in the POST has no effect. The file follows its slot.
     new = tclient.get(f"/examens/nieuw?sjabloon={template.id}").text
     assert 'id="sjabloon" name="sjabloon"' in new
     assert "Gebaseerd op sjabloon Python P1 (2026)." in new
+    assert 'name="slot_label_0"' not in new
     slot_ids = [str(s.id) for s in template.slots]
     response = post(tclient, "/examens/nieuw", form(
         name="Python P1 herkansing", source_template_id=str(template.id), slot_count="1",
@@ -945,8 +964,10 @@ def test_template_editor_create_edit_and_use(
         slot_id_0=slot_ids[1], extensions="py, md"))  # fmt: skip
     exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
     assert exam is not None
-    assert exam.expected_files[0].template_file is not None
-    assert exam.expected_files[0].template_file.original_name == "leeg.py"
+    assert exam.source_template_id == template.id
+    assert [s.label for s in exam.expected_files] == ["Uitleg", "Code"]
+    assert exam.expected_files[1].template_file is not None
+    assert exam.expected_files[1].template_file.original_name == "leeg.py"
 
 
 def test_template_edit_removes_slot_file(tclient: TestClient, db: Session) -> None:

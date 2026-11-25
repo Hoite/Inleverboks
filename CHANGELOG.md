@@ -25,6 +25,29 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   opslaan als sjabloon en eigendom overdragen, plus de bewaartermijn met de bewaren-vlag (en
   definitief verwijderen). De waarschuwing dat bestanden binnenkort worden verwijderd staat
   nog op *Inleveringen* en op het dashboard, met een link naar dit tabblad.
+- Een nieuw examen staat standaard op de eerstvolgende werkdag (morgen, of maandag als
+  morgen in het weekend valt) van 09:00 tot 17:00 in `APP_TIMEZONE`. Dupliceren en een
+  herkansing beginnen ook op de eerstvolgende werkdag om 09:00, met de duur van het origineel.
+- In het examenformulier schuift het einde mee als je de start verandert (de duur blijft
+  gelijk). Een voorgestelde linknaam met een datum (`ddmmjjjj`, bij sjablonen uit een
+  kwalificatie) volgt de startdatum, tot je zelf een linknaam typt. Ook zonder JavaScript
+  zet de server de datum in een ongewijzigde voorgestelde linknaam goed. Het voorstel
+  gebruikt de geplande datum, niet die van vandaag.
+- Het grijze vak met het adres vóór de linknaam is zo breed als de tekst (het invoerveld
+  houdt minstens 10rem). Past het niet, dan valt eerst `https://` weg en daarna wordt het
+  links afgekapt met een beletselteken. Het volledige adres staat in de tooltip.
+- Zoekbare keuzelijsten voor sjabloon en klassenlijst bij *Nieuw examen*, tweede
+  beoordelaar en eigendom overdragen: typ een deel van de naam of het e-mailadres (ook
+  zonder accenten), kies met de pijltjes en Enter, sluit met Escape. Zonder JavaScript blijft
+  het een gewone keuzelijst; de server ziet geen verschil.
+- Een examen dat uit een sjabloon is gemaakt, toont de verwachte bestanden alleen ter
+  inzage, met een link naar het sjabloon: je wijzigt ze in het sjabloon. Dat geldt bij het
+  aanmaken en bij later bewerken, en de server negeert wijzigingen aan de vakjes in het
+  formulier (bij een deelexamen tellen alleen de gekozen werkprocessen). Sjabloonbestanden
+  uploaden op de instellingenpagina kan nog steeds. Examens zonder sjabloon, het
+  sjablonenformulier en herkansingen werken zoals voorheen. Verwijder je het sjabloon, dan
+  worden de vakjes weer bewerkbaar. Nieuwe kolom `exam.source_template_id` (migratie
+  `d4f2b7a91c35`); bestaande examens krijgen geen koppeling.
 
 ### Opgelost
 

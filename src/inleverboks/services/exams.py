@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import exists, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import Clock
@@ -91,6 +91,9 @@ class ExamInput:
     source_exam_id: uuid.UUID | None = None  # resit: copy template files from this exam
     # Resit: student numbers from the source exam that make up the roster.
     roster_numbers: list[str] = field(default_factory=list)
+    # The link name the form suggested (with the planned date). When the teacher kept it,
+    # the server dates it to the chosen start (see ``redate_slug``).
+    suggested_slug: str = ""
 
 
 @dataclass(frozen=True)
@@ -157,6 +160,18 @@ def _snapshot(exam: Exam) -> dict[str, Any]:
 
 TEMPLATE_WINDOW = timedelta(hours=2)
 DASH = "\u2013"  # en dash between qualification and core task in suggested names
+SLUG_DATE_FORMAT = "%d%m%Y"
+_SLUG_DATE_RE = re.compile(r"(?<![0-9])[0-9]{8}(?=(?:-[0-9]+)?$)")
+_SLUG_COUNTER_RE = re.compile(r"-[0-9]+$")
+
+
+def redate_slug(slug: str, day: str) -> str | None:
+    """Put ``day`` (``ddmmYYYY``) in place of the date at the end of a suggested slug and
+    drop a numeric suffix (``-2``); None when the slug has no date."""
+    match = _SLUG_DATE_RE.search(slug)
+    if match is None:
+        return None
+    return slug[: match.start()] + day
 
 
 def _roster_input(entry: ExamRosterEntry) -> RosterInput:
@@ -399,6 +414,7 @@ class ExamService:
                 for s in exam.expected_files
             ],
             qualification=dict(exam.qualification) if exam.qualification else None,
+            source_template_id=exam.source_template_id,
         )
 
     def input_from_template(
@@ -413,6 +429,7 @@ class ExamService:
             base.name, base.slug = self._suggest_names(
                 db, template, qualification, work_processes or [], base.starts_at
             )
+            base.suggested_slug = base.slug
             base.qualification = _qualification_snapshot(qualification, template.core_task_code)
         base.name = base.name or template.name
         base.access_code_enabled = bool(config.get("access_code_enabled", True))
@@ -438,6 +455,57 @@ class ExamService:
         ]  # fmt: skip
         base.source_template_id = template.id
         return base
+
+    def slots_template(
+        self, db: Session, owner_id: uuid.UUID, data: ExamInput, exam: Exam | None = None
+    ) -> ExamTemplate | None:
+        """The template whose expected files an exam uses (read-only in the form), or None.
+
+        A new exam: the template it is made from, when the owner may use it (not for a
+        resit, which keeps its own selection). An existing exam: the stored source template.
+        """
+        if exam is not None:
+            if exam.source_template_id is None:
+                return None
+            return db.get(ExamTemplate, exam.source_template_id)
+        if data.source_template_id is None or data.source_exam_id is not None:
+            return None
+        template = db.get(ExamTemplate, data.source_template_id)
+        owner = db.get(User, owner_id)
+        if template is None or owner is None or not can_use_template(owner, template):
+            return None
+        return template
+
+    def _lock_template_slots(
+        self, db: Session, owner_id: uuid.UUID, data: ExamInput, exam: Exam | None
+    ) -> None:
+        """Expected files of a template-based exam never come from the form: a new exam
+        takes the template's slots (limited to the chosen work processes, a part exam);
+        an existing one keeps its slots. Slot changes in the POST are ignored."""
+        template = self.slots_template(db, owner_id, data, exam)
+        if template is None:
+            return
+        if exam is not None:
+            data.slots = [
+                SlotInput(
+                    label=s.label, pattern=s.expected_name_pattern,
+                    extensions=list(s.extensions) if s.extensions else None, id=s.id,
+                    work_process_code=s.work_process_code,
+                )
+                for s in exam.expected_files
+            ]  # fmt: skip
+            return
+        codes = {s.work_process_code for s in template.slots if s.work_process_code}
+        chosen = {s.work_process_code for s in data.slots if s.work_process_code} & codes
+        data.slots = [
+            SlotInput(
+                label=s.label, pattern=s.expected_name_pattern,
+                extensions=list(s.extensions) if s.extensions else None, id=s.id,
+                work_process_code=s.work_process_code,
+            )
+            for s in template.slots
+            if not chosen or s.work_process_code in chosen
+        ]  # fmt: skip
 
     def _resolve_sources(self, db: Session, owner: User, data: ExamInput) -> None:
         """The qualification snapshot and a resit roster come from the server, never from
@@ -476,7 +544,7 @@ class ExamService:
         else:
             name = f"{prefix} {DASH} {', '.join(chosen)}"
             part = task_code + "".join(c.removeprefix(task_code) for c in chosen)
-        day = starts_at.astimezone(self.env.timezone).strftime("%d%m%Y")
+        day = starts_at.astimezone(self.env.timezone).strftime(SLUG_DATE_FORMAT)
         slug = slugs.suggest(db, f"{qualification.crebo}-{part}-{day}")
         return name[:200], slug
 
@@ -485,6 +553,7 @@ class ExamService:
     ) -> ExamInput:
         """Normalize and validate; raises ExamValidationError with a code per field."""
         problems: dict[str, str] = {}
+        self._lock_template_slots(db, owner_id, data, exam)
         self._validate_basics(db, owner_id, data, exam, problems)
         self._validate_access(db, data, problems)
         self._validate_limits(data, problems)
@@ -516,6 +585,14 @@ class ExamService:
         if data.ends_at <= data.starts_at:
             problems["ends_at"] = "end_before_start"
         data.slug = data.slug.strip().lower()
+        suggested = data.suggested_slug.strip().lower()
+        if exam is None and suggested and data.slug == suggested:
+            # The teacher kept the suggested link name: date it to the chosen start.
+            day = data.starts_at.astimezone(self.env.timezone).strftime(SLUG_DATE_FORMAT)
+            dated = redate_slug(data.slug, day)
+            if dated is not None:
+                data.slug = slugs.suggest(db, dated)
+            data.suggested_slug = data.slug
         if not data.slug:
             data.slug = slugs.suggest(db, data.name) if data.name else slugs.unique_random(db)
         try:
@@ -641,9 +718,11 @@ class ExamService:
         if data.class_list_id is None and not data.roster:
             data.allow_unlisted = True  # without a class list nobody is "on the list"
         now = self.clock.now()
+        template_source = self.slots_template(db, owner.id, data)
         exam = Exam(
-            owner_id=owner.id, created_at=now, updated_at=now, qualification=data.qualification
-        )
+            owner_id=owner.id, created_at=now, updated_at=now, qualification=data.qualification,
+            source_template_id=template_source.id if template_source else None,
+        )  # fmt: skip
         self._apply(exam, data)
         db.add(exam)
         db.flush()
@@ -799,6 +878,9 @@ class ExamService:
         if not can_exam(user, ExamAction.DUPLICATE, _ref(exam)):
             raise PermissionDeniedError()
         data = self.input_from_exam(db, exam)
+        # The copy keeps the slots of this exam (not the template's current ones), but stays
+        # linked to the template, so its expected files stay read-only.
+        data.source_template_id = None
         for slot in data.slots:
             slot.id = None
         data.name = f"{exam.name} (kopie)"[:200]
@@ -810,6 +892,7 @@ class ExamService:
         data.ends_at = data.starts_at + duration
         data.roster = [_roster_input(e) for e in self.roster(db, exam)]
         copy = self.create(db, user, data, ip=ip)
+        copy.source_template_id = exam.source_template_id
         self._copy_template_files(db, copy, [s.template_file for s in exam.expected_files])
         self.audit.append(
             db,
@@ -1208,6 +1291,12 @@ class ExamService:
     ) -> list[str]:
         template = self.get_managed_template(db, user, template_id)
         keys = [s.template_file.storage_key for s in template.slots if s.template_file]
+        # Also done by ON DELETE SET NULL; explicit, so it never depends on the database.
+        db.execute(
+            update(Exam)
+            .where(Exam.source_template_id == template.id)
+            .values(source_template_id=None)
+        )
         self.audit.append(
             db,
             "exam_template.deleted",
@@ -1327,6 +1416,7 @@ class ExamService:
             if any(slot.id not in handed_in.get(number, set()) for number in chosen)
         }  # fmt: skip
         data = self.input_from_exam(db, exam)
+        data.source_template_id = None  # a resit keeps its own selection of expected files
         if open_slots:
             data.slots = [slot for slot in data.slots if slot.id in open_slots]
         data.name = f"{exam.name} {DASH} {name_suffix}"[:200]

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from inleverboks.services.errors import DomainError
@@ -66,7 +66,21 @@ def round_to_quarter(value: datetime) -> datetime:
     return base - timedelta(minutes=minutes)
 
 
+DEFAULT_START = time(9, 0)
+DEFAULT_END = time(17, 0)
+
+
+def next_working_day(today: date) -> date:
+    """Tomorrow, or Monday when tomorrow falls on a weekend."""
+    day = today + timedelta(days=1)
+    while day.weekday() >= 5:  # Saturday, Sunday
+        day += timedelta(days=1)
+    return day
+
+
 def default_window(now: datetime, tz: ZoneInfo) -> tuple[datetime, datetime]:
-    """Start now (rounded to the quarter, in local time) and end two hours later."""
-    start = round_to_quarter(now.astimezone(tz)).astimezone(UTC)
-    return start, start + timedelta(hours=2)
+    """A new exam: the next working day from 09:00 to 17:00 local time (in UTC)."""
+    day = next_working_day(now.astimezone(tz).date())
+    start = datetime.combine(day, DEFAULT_START, tzinfo=tz).astimezone(UTC)
+    end = datetime.combine(day, DEFAULT_END, tzinfo=tz).astimezone(UTC)
+    return start, end

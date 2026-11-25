@@ -58,6 +58,7 @@ erDiagram
   exam ||--o{ extension_grant : verlenging
   exam ||--o{ submission : inleveringen
   exam }o--o| ip_preset : "IP-preset"
+  exam }o--o| exam_template : "gemaakt uit (vakjes alleen-lezen)"
   submission ||--o{ submission_file : bestanden
   submission_file }o--o| expected_file : "in vakje"
   submission ||--o{ receipt_token : "PDF-token"

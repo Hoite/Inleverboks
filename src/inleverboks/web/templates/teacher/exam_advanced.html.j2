@@ -2,6 +2,7 @@
 {% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
 {% from "teacher/_status.html.j2" import status_badge %}
 {% block title %}{{ _("Advanced") }} · {{ exam.name }} · {{ app_name }}{% endblock %}
+{% block head_extra %}<script type="module" src="{{ asset('js/combobox.js') }}"></script>{% endblock %}
 {% block content %}
 <p class="breadcrumb"><a href="/examens">{{ _("Exams") }}</a></p>
 <div class="page-head">
@@ -52,7 +53,7 @@
     {{ csrf() }}
     <div class="field grow">
       <label for="owner_id">{{ _("Transfer ownership to") }}</label>
-      <select id="owner_id" name="owner_id">
+      <select id="owner_id" name="owner_id" data-combobox data-config="{{ combobox_config() }}">
         {% for t in teachers %}<option value="{{ t.id }}"{% if t.id == exam.owner_id %} selected{% endif %}>{{ t.name }} ({{ t.email }})</option>{% endfor %}
       </select>
     </div>

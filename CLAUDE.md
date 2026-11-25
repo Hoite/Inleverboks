@@ -128,6 +128,19 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   examen een momentopname in `Exam.qualification`. Die bepaalt de server altijd zelf
   (`ExamService._resolve_sources`), nooit uit verborgen velden. Gedeelde sjablonen: alleen admins
   beheren ze (`can_manage_template`).
+- **Docentpaden:** alles onder `/examens` (`/examens/{id:uuid}/…`, `/examens/sjablonen`,
+  `/examens/klassenlijsten`). Gebruik `{exam_id:uuid}` in routes, zodat een examen-id nooit
+  een vaste subpagina overschaduwt. Oude `/docent/…`-URL's sturen door via
+  `web/routes/legacy.py`. Een examen heeft de tabbladen Inleveringen, Instellingen, Auditlog
+  en Geavanceerd (`/examens/{id}/geavanceerd`: zeldzame acties en de bewaartermijn).
+- **Examens uit een sjabloon:** `Exam.source_template_id`. De vakjes komen dan altijd van de
+  server (`ExamService._lock_template_slots`: sjabloon plus gekozen werkprocessen bij nieuw,
+  de bestaande vakjes bij bewerken); het formulier toont ze alleen-lezen. Herkansingen en
+  examens zonder sjabloon houden bewerkbare vakjes.
+- **Zoekbare keuzelijsten:** zet `data-combobox data-config="{{ combobox_config() }}"` op een
+  `<select>` en laad `js/combobox.js`. Het script geeft het id van de select aan het
+  zoekveld (zodat `<label for>` blijft kloppen); zoek de select in andere scripts dus op
+  `name`, niet op id.
 - **Toegankelijkheid:** `tests/integration/test_accessibility.py` loopt alle paginatypen af
   (taal, één `h1`, labels, alt, knopnamen). Voeg een nieuwe pagina daar aan toe.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import datetime
 from functools import cache
 from pathlib import Path
@@ -16,6 +17,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoes
 from inleverboks import __version__
 from inleverboks.config import Settings
 from inleverboks.i18n import DEFAULT_LOCALE, get_translations
+from inleverboks.i18n import gettext as _
 from inleverboks.services.branding import Branding
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -31,6 +33,21 @@ def asset(path: str) -> str:
         raise ValueError(msg)
     digest = hashlib.sha256(file.read_bytes()).hexdigest()[:10]
     return f"/static/{path}?v={digest}"
+
+
+def combobox_texts() -> dict[str, str]:
+    """Strings of the searchable select (js/combobox.js), translated on the server."""
+    return {
+        "noResults": _("No results"),
+        "oneResult": _("1 result"),
+        "results": _("%s results"),
+        "showOptions": _("Show options"),
+    }
+
+
+def combobox_config() -> str:
+    """The ``data-config`` value of a ``<select data-combobox>``."""
+    return json.dumps(combobox_texts(), ensure_ascii=False)
 
 
 def _context(request: Request) -> dict[str, Any]:
@@ -71,6 +88,7 @@ def build_templates(settings: Settings) -> Jinja2Templates:
         demo_mode=settings.demo_mode,
         base_url=settings.app_base_url,
         asset=asset,
+        combobox_config=combobox_config,
     )
     return Jinja2Templates(env=env, context_processors=[_context])
 

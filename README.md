@@ -94,9 +94,15 @@ bladwijzers worden permanent doorgestuurd).
 
 **Examensjablonen** (tabblad *Examensjablonen*) bewaren de verwachte bestanden,
 sjabloonbestanden, extensies, limieten en toegangsinstellingen. Je maakt ze daar zelf, of slaat
-een bestaand examen op als sjabloon. Bij **Nieuw examen** kies je bovenaan een sjabloon. Tijden,
-linknaam en klassenlijst kies je altijd per examen. Sjablonen zijn persoonlijk en hebben een
-eigen (paarse) kleur, zodat je ze niet met een examen verwart.
+een bestaand examen op als sjabloon (tabblad *Geavanceerd*). Bij **Nieuw examen** kies je
+bovenaan een sjabloon. Tijden, linknaam en klassenlijst kies je altijd per examen. De verwachte
+bestanden van een examen uit een sjabloon zie je alleen ter inzage: je wijzigt ze in het
+sjabloon (sjabloonbestanden uploaden op het examen kan wel). Sjablonen zijn persoonlijk en
+hebben een eigen (paarse) kleur, zodat je ze niet met een examen verwart.
+
+Een nieuw examen staat standaard op de eerstvolgende werkdag van 09:00 tot 17:00. Verschuif je
+de start, dan schuift het einde mee. Keuzelijsten met veel namen (sjabloon, klassenlijst,
+tweede beoordelaar, nieuwe eigenaar) zijn doorzoekbaar op naam en e-mailadres.
 
 **Sjablonen uit een kwalificatie:** onder *Examensjablonen → Sjabloon uit crebo* zoek je een
 opleiding op crebonummer of naam van de uitstroom (bijvoorbeeld 27016). Kies de kerntaken: elke

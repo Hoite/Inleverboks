@@ -69,6 +69,11 @@ class Exam(Base):
     # Snapshot of the SBB qualification (crebo, name, dossier version, core task), so the
     # archive stays right after SBB replaces a dossier.
     qualification: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    # The template the exam was made from. Its expected files then come from the template
+    # and are read-only in the exam form. Deleting the template makes them editable again.
+    source_template_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("exam_template.id", ondelete="SET NULL"), index=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime)

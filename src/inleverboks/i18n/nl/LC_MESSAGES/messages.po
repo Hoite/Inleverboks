@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 13:12+0100\n"
+"POT-Creation-Date: 2026-11-25 13:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -228,6 +228,19 @@ msgstr "Dit wachtwoord komt te vaak voor."
 
 msgid "Do not use your e-mail address in the password."
 msgstr "Gebruik je e-mailadres niet in het wachtwoord."
+
+msgid "No results"
+msgstr "Geen resultaten"
+
+msgid "1 result"
+msgstr "1 resultaat"
+
+#, python-format
+msgid "%s results"
+msgstr "%s resultaten"
+
+msgid "Show options"
+msgstr "Opties tonen"
 
 msgid "Invitation link created"
 msgstr "Uitnodigingslink aangemaakt"
@@ -1722,6 +1735,18 @@ msgstr "Linknaam"
 msgid "Leave empty to derive it from the name. a-z, 0-9 and dashes."
 msgstr "Laat leeg om hem af te leiden van de naam. a-z, 0-9 en streepjes."
 
+msgid "These expected files come from the exam template"
+msgstr "Deze verwachte bestanden komen uit het examensjabloon"
+
+msgid "You change them in the template."
+msgstr "Je wijzigt ze in het sjabloon."
+
+msgid "All allowed extensions"
+msgstr "Alle toegestane extensies"
+
+msgid "No expected files; students hand in extra files only."
+msgstr "Geen verwachte bestanden; studenten leveren alleen extra bestanden in."
+
 #, python-format
 msgid "Label of file %(n)s"
 msgstr "Label van bestand %(n)s"
@@ -1940,18 +1965,12 @@ msgstr "Niet toegestaan"
 msgid "Template file"
 msgstr "Sjabloonbestand"
 
-msgid "All allowed extensions"
-msgstr "Alle toegestane extensies"
-
 #, python-format
 msgid "Template file for %(label)s"
 msgstr "Sjabloonbestand voor %(label)s"
 
 msgid "Upload"
 msgstr "Uploaden"
-
-msgid "No expected files; students hand in extra files only."
-msgstr "Geen verwachte bestanden; studenten leveren alleen extra bestanden in."
 
 msgid "Class list"
 msgstr "Klassenlijst"
@@ -2235,10 +2254,8 @@ msgstr ""
 msgid "My templates"
 msgstr "Mijn sjablonen"
 
-msgid ""
-"No exam templates yet. Create one here, or save an existing exam as template from its settings "
-"page."
+msgid "No exam templates yet. Create one here, or save an existing exam as template on its Advanced tab."
 msgstr ""
-"Nog geen examensjablonen. Maak er hier een, of sla een bestaand examen op als sjabloon via de "
-"pagina met instellingen."
+"Nog geen examensjablonen. Maak er hier een, of sla een bestaand examen op als sjabloon via het "
+"tabblad Geavanceerd."
 

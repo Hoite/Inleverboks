@@ -246,14 +246,14 @@ def test_full_and_part_exam_names(
     template = template_named(db, "B1-K1")
     full = teacher.get(f"/examens/nieuw?sjabloon={template.id}").text
     assert f'value="27016 ICT System Engineer {DASH} B1-K1 Richt systemen in"' in full
-    assert 'value="27016-b1-k1-13112026"' in full
+    assert 'value="27016-b1-k1-16112026"' in full
     assert full.count('name="wp"') == 3
     part = teacher.get(f"/examens/nieuw?sjabloon={template.id}&wp=B1-K1-W3").text
     assert f'value="27016 ICT System Engineer {DASH} B1-K1-W3"' in part
-    assert 'value="27016-b1-k1-w3-13112026"' in part
+    assert 'value="27016-b1-k1-w3-16112026"' in part
     assert 'name="slot_wp_0" value="B1-K1-W3"' in part and 'name="slot_wp_1"' not in part
     two = teacher.get(f"/examens/nieuw?sjabloon={template.id}&wp=B1-K1-W1&wp=B1-K1-W3").text
-    assert 'value="27016-b1-k1-w1-w3-13112026"' in two
+    assert 'value="27016-b1-k1-w1-w3-16112026"' in two
 
 
 def test_exam_keeps_codes_and_a_server_side_snapshot(
@@ -560,3 +560,101 @@ def test_cli_sbb_import(
     finally:
         get_settings.cache_clear()
     assert db.scalar(select(func.count()).select_from(Qualification)) == 6
+
+
+# Expected files of a template-based exam are read-only ------------------------------
+
+
+def test_template_exam_ignores_forged_slots(
+    teacher: TestClient, db: Session, qualification: Qualification
+) -> None:
+    make_templates(teacher, qualification, "B1-K1")
+    template = template_named(db, "B1-K1")
+    fields: dict[str, Any] = {
+        "name": "x", "slug": "", "source_template_id": str(template.id), "slot_count": "2",
+        "slot_label_0": "Gewijzigd", "slot_pattern_0": "*.exe", "slot_extensions_0": "exe",
+        "slot_wp_0": "B1-K1-W3", "slot_label_1": "Extra vakje", "slot_wp_1": "",
+    }  # fmt: skip
+    response = post(teacher, "/examens/nieuw", exam_form(**fields))
+    exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
+    assert exam is not None
+    # Only the chosen work process (a part exam), with the template's own label.
+    w3 = next(s for s in template.slots if s.work_process_code == "B1-K1-W3")
+    assert [(s.label, s.expected_name_pattern) for s in exam.expected_files] == [
+        (w3.label, w3.expected_name_pattern)
+    ]
+    assert exam.source_template_id == template.id
+
+    # Later edits show a read-only list with a link to the template and ignore slot changes.
+    edit = teacher.get(f"/examens/{exam.id}/bewerken").text
+    assert 'name="slot_label_0"' not in edit
+    assert 'value="add_slot"' not in edit
+    assert "Deze verwachte bestanden komen uit het examensjabloon" in edit
+    assert f'href="/examens/sjablonen/{template.id}"' in edit
+    fields |= {"name": "y", "slug": exam.slug, "slot_count": "1", "slot_label_0": "Anders"}
+    assert post(teacher, f"/examens/{exam.id}/bewerken", exam_form(**fields)).status_code == 303
+    db.expire_all()
+    exam = db.get(Exam, exam.id)
+    assert exam is not None and exam.name == "y"
+    assert [s.label for s in exam.expected_files] == [w3.label]
+
+
+def test_template_exam_becomes_editable_when_the_template_is_gone(
+    teacher: TestClient, db: Session, qualification: Qualification
+) -> None:
+    make_templates(teacher, qualification, "B1-K1")
+    template = template_named(db, "B1-K1")
+    exam = create_exam_from(teacher, db, template, [])
+    assert 'name="slot_label_0"' not in teacher.get(f"/examens/{exam.id}/bewerken").text
+    post(teacher, f"/examens/sjablonen/{template.id}/verwijderen")
+    db.expire_all()
+    stored = db.get(Exam, exam.id)
+    assert stored is not None and stored.source_template_id is None
+    assert 'name="slot_label_0"' in teacher.get(f"/examens/{exam.id}/bewerken").text
+
+
+def test_duplicate_and_resit_of_a_template_exam(
+    teacher: TestClient, db: Session, qualification: Qualification
+) -> None:
+    make_templates(teacher, qualification, "B1-K1")
+    template = template_named(db, "B1-K1")
+    exam = create_exam_from(teacher, db, template, ["B1-K1-W1"])
+    copy_id = post(teacher, f"/examens/{exam.id}/dupliceren").headers["location"].split("/")[2]
+    copy = db.get(Exam, uuid.UUID(copy_id))
+    assert copy is not None
+    assert copy.source_template_id == template.id  # still read-only
+    assert [s.work_process_code for s in copy.expected_files] == ["B1-K1-W1"]
+    # A resit keeps its own selection of open expected files (editable, as before).
+    db.add(ExamRosterEntry(exam_id=exam.id, student_number="123456", first_name="Jan",
+                           last_name="Vries"))  # fmt: skip
+    db.commit()
+    resit = post(teacher, f"/examens/{exam.id}/herkansing", {"student_number": "123456"})
+    assert 'name="slot_label_0"' in resit.text
+
+
+# Link name with the planned date --------------------------------------------------------
+
+
+def test_kept_suggested_slug_follows_the_start_date(
+    teacher: TestClient, db: Session, qualification: Qualification
+) -> None:
+    make_templates(teacher, qualification, "B1-K1")
+    template = template_named(db, "B1-K1")
+    page = teacher.get(f"/examens/nieuw?sjabloon={template.id}").text
+    assert 'name="suggested_slug" value="27016-b1-k1-16112026"' in page  # the planned date
+    common = {"name": "x", "source_template_id": str(template.id), "slot_count": "0",
+              "starts_at_date": "2026-12-03", "starts_at_time": "09:00",
+              "ends_at_date": "2026-12-03", "ends_at_time": "17:00"}  # fmt: skip
+    kept = {"slug": "27016-b1-k1-16112026", "suggested_slug": "27016-b1-k1-16112026"}
+    response = post(teacher, "/examens/nieuw", exam_form(**common, **kept))
+    exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
+    assert exam is not None and exam.slug == "27016-b1-k1-03122026"
+    # Again for the same day: the next free name.
+    response = post(teacher, "/examens/nieuw", exam_form(**common, **kept))
+    exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
+    assert exam is not None and exam.slug == "27016-b1-k1-03122026-2"
+    # A link name the teacher typed stays as it is.
+    own = {"slug": "mijn-eigen-link", "suggested_slug": "27016-b1-k1-16112026"}
+    response = post(teacher, "/examens/nieuw", exam_form(**common, **own))
+    exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
+    assert exam is not None and exam.slug == "mijn-eigen-link"

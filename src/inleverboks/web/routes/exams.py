@@ -25,6 +25,7 @@ from inleverboks.services.exams import (
     ExamStatus,
     ExamValidationError,
     can_manage_template,
+    can_use_template,
 )
 from inleverboks.services.overview import build_overview
 from inleverboks.services.template_files import store_template, unreferenced
@@ -427,6 +428,10 @@ def _render_form(
     if resit_from is None and data.source_exam_id is not None:
         candidate = db.get(Exam, data.source_exam_id)
         resit_from = candidate if candidate is not None and candidate.owner_id == user.id else None
+    slot_template = None
+    if mode == "exam" and resit_from is None:
+        owner_id = exam.owner_id if exam is not None else user.id
+        slot_template = services.exams.slots_template(db, owner_id, data, exam)
     chosen = {s.work_process_code for s in data.slots if s.work_process_code}
     picker_processes = [
         {"code": s.work_process_code, "label": s.label, "checked": s.work_process_code in chosen}
@@ -443,6 +448,8 @@ def _render_form(
         templates=templates,
         source_template=source,
         picker_processes=picker_processes,
+        slot_template=slot_template,
+        slot_template_link=slot_template is not None and can_use_template(user, slot_template),
         resit_from=resit_from,
         values=form_values(data, tz, raw),
         problems=problems or {},
