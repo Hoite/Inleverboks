@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 13:08+0100\n"
+"POT-Creation-Date: 2026-11-25 13:10+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -647,6 +647,9 @@ msgstr "Examens"
 msgid "Admin"
 msgstr "Admin"
 
+msgid "Account menu"
+msgstr "Accountmenu"
+
 msgid "Account"
 msgstr "Account"
 
@@ -664,6 +667,9 @@ msgstr "Examenwerk inleveren"
 
 msgid "Open the hand-in link that your teacher shows you."
 msgstr "Open de inleverlink die je docent laat zien."
+
+msgid "Go to my exams"
+msgstr "Naar mijn examens"
 
 msgid "Users"
 msgstr "Gebruikers"

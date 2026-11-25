@@ -5,9 +5,11 @@ from pathlib import Path
 
 from fastapi import Request
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
+from inleverboks.adapters.clock import FrozenClock
 from inleverboks.main import create_app
-from tests.conftest import add_first_route, csrf_token, make_settings
+from tests.conftest import add_first_route, create_user, csrf_token, login, make_settings
 
 
 def test_healthz(client: TestClient) -> None:
@@ -67,6 +69,37 @@ def test_index_is_dutch(client: TestClient) -> None:
     assert '<html lang="nl">' in response.text
     assert "Examenwerk inleveren" in response.text
     assert "Inloggen docent" in response.text
+
+
+def test_home_page_knows_the_session(client: TestClient, db: Session, clock: FrozenClock) -> None:
+    create_user(db, clock, name="Hoite de Docent")
+    login(client)
+    page = client.get("/").text
+    # Signed in: the normal header with the account menu, no login link.
+    assert "Inloggen docent" not in page
+    assert "Examenwerk inleveren" in page  # the student explanation stays
+    assert '<a class="button" href="/examens">Naar mijn examens</a>' in page
+    assert '<a href="/examens">Examens</a>' in page
+    assert '<details class="account-menu" data-menu>' in page
+    assert "Hoite de Docent" in page
+    assert "Accountmenu" in page
+    assert 'action="/logout"' in page
+    assert page.count('class="brand" href="/"') == 1  # the logo always goes home
+
+
+def test_account_menu_marks_the_account_page(
+    client: TestClient, db: Session, clock: FrozenClock
+) -> None:
+    create_user(db, clock)
+    login(client)
+    exams = client.get("/examens").text
+    assert '<a class="brand" href="/">' in exams
+    assert '<a href="/examens" aria-current="page">Examens</a>' in exams
+    assert '<a href="/account">Account</a>' in exams
+    account = client.get("/account").text
+    assert '<a href="/account" aria-current="page">Account</a>' in account
+    assert '<summary class="is-current">' in account
+    assert "js/menu.js" in account
 
 
 def test_demo_banner(tmp_path: Path) -> None:

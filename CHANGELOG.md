@@ -14,6 +14,12 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   formulieren), met behoud van de querystring.
 - *Ontvangstbewijs controleren* is een admintaak geworden: een tabblad onder *Admin*
   (`/admin/ontvangstbewijs`). Docenten zien de link niet meer in de kop en krijgen 403.
+- Het logo in de kop gaat altijd naar de startpagina (`/`), ook als je bent ingelogd.
+- De startpagina kent je sessie: ingelogd zie je de gewone kop en een knop *Naar mijn
+  examens*. De uitleg voor studenten blijft staan.
+- In de kop staat nu een accountmenu (persoonicoon en je naam) met *Account* en
+  *Uitloggen*. Het is gebouwd met `<details>`, werkt zonder JavaScript en sluit met Escape of
+  een klik ernaast.
 
 ### Opgelost
 

@@ -1,8 +1,13 @@
 {% extends "base.html.j2" %}
 {% block header_nav %}
-<nav class="header-nav"><a href="/login">{{ _("Teacher login") }}</a></nav>
+{% if current_user %}{{ super() }}{% else %}
+<nav class="header-nav" aria-label="{{ _('Main menu') }}"><a href="/login">{{ _("Teacher login") }}</a></nav>
+{% endif %}
 {% endblock %}
 {% block content %}
 <h1>{{ _("Hand in exam work") }}</h1>
 <p>{{ _("Open the hand-in link that your teacher shows you.") }}</p>
+{% if current_user and auth.stage == "full" %}
+<p><a class="button" href="/examens">{{ _("Go to my exams") }}</a></p>
+{% endif %}
 {% endblock %}
