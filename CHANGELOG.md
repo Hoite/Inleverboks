@@ -6,6 +6,17 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Opgelost
+
+- **Migraties op SQLite wisten gegevens.** Een migratie die een tabel opnieuw opbouwt (Alembic
+  *batch*) liet de foreign keys aan staan. Het verwijderen van de oude tabel wiste daardoor de
+  onderliggende rijen (`ON DELETE CASCADE`) of brak halverwege af en liet `_alembic_tmp_…` achter.
+  Getroffen: de migratie van 0.2.0 wiste de verwachte bestanden (en de koppeling met
+  sjabloonbestanden) van alle examensjablonen. Die van 0.3.0 wiste de verwachte bestanden,
+  klassenlijsten en verlengingen van examens zonder inleveringen, of brak af bij examens met
+  inleveringen. Migraties zetten de foreign keys nu uit, ruimen een achtergebleven kopie op en
+  controleren daarna alle verwijzingen. PostgreSQL had hier geen last van.
+
 ## [0.3.0] - 2026-11-25
 
 ### Toegevoegd
