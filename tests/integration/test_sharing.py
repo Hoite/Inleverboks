@@ -26,6 +26,7 @@ from inleverboks.db.models import (
 from inleverboks.services.classlists import ImportResult, ParsedEntry
 from inleverboks.services.container import Services
 from tests.conftest import START, create_user, csrf_token, enable_totp, extract, login, post
+from tests.integration.test_exams import form as exam_form
 from tests.student_helpers import make_exam, ready, slot_ids, upload
 
 
@@ -265,6 +266,28 @@ def test_other_teacher_uses_list_in_exam_and_snapshot_stays(
             )
         )
         assert numbers == {"123456", "123457"}
+
+
+def test_template_based_exam_uses_another_teachers_list(
+    db: Session, services: Services, clients: dict[str, TestClient], class_list: ClassList,
+    colleague: User,
+) -> None:  # fmt: skip
+    source = make_exam(db, services, colleague, slug="bron-examen")
+    template = services.exams.save_as_template(db, colleague, source, "Bert sjabloon", ip=None)
+    other = clients["other"]
+    page = other.get(f"/examens/nieuw?sjabloon={template.id}").text
+    assert f'<option value="{class_list.id}">ICT-2A (2) · Anna Eigenaar</option>' in page
+    response = post(other, "/examens/nieuw", exam_form(
+        name="Uit sjabloon", source_template_id=str(template.id),
+        class_list_id=str(class_list.id), allow_unlisted="",
+    ))  # fmt: skip
+    assert response.status_code == 303, response.text
+    exam = db.get(Exam, uuid.UUID(response.headers["location"].split("/")[2]))
+    assert exam is not None and exam.source_template_id == template.id
+    numbers = set(
+        db.scalars(select(ExamRosterEntry.student_number).where(ExamRosterEntry.exam_id == exam.id))
+    )
+    assert numbers == {"123456", "123457"}
 
 
 # Presentation counter -------------------------------------------------------------
