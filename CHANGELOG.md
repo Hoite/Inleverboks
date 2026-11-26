@@ -6,6 +6,17 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+### Toegevoegd
+
+- **Onderwijsteams** (eerste stap, PLAN B63/B64): een admin maakt teams aan onder
+  *Admin → Onderwijsteams*, voegt leden toe, wijst teamcontactpersonen (TCP's) aan en
+  koppelt crebo's (een crebo kan bij meerdere teams horen). Een team is alleen te
+  verwijderen als het leeg is. Leden zien hun teams op de accountpagina; een TCP voegt
+  daar bestaande accounts toe of haalt leden uit het team. Een TCP moet tweestapsverificatie
+  gebruiken. De gebruikerspagina toont de teams per account en de weergave *Zonder
+  onderwijsteam*; de teamlijst markeert teams zonder TCP. Klassenlijsten, sjablonen en
+  examens volgen in de volgende stappen.
+
 ### Opgelost
 
 - *Concept verwijderen* gaf een serverfout als er een proces-verbaal van het examen was

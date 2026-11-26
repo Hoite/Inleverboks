@@ -43,6 +43,7 @@ class SystemAction(StrEnum):
     MANAGE_BRANDING = "manage_branding"
     VIEW_SYSTEM_AUDIT = "view_system_audit"
     VERIFY_RECEIPT = "verify_receipt"  # admin only, for any exam
+    MANAGE_TEAMS = "manage_teams"  # create teams, see all of them (PLAN B63)
 
 
 _A, _O, _S, _T = (
@@ -139,6 +140,66 @@ def can_class_list(user: User | None, action: ClassListAction, owner_id: uuid.UU
     if user is None or not user.is_active:
         return False
     return bool(class_list_roles(user, owner_id) & CLASS_LIST_MATRIX[action])
+
+
+# Education teams (PLAN B63) ---------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TeamContext:
+    """The teams a user is a member of, and those where he is a team contact (TCP)."""
+
+    member_of: frozenset[uuid.UUID] = frozenset()
+    contact_of: frozenset[uuid.UUID] = frozenset()
+
+
+class TeamRole(StrEnum):
+    ADMIN = "admin"
+    CONTACT = "contact"  # team contact ("TCP") of this team
+    MEMBER = "member"
+    OTHER_TEACHER = "other_teacher"
+
+
+class TeamAction(StrEnum):
+    VIEW = "view"  # team page: description, crebos, contacts and members
+    ADD_MEMBER = "add_member"  # an existing account, never as contact
+    REMOVE_MEMBER = "remove_member"  # not a contact: the service enforces that
+    SET_CONTACT = "set_contact"
+    EDIT = "edit"  # name and description
+    MANAGE_CREBOS = "manage_crebos"
+    DELETE = "delete"  # only when empty: the service enforces that
+
+
+_TA, _TC, _TM, _TT = TeamRole.ADMIN, TeamRole.CONTACT, TeamRole.MEMBER, TeamRole.OTHER_TEACHER
+
+TEAM_MATRIX: dict[TeamAction, frozenset[TeamRole]] = {
+    TeamAction.VIEW: frozenset({_TA, _TC, _TM}),
+    TeamAction.ADD_MEMBER: frozenset({_TA, _TC}),
+    TeamAction.REMOVE_MEMBER: frozenset({_TA, _TC}),
+    TeamAction.SET_CONTACT: frozenset({_TA}),
+    TeamAction.EDIT: frozenset({_TA}),
+    TeamAction.MANAGE_CREBOS: frozenset({_TA}),
+    TeamAction.DELETE: frozenset({_TA}),
+}
+
+
+def team_roles(user: User, teams: TeamContext, team_id: uuid.UUID) -> frozenset[TeamRole]:
+    roles: set[TeamRole] = set()
+    if team_id in teams.contact_of:
+        roles.add(TeamRole.CONTACT)
+    if team_id in teams.member_of:
+        roles.add(TeamRole.MEMBER)
+    if not roles:
+        roles.add(TeamRole.OTHER_TEACHER)
+    if user.is_admin:
+        roles.add(TeamRole.ADMIN)
+    return frozenset(roles)
+
+
+def can_team(user: User | None, teams: TeamContext, action: TeamAction, team_id: uuid.UUID) -> bool:
+    if user is None or not user.is_active:
+        return False
+    return bool(team_roles(user, teams, team_id) & TEAM_MATRIX[action])
 
 
 def can(user: User | None, action: SystemAction) -> bool:

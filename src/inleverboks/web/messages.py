@@ -44,6 +44,17 @@ def error_messages() -> dict[str, str]:
         "owner_invalid": _("Choose an active teacher."),
         "template_too_large": _("The template file is larger than the maximum per file."),
         "class_list_not_found": _("Class list not found."),
+        "team_not_found": _("Education team not found."),
+        "invalid_team_name": _("Enter a name for the education team (at most 200 characters)."),
+        "team_name_taken": _("An education team with this name already exists."),
+        "description_too_long": _("The description is too long (at most 500 characters)."),
+        "team_not_empty": _(
+            "This education team still has class lists, templates or exams. Assign them to "
+            "another team first."
+        ),
+        "already_member": _("This account is already a member of the team."),
+        "contact_protected": _("Only an admin can remove a team contact from the team."),
+        "unknown_crebo": _("Choose a crebo from the imported qualifications."),
         "template_not_found": _("Exam template not found."),
         "exam_not_found": _("Exam not found."),
         "not_active": _("Only an active hand-in can be undone or declared invalid."),

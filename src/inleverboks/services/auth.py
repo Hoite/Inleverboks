@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from inleverboks.adapters.auth import AuthProvider
 from inleverboks.adapters.clock import Clock
 from inleverboks.adapters.ratelimit import RateLimiter
-from inleverboks.db.models import RecoveryCode, User, UserSession
+from inleverboks.db.models import RecoveryCode, TeamMember, User, UserSession
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.passwords import hash_password, needs_rehash
 from inleverboks.services.security import hash_token, new_token
@@ -81,7 +81,13 @@ class AuthService:
     # Stages ------------------------------------------------------------------------
 
     def totp_required(self, db: Session, user: User) -> bool:
-        return user.is_admin or self.settings.load(db).require_totp_all
+        """Admins and team contacts (PLAN B64) always; others when the setting says so."""
+        if user.is_admin or self.settings.load(db).require_totp_all:
+            return True
+        query = select(TeamMember.team_id).where(
+            TeamMember.user_id == user.id, TeamMember.is_contact.is_(True)
+        )
+        return db.scalar(query.limit(1)) is not None
 
     def next_stage(self, db: Session, user: User) -> Stage:
         if user.must_change_password:

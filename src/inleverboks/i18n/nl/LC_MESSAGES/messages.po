@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-25 16:50+0100\n"
+"POT-Creation-Date: 2026-11-26 16:21+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -170,6 +170,32 @@ msgstr "Het sjabloonbestand is groter dan het maximum per bestand."
 
 msgid "Class list not found."
 msgstr "Klassenlijst niet gevonden."
+
+msgid "Education team not found."
+msgstr "Onderwijsteam niet gevonden."
+
+msgid "Enter a name for the education team (at most 200 characters)."
+msgstr "Vul een naam in voor het onderwijsteam (maximaal 200 tekens)."
+
+msgid "An education team with this name already exists."
+msgstr "Er bestaat al een onderwijsteam met deze naam."
+
+msgid "The description is too long (at most 500 characters)."
+msgstr "De omschrijving is te lang (maximaal 500 tekens)."
+
+msgid "This education team still has class lists, templates or exams. Assign them to another team first."
+msgstr ""
+"Dit onderwijsteam heeft nog klassenlijsten, sjablonen of examens. Wijs die eerst toe aan een "
+"ander team."
+
+msgid "This account is already a member of the team."
+msgstr "Dit account is al lid van het team."
+
+msgid "Only an admin can remove a team contact from the team."
+msgstr "Alleen een admin kan een teamcontactpersoon uit het team halen."
+
+msgid "Choose a crebo from the imported qualifications."
+msgstr "Kies een crebo uit de geïmporteerde kwalificaties."
 
 msgid "Exam template not found."
 msgstr "Examensjabloon niet gevonden."
@@ -696,6 +722,9 @@ msgstr "Naar mijn examens"
 msgid "Users"
 msgstr "Gebruikers"
 
+msgid "Education teams"
+msgstr "Onderwijsteams"
+
 msgid "Whitelist"
 msgstr "Whitelist"
 
@@ -980,6 +1009,99 @@ msgstr "Beveiliging"
 msgid "Two-step verification mandatory for all teachers"
 msgstr "Tweestapsverificatie verplicht voor alle docenten"
 
+msgid "The education team has been created."
+msgstr "Het onderwijsteam is aangemaakt."
+
+msgid "The member has been added."
+msgstr "Het lid is toegevoegd."
+
+msgid "The member has been removed from the team."
+msgstr "Het lid is uit het team gehaald."
+
+msgid "The crebo has been linked."
+msgstr "De crebo is gekoppeld."
+
+msgid "The crebo has been unlinked."
+msgstr "De crebo is ontkoppeld."
+
+msgid "Name and description"
+msgstr "Naam en omschrijving"
+
+msgid "Description (optional)"
+msgstr "Omschrijving (optioneel)"
+
+msgid "Members"
+msgstr "Leden"
+
+msgid "Add an account"
+msgstr "Account toevoegen"
+
+msgid "Team contact"
+msgstr "Teamcontactpersoon"
+
+msgid "Add"
+msgstr "Toevoegen"
+
+msgid ""
+"A team contact manages the class lists and templates of the team, sees all its exams and needs "
+"two-step verification."
+msgstr ""
+"Een teamcontactpersoon (TCP) beheert de klassenlijsten en sjablonen van het team, ziet alle "
+"examens van het team en moet tweestapsverificatie gebruiken."
+
+msgid "Crebos"
+msgstr "Crebo's"
+
+msgid "Unlink"
+msgstr "Ontkoppelen"
+
+msgid "No crebos linked yet."
+msgstr "Nog geen crebo's gekoppeld."
+
+msgid "Link a crebo"
+msgstr "Crebo koppelen"
+
+msgid "Link the crebo"
+msgstr "Koppelen"
+
+msgid "Import the SBB qualifications first (Admin, Qualifications)."
+msgstr "Importeer eerst de kwalificaties van SBB (Admin, Kwalificaties)."
+
+msgid "Delete education team"
+msgstr "Onderwijsteam verwijderen"
+
+msgid "The team has no class lists, templates or exams. The members keep their accounts."
+msgstr "Het team heeft geen klassenlijsten, sjablonen of examens. De leden houden hun account."
+
+#, python-format
+msgid ""
+"This team still has %(lists)s class list(s), %(templates)s template(s) and %(exams)s exam(s). "
+"Assign them to another team before you delete it."
+msgstr ""
+"Dit team heeft nog %(lists)s klassenlijst(en), %(templates)s sjabloon/sjablonen en %(exams)s "
+"examen(s). Wijs die toe aan een ander team voordat je het verwijdert."
+
+msgid "The education team has been deleted."
+msgstr "Het onderwijsteam is verwijderd."
+
+msgid "New education team"
+msgstr "Nieuw onderwijsteam"
+
+msgid "Create education team"
+msgstr "Onderwijsteam aanmaken"
+
+msgid "Team contacts"
+msgstr "Teamcontactpersonen"
+
+msgid "No team contact"
+msgstr "Geen teamcontactpersoon"
+
+msgid "None"
+msgstr "Geen"
+
+msgid "There are no education teams yet."
+msgstr "Er zijn nog geen onderwijsteams."
+
 msgid "Invitation revoked."
 msgstr "Uitnodiging ingetrokken."
 
@@ -1004,6 +1126,15 @@ msgstr "Acties"
 msgid "Revoke"
 msgstr "Intrekken"
 
+msgid "Show"
+msgstr "Tonen"
+
+msgid "All accounts"
+msgstr "Alle accounts"
+
+msgid "Without education team"
+msgstr "Zonder onderwijsteam"
+
 msgid "Role"
 msgstr "Rol"
 
@@ -1021,6 +1152,9 @@ msgstr "Local admin"
 
 msgid "Teacher"
 msgstr "Docent"
+
+msgid "team contact"
+msgstr "teamcontactpersoon"
 
 msgid "Active"
 msgstr "Actief"
@@ -1055,6 +1189,9 @@ msgstr "Ook tweestapsverificatie resetten"
 msgid "Create reset link"
 msgstr "Resetlink maken"
 
+msgid "Every account is in an education team."
+msgstr "Elk account zit in een onderwijsteam."
+
 msgid "Compare a printed or shown receipt with what was stored."
 msgstr "Vergelijk een geprint of getoond ontvangstbewijs met wat is opgeslagen."
 
@@ -1078,9 +1215,6 @@ msgstr "Bestanden"
 
 msgid "Added."
 msgstr "Toegevoegd."
-
-msgid "Add"
-msgstr "Toevoegen"
 
 msgid "Domain or e-mail address"
 msgstr "Domein of e-mailadres"
@@ -1121,6 +1255,11 @@ msgstr ""
 
 msgid "Save name"
 msgstr "Naam opslaan"
+
+msgid "You are not in an education team yet. Ask an admin or the team contact of your team."
+msgstr ""
+"Je zit nog niet in een onderwijsteam. Vraag het aan een admin of aan de teamcontactpersoon van je"
+" team."
 
 msgid "Password"
 msgstr "Wachtwoord"
@@ -1259,9 +1398,6 @@ msgstr "Examinator (eigenaar)"
 
 msgid "Second reviewer"
 msgstr "Tweede beoordelaar"
-
-msgid "None"
-msgstr "Geen"
 
 msgid "Start"
 msgstr "Start"
@@ -1808,9 +1944,6 @@ msgstr "Gebaseerd op sjabloon %(name)s. Tijden, linknaam en klassenlijst horen n
 msgid "Template name"
 msgstr "Naam van het sjabloon"
 
-msgid "Description (optional)"
-msgstr "Omschrijving (optioneel)"
-
 msgid "Second reviewer (optional)"
 msgstr "Tweede beoordelaar (optioneel)"
 
@@ -1936,9 +2069,6 @@ msgstr "ongeldig"
 
 msgid "not on list"
 msgstr "niet op lijst"
-
-msgid "Show"
-msgstr "Tonen"
 
 msgid "All"
 msgstr "Alle"
@@ -2196,6 +2326,11 @@ msgstr "Student mag opnieuw inleveren"
 msgid "This student has not handed in yet."
 msgstr "Deze student heeft nog niet ingeleverd."
 
+msgid "You can add existing accounts. An admin invites new colleagues and appoints team contacts."
+msgstr ""
+"Je kunt bestaande accounts toevoegen. Een admin nodigt nieuwe collega's uit en wijst "
+"teamcontactpersonen aan."
+
 msgid ""
 "This is a template, not an exam. Students cannot hand in here; create an exam from the template "
 "for that."
@@ -2382,4 +2517,22 @@ msgid "No exam templates yet. Create one here, or save an existing exam as templ
 msgstr ""
 "Nog geen examensjablonen. Maak er hier een, of sla een bestaand examen op als sjabloon via het "
 "tabblad Geavanceerd."
+
+msgid "Role in the team"
+msgstr "Rol in het team"
+
+msgid "Member"
+msgstr "Lid"
+
+msgid "Remove team contact role"
+msgstr "Rol teamcontactpersoon weghalen"
+
+msgid "Make team contact"
+msgstr "Teamcontactpersoon maken"
+
+msgid "Remove from team"
+msgstr "Uit team halen"
+
+msgid "The team has no members yet."
+msgstr "Het team heeft nog geen leden."
 

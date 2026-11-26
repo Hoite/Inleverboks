@@ -45,6 +45,7 @@ from inleverboks.web.routes import (
     public,
     review,
     student,
+    teams,
 )
 from inleverboks.web.routes.review import render_pv_factory
 from inleverboks.web.templating import build_templates, render
@@ -113,7 +114,7 @@ def create_app(
     app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
     # The student page at /{slug} is a catch-all and must come last.
     for module in (
-        health, public, branding, auth, exams, review, classlists, admin, legacy, student,
+        health, public, branding, auth, teams, exams, review, classlists, admin, legacy, student,
     ):  # fmt: skip
         app.include_router(module.router)
 

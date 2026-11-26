@@ -1,0 +1,59 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("Education teams") }} · {{ app_name }}{% endblock %}
+{% block content %}
+<h1>{{ _("Admin") }}</h1>
+{% include "admin/_nav.html.j2" %}
+{% if ok == "deleted" %}{{ ok_box(_("The education team has been deleted.")) }}{% endif %}
+{{ errors_box(errors) }}
+
+<section class="card">
+  <h2>{{ _("New education team") }}</h2>
+  <form method="post" action="/admin/onderwijsteams" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="team-name">{{ _("Name") }}</label>
+      <input id="team-name" name="name" type="text" required maxlength="200" value="{{ name_value }}">
+    </div>
+    <div class="field">
+      <label for="team-description">{{ _("Description (optional)") }}</label>
+      <input id="team-description" name="description" type="text" maxlength="500" value="{{ description_value }}">
+    </div>
+    <div><button type="submit" class="button">{{ _("Create education team") }}</button></div>
+  </form>
+</section>
+
+<section>
+  <h2>{{ _("Education teams") }}</h2>
+  {% if teams %}
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">{{ _("Name") }}</th>
+        <th scope="col">{{ _("Members") }}</th>
+        <th scope="col">{{ _("Team contacts") }}</th>
+        <th scope="col">{{ _("Crebos") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for team in teams %}
+      {% set contacts = team.members|selectattr("is_contact")|list %}
+      <tr>
+        <td><a href="/admin/onderwijsteams/{{ team.id }}">{{ team.name }}</a></td>
+        <td>{{ team.members|length }}</td>
+        <td>
+          {% if contacts %}{{ contacts|map(attribute="user.name")|join(", ") }}
+          {% else %}<span class="badge badge-warning"><span aria-hidden="true">!</span> {{ _("No team contact") }}</span>{% endif %}
+        </td>
+        <td>{% if team.crebos %}{{ team.crebos|map(attribute="crebo")|join(", ") }}{% else %}<span class="muted">{{ _("None") }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ _("There are no education teams yet.") }}</p>
+  {% endif %}
+</section>
+{% endblock %}

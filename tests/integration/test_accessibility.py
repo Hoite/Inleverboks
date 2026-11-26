@@ -161,6 +161,10 @@ def test_teacher_and_admin_pages(
 
     admin = create_user(db, clock, "admin@school.nl", admin=True)
     secret = enable_totp(db, services, admin)
+    team = services.teams.create(db, admin, "ICT", "Applicatieontwikkeling", ip=None)
+    services.teams.add_member(db, admin, team, owner.id, ip=None)
+    services.teams.add_crebo(db, admin, team, "27016", ip=None)
+    problems += audit(teacher, f"/examens/teams/{team.id}")
     ac = TestClient(client.app)
     login(ac, "admin@school.nl", secret=secret, clock=clock)
     admin_urls = [
@@ -170,6 +174,8 @@ def test_teacher_and_admin_pages(
         f"/examens/alle?eigenaar={owner.id}", "/examens/sjablonen?toon=alle",
         f"/examens/sjablonen/{template.id}",  # another teacher's personal template
         f"/examens/klassenlijsten/{class_list.id}",  # another teacher's class list
+        "/admin/onderwijsteams", f"/admin/onderwijsteams/{team.id}",
+        "/admin/gebruikers?toon=zonder-team", f"/examens/teams/{team.id}",
     ]  # fmt: skip
     problems += [p for url in admin_urls for p in audit(ac, url)]
     assert problems == []

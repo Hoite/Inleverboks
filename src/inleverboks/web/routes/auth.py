@@ -203,18 +203,27 @@ def change_password(
     return _redirect(STAGE_PATHS.get(stage, "/account?ok=password"))
 
 
+def _account_page(
+    request: Request, ctx: AuthContext, services: Svc, db: Db, *, ok: str | None = None,
+    errors: list[str] | None = None, name_value: str | None = None, status: int = 200,
+) -> Response:  # fmt: skip
+    return render(
+        request,
+        "auth/account.html.j2",
+        status_code=status,
+        ok=ok,
+        totp_required=services.auth.totp_required(db, ctx.user),
+        errors=errors or [],
+        name_value=ctx.user.name if name_value is None else name_value,
+        my_teams=services.teams.memberships(db, ctx.user.id).get(ctx.user.id, []),
+    )
+
+
 @router.get("/account")
 def account(
     request: Request, ctx: Teacher, services: Svc, db: Db, ok: str | None = None
 ) -> Response:
-    return render(
-        request,
-        "auth/account.html.j2",
-        ok=ok,
-        totp_required=services.auth.totp_required(db, ctx.user),
-        errors=[],
-        name_value=ctx.user.name,
-    )
+    return _account_page(request, ctx, services, db, ok=ok)
 
 
 @router.post("/account/naam")
@@ -229,11 +238,9 @@ def change_name(
         changed = services.users.rename(db, ctx.user, name, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return render(
-            request, "auth/account.html.j2", ok=None,
-            totp_required=services.auth.totp_required(db, ctx.user),
-            errors=describe(exc), name_value=name, status_code=400,
-        )  # fmt: skip
+        return _account_page(
+            request, ctx, services, db, errors=describe(exc), name_value=name, status=400
+        )
     return _redirect("/account?ok=name" if changed else "/account")
 
 
@@ -315,15 +322,7 @@ def totp_disable(
         services.users.disable_totp(db, ctx.user, password=password, ip=client_ip(request))
     except DomainError as exc:
         db.rollback()
-        return render(
-            request,
-            "auth/account.html.j2",
-            status_code=400,
-            ok=None,
-            totp_required=services.auth.totp_required(db, ctx.user),
-            errors=describe(exc),
-            name_value=ctx.user.name,
-        )
+        return _account_page(request, ctx, services, db, errors=describe(exc), status=400)
     return _redirect("/account?ok=totp_disabled")
 
 

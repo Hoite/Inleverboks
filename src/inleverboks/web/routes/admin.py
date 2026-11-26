@@ -40,8 +40,13 @@ def _redirect(url: str) -> RedirectResponse:
 def _users_page(
     request: Request, db: Db, services: Svc, *, errors: list[str] | None = None,
     ok: str | None = None, status: int = 200, invite_email: str = "",
+    without_team: bool = False,
 ) -> Response:  # fmt: skip
     now = services.clock.now()
+    memberships = services.teams.memberships(db)
+    accounts = services.users.list_users(db)
+    if without_team:
+        accounts = [u for u in accounts if u.id not in memberships]
     open_invites = list(
         db.scalars(
             select(Invite)
@@ -53,7 +58,9 @@ def _users_page(
         request,
         "admin/users.html.j2",
         status_code=status,
-        users=services.users.list_users(db),
+        users=accounts,
+        memberships=memberships,
+        without_team=without_team,
         open_invites=open_invites,
         errors=errors or [],
         ok=ok,
@@ -67,8 +74,12 @@ def admin_home() -> Response:
 
 
 @router.get("/gebruikers")
-def users(request: Request, ctx: Admin, db: Db, services: Svc, ok: str | None = None) -> Response:
-    return _users_page(request, db, services, ok=ok)
+def users(
+    request: Request, ctx: Admin, db: Db, services: Svc, ok: str | None = None,
+    toon: str | None = None,
+) -> Response:  # fmt: skip
+    # PLAN B69: the admin finds the accounts that are not in an education team yet.
+    return _users_page(request, db, services, ok=ok, without_team=toon == "zonder-team")
 
 
 @router.post("/uitnodigingen")

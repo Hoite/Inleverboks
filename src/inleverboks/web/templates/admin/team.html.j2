@@ -1,0 +1,96 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ team.name }} · {{ _("Education teams") }} · {{ app_name }}{% endblock %}
+{% block head_extra %}<script type="module" src="{{ asset('js/combobox.js') }}"></script>{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/admin/onderwijsteams">{{ _("Education teams") }}</a></p>
+<h1>{{ team.name }}</h1>
+{% if ok == "created" %}{{ ok_box(_("The education team has been created.")) }}{% endif %}
+{% if ok == "saved" %}{{ ok_box(_("Saved.")) }}{% endif %}
+{% if ok == "member_added" %}{{ ok_box(_("The member has been added.")) }}{% endif %}
+{% if ok == "member_removed" %}{{ ok_box(_("The member has been removed from the team.")) }}{% endif %}
+{% if ok == "crebo_added" %}{{ ok_box(_("The crebo has been linked.")) }}{% endif %}
+{% if ok == "crebo_removed" %}{{ ok_box(_("The crebo has been unlinked.")) }}{% endif %}
+{{ errors_box(errors) }}
+
+<section class="card">
+  <h2>{{ _("Name and description") }}</h2>
+  <form method="post" action="/admin/onderwijsteams/{{ team.id }}/bewerken" class="stack">
+    {{ csrf() }}
+    <div class="field">
+      <label for="team-name">{{ _("Name") }}</label>
+      <input id="team-name" name="name" type="text" required maxlength="200" value="{{ name_value }}">
+    </div>
+    <div class="field">
+      <label for="team-description">{{ _("Description (optional)") }}</label>
+      <input id="team-description" name="description" type="text" maxlength="500" value="{{ description_value }}">
+    </div>
+    <div><button type="submit" class="button button-secondary">{{ _("Save") }}</button></div>
+  </form>
+</section>
+
+<section class="card" id="leden">
+  <h2>{{ _("Members") }}</h2>
+  {% with member_actions="admin", member_base="/admin/onderwijsteams/" ~ team.id ~ "/leden" %}{% include "teams/_members.html.j2" %}{% endwith %}
+  {% if candidates %}
+  <form method="post" action="/admin/onderwijsteams/{{ team.id }}/leden" class="row-form top-gap">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="member-user">{{ _("Add an account") }}</label>
+      <select id="member-user" name="user_id" data-combobox data-config="{{ combobox_config() }}">
+        {% for u in candidates %}<option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>{% endfor %}
+      </select>
+    </div>
+    <label class="checkbox"><input type="checkbox" name="contact" value="true"> {{ _("Team contact") }}</label>
+    <button type="submit" class="button button-secondary">{{ _("Add") }}</button>
+  </form>
+  {% endif %}
+  <p class="hint">{{ _("A team contact manages the class lists and templates of the team, sees all its exams and needs two-step verification.") }}</p>
+</section>
+
+<section class="card" id="crebos">
+  <h2>{{ _("Crebos") }}</h2>
+  {% if team.crebos %}
+  <ul class="plain-list">
+    {% for row in team.crebos %}
+    <li>
+      {{ row.crebo }} {{ crebo_names.get(row.crebo, "") }}
+      <form method="post" action="/admin/onderwijsteams/{{ team.id }}/crebos/{{ row.crebo }}/verwijderen" class="inline-form">
+        {{ csrf() }}<button type="submit" class="button button-small button-secondary">{{ _("Unlink") }}<span class="visually-hidden"> {{ row.crebo }}</span></button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">{{ _("No crebos linked yet.") }}</p>
+  {% endif %}
+  {% if crebo_names %}
+  <form method="post" action="/admin/onderwijsteams/{{ team.id }}/crebos" class="row-form top-gap">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="team-crebo">{{ _("Link a crebo") }}</label>
+      <select id="team-crebo" name="crebo" data-combobox data-config="{{ combobox_config() }}">
+        {% set linked = team.crebos|map(attribute="crebo")|list %}
+        {% for crebo, name in crebo_names|dictsort if crebo not in linked %}<option value="{{ crebo }}">{{ crebo }} {{ name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Link the crebo") }}</button>
+  </form>
+  {% else %}
+  <p class="hint">{{ _("Import the SBB qualifications first (Admin, Qualifications).") }}</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>{{ _("Delete education team") }}</h2>
+  {% if contents.empty %}
+  <form method="post" action="/admin/onderwijsteams/{{ team.id }}/verwijderen" class="stack">
+    {{ csrf() }}
+    <p>{{ _("The team has no class lists, templates or exams. The members keep their accounts.") }}</p>
+    <div><button type="submit" class="button button-danger">{{ _("Delete education team") }}</button></div>
+  </form>
+  {% else %}
+  <p>{{ _("This team still has %(lists)s class list(s), %(templates)s template(s) and %(exams)s exam(s). Assign them to another team before you delete it.", lists=contents.class_lists, templates=contents.templates, exams=contents.exams) }}</p>
+  {% endif %}
+</section>
+{% endblock %}

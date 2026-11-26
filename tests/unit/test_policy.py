@@ -12,14 +12,20 @@ from inleverboks.db.models import User
 from inleverboks.policy import (
     CLASS_LIST_MATRIX,
     EXAM_MATRIX,
+    TEAM_MATRIX,
     ClassListAction,
     ExamAction,
     ExamRef,
     SystemAction,
+    TeamAction,
+    TeamContext,
+    TeamRole,
     can,
     can_class_list,
     can_exam,
+    can_team,
     exam_roles,
+    team_roles,
 )
 
 OWNER, REVIEWER, OTHER, ADMIN = "owner", "reviewer", "other", "admin"
@@ -137,3 +143,55 @@ def test_class_list_matrix(action: ClassListAction, people: dict[str, User]) -> 
     assert can_class_list(people[ADMIN], action, owner_id) is admin
     assert not can_class_list(None, action, owner_id)
     assert not can_class_list(_user(active=False), action, owner_id)
+
+
+# Education teams (PLAN B63) --------------------------------------------------------
+
+T = TeamAction
+
+# action: (admin outside the team, team contact, member, other teacher)
+TEAM_EXPECTED: dict[TeamAction, tuple[bool, bool, bool, bool]] = {
+    T.VIEW: (True, True, True, False),
+    T.ADD_MEMBER: (True, True, False, False),
+    T.REMOVE_MEMBER: (True, True, False, False),
+    T.SET_CONTACT: (True, False, False, False),
+    T.EDIT: (True, False, False, False),
+    T.MANAGE_CREBOS: (True, False, False, False),
+    T.DELETE: (True, False, False, False),
+}
+
+
+def test_team_matrix_covers_every_action() -> None:
+    assert set(TEAM_MATRIX) == set(TeamAction) == set(TEAM_EXPECTED)
+
+
+@pytest.mark.parametrize("action", list(TeamAction))
+def test_team_matrix(action: TeamAction) -> None:
+    team = uuid.uuid4()
+    admin, contact, member, other = _user(admin=True), _user(), _user(), _user()
+    contexts = {
+        admin.id: TeamContext(),
+        contact.id: TeamContext(member_of=frozenset({team}), contact_of=frozenset({team})),
+        member.id: TeamContext(member_of=frozenset({team})),
+        # a contact of another team has no rights here
+        other.id: TeamContext(member_of=frozenset({uuid.uuid4()}), contact_of=frozenset()),
+    }
+    got = tuple(can_team(u, contexts[u.id], action, team) for u in (admin, contact, member, other))
+    assert got == TEAM_EXPECTED[action]
+
+
+def test_team_rights_need_an_active_account() -> None:
+    team = uuid.uuid4()
+    ctx = TeamContext(member_of=frozenset({team}), contact_of=frozenset({team}))
+    assert not can_team(_user(active=False), ctx, TeamAction.VIEW, team)
+    assert not can_team(None, ctx, TeamAction.VIEW, team)
+    assert team_roles(_user(admin=True), ctx, team) == {
+        TeamRole.ADMIN,
+        TeamRole.CONTACT,
+        TeamRole.MEMBER,
+    }
+
+
+def test_managing_teams_is_for_admins() -> None:
+    assert can(_user(admin=True), SystemAction.MANAGE_TEAMS)
+    assert not can(_user(), SystemAction.MANAGE_TEAMS)

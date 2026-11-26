@@ -46,6 +46,11 @@
 
 <section>
   <h2>{{ _("Users") }}</h2>
+  <nav class="view-switch" aria-label="{{ _('Show') }}">
+    <a href="/admin/gebruikers"{% if not without_team %} aria-current="page"{% endif %}>{{ _("All accounts") }}</a>
+    <a href="/admin/gebruikers?toon=zonder-team"{% if without_team %} aria-current="page"{% endif %}>{{ _("Without education team") }}</a>
+  </nav>
+  {% if users %}
   <div class="table-wrap">
   <table>
     <thead>
@@ -53,6 +58,7 @@
         <th scope="col">{{ _("Name") }}</th>
         <th scope="col">{{ _("E-mail address") }}</th>
         <th scope="col">{{ _("Role") }}</th>
+        <th scope="col">{{ _("Education teams") }}</th>
         <th scope="col">{{ _("Status") }}</th>
         <th scope="col">{{ _("Two-step") }}</th>
         <th scope="col">{{ _("Last login") }}</th>
@@ -66,6 +72,9 @@
         <td>{{ user.email }}</td>
         <td>
           {% if user.is_local_admin %}{{ _("Local admin") }}{% elif user.is_admin %}{{ _("Admin") }}{% else %}{{ _("Teacher") }}{% endif %}
+        </td>
+        <td>
+          {% for m in memberships.get(user.id, []) %}<a href="/admin/onderwijsteams/{{ m.team_id }}">{{ m.name }}</a>{% if m.is_contact %} ({{ _("team contact") }}){% endif %}{% if not loop.last %}, {% endif %}{% else %}<span class="muted">{{ _("None") }}</span>{% endfor %}
         </td>
         <td>
           {% if user.is_active %}<span class="badge badge-success"><span aria-hidden="true">✓</span> {{ _("Active") }}</span>
@@ -112,5 +121,8 @@
     </tbody>
   </table>
   </div>
+  {% else %}
+  <p class="muted">{{ _("Every account is in an education team.") }}</p>
+  {% endif %}
 </section>
 {% endblock %}

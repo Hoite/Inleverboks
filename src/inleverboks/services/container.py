@@ -26,6 +26,7 @@ from inleverboks.services.review import ReviewService
 from inleverboks.services.student_flow import StudentFlowService
 from inleverboks.services.submissions import SubmissionService
 from inleverboks.services.system_settings import SettingsService
+from inleverboks.services.teams import TeamService
 from inleverboks.services.totp import TotpService
 from inleverboks.services.users import UserService
 from inleverboks.services.whitelist import WhitelistService
@@ -53,6 +54,7 @@ class Services:
     maintenance: MaintenanceService
     branding: BrandingService
     qualifications: QualificationService
+    teams: TeamService
     mailer: Mailer = field(default_factory=NullMailer)
     scanner: FileScanner = field(default_factory=NoopScanner)
     # Rate-limit delays; tests replace this with a no-op.
@@ -120,4 +122,5 @@ def build_services(
         maintenance=MaintenanceService(clock=clock, audit=audit, storage=storage, flow=flow),
         branding=BrandingService(clock, audit, storage),
         qualifications=QualificationService(clock, audit),
+        teams=TeamService(clock, audit, auth),
     )

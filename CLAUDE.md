@@ -150,6 +150,11 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   `db.get` plus een eigen check. Admins zien alle sjablonen (`?toon=alle`, B61) maar beheren
   persoonlijke sjablonen van anderen niet. De presentatieteller telt studenten met een actieve of
   ongeldige inlevering (`handed_in_count`, B62).
+- **Onderwijsteams** (PLAN B63–B69, §9): `services/teams.py` en `web/routes/teams.py`
+  (`/admin/onderwijsteams` en `/examens/teams/{id}`). Rechten via `policy.TEAM_MATRIX` met een
+  `TeamContext` (`services.teams.context(db, user)`); de TCP-rol is `TeamMember.is_contact`.
+  `team_id` staat op klassenlijsten, sjablonen en examens (RESTRICT; NULL = nog niet
+  toegewezen). Een TCP moet tweestaps gebruiken (`AuthService.totp_required`).
 - **Toegankelijkheid:** `tests/integration/test_accessibility.py` loopt alle paginatypen af
   (taal, één `h1`, labels, alt, knopnamen). Voeg een nieuwe pagina daar aan toe.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of

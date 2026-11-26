@@ -74,6 +74,10 @@ class Exam(Base):
     source_template_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("exam_template.id", ondelete="SET NULL"), index=True
     )
+    # The education team of the exam (PLAN B67); NULL when the owner has no team.
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("team.id", ondelete="RESTRICT"), index=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime)
@@ -107,6 +111,9 @@ class ExamTemplate(Base):
     """Personal reusable exam configuration (no times, slug, code or submissions)."""
 
     __tablename__ = "exam_template"
+    __table_args__ = (
+        CheckConstraint("NOT (shared AND team_id IS NOT NULL)", name="shared_or_team"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=new_id)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), index=True)
@@ -119,6 +126,10 @@ class ExamTemplate(Base):
         ForeignKey("qualification.id", ondelete="SET NULL"), index=True
     )
     core_task_code: Mapped[str | None] = mapped_column(String(20))
+    # A team template (PLAN B66). NULL: personal, or a shared one not yet assigned (B69).
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("team.id", ondelete="RESTRICT"), index=True
+    )
 
     qualification: Mapped[Qualification | None] = relationship()
 
@@ -179,6 +190,10 @@ class ClassList(Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_user.id"), index=True)
     name: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    # The education team of the list (PLAN B65); NULL: not yet assigned (B69).
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("team.id", ondelete="RESTRICT"), index=True
+    )
 
     entries: Mapped[list[ClassListEntry]] = relationship(cascade="all, delete-orphan")
 

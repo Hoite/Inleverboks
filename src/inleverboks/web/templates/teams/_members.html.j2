@@ -1,0 +1,47 @@
+{#- The member table of a team. Expects: team, members, csrf; ``member_actions`` is
+    "admin" (TCP toggle, remove anyone) or "contact" (remove members who are no TCP). -#}
+{% if members %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th scope="col">{{ _("Name") }}</th>
+      <th scope="col">{{ _("E-mail address") }}</th>
+      <th scope="col">{{ _("Role in the team") }}</th>
+      {% if member_actions %}<th scope="col"><span class="visually-hidden">{{ _("Actions") }}</span></th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for m in members %}
+    <tr>
+      <td>{{ m.user.name }}{% if not m.user.is_active %} <span class="badge badge-neutral">{{ _("Deactivated") }}</span>{% endif %}</td>
+      <td>{{ m.user.email }}</td>
+      <td>{{ _("Team contact") if m.is_contact else _("Member") }}</td>
+      {% if member_actions %}
+      <td class="actions">
+        {% if member_actions == "admin" %}
+        <form method="post" action="/admin/onderwijsteams/{{ team.id }}/leden/{{ m.user_id }}/tcp" class="inline-form">
+          {{ csrf() }}
+          {% if m.is_contact %}
+          <button type="submit" class="button button-small button-secondary">{{ _("Remove team contact role") }}<span class="visually-hidden"> {{ m.user.name }}</span></button>
+          {% else %}
+          <input type="hidden" name="contact" value="true">
+          <button type="submit" class="button button-small button-secondary">{{ _("Make team contact") }}<span class="visually-hidden"> {{ m.user.name }}</span></button>
+          {% endif %}
+        </form>
+        {% endif %}
+        {% if member_actions == "admin" or not m.is_contact %}
+        <form method="post" action="{{ member_base }}/{{ m.user_id }}/verwijderen" class="inline-form">
+          {{ csrf() }}<button type="submit" class="button button-small button-secondary">{{ _("Remove from team") }}<span class="visually-hidden"> {{ m.user.name }}</span></button>
+        </form>
+        {% endif %}
+      </td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">{{ _("The team has no members yet.") }}</p>
+{% endif %}

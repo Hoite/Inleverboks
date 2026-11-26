@@ -1,0 +1,43 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ team.name }} · {{ app_name }}{% endblock %}
+{% block head_extra %}{% if may_manage %}<script type="module" src="{{ asset('js/combobox.js') }}"></script>{% endif %}{% endblock %}
+{% block content %}
+<p class="breadcrumb"><a href="/account">{{ _("Account") }}</a></p>
+<h1>{{ team.name }}</h1>
+{% if ok == "member_added" %}{{ ok_box(_("The member has been added.")) }}{% endif %}
+{% if ok == "member_removed" %}{{ ok_box(_("The member has been removed from the team.")) }}{% endif %}
+{{ errors_box(errors) }}
+{% if team.description %}<p>{{ team.description }}</p>{% endif %}
+
+<section class="card">
+  <h2>{{ _("Crebos") }}</h2>
+  {% if team.crebos %}
+  <ul class="plain-list">
+    {% for row in team.crebos %}<li>{{ row.crebo }} {{ crebo_names.get(row.crebo, "") }}</li>{% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">{{ _("No crebos linked yet.") }}</p>
+  {% endif %}
+</section>
+
+<section class="card" id="leden">
+  <h2>{{ _("Members") }}</h2>
+  {% with member_actions="contact" if may_manage else "", member_base="/examens/teams/" ~ team.id ~ "/leden" %}{% include "teams/_members.html.j2" %}{% endwith %}
+  {% if may_manage %}
+  {% if candidates %}
+  <form method="post" action="/examens/teams/{{ team.id }}/leden" class="row-form top-gap">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="member-user">{{ _("Add an account") }}</label>
+      <select id="member-user" name="user_id" data-combobox data-config="{{ combobox_config() }}">
+        {% for u in candidates %}<option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Add") }}</button>
+  </form>
+  {% endif %}
+  <p class="hint">{{ _("You can add existing accounts. An admin invites new colleagues and appoints team contacts.") }}</p>
+  {% endif %}
+</section>
+{% endblock %}

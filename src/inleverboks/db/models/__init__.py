@@ -27,6 +27,7 @@ from inleverboks.db.models.system import (
     Setting,
     WhitelistEntry,
 )
+from inleverboks.db.models.teams import Team, TeamCrebo, TeamMember
 from inleverboks.db.models.users import (
     Invite,
     PasswordReset,
@@ -60,6 +61,9 @@ __all__ = [
     "Setting",
     "Submission",
     "SubmissionFile",
+    "Team",
+    "TeamCrebo",
+    "TeamMember",
     "TemplateFile",
     "User",
     "UserSession",
