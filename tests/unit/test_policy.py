@@ -14,6 +14,7 @@ from inleverboks.policy import (
     EXAM_MATRIX,
     TEAM_MATRIX,
     ClassListAction,
+    ClassListRef,
     ExamAction,
     ExamRef,
     SystemAction,
@@ -115,15 +116,23 @@ def test_system_actions(people: dict[str, User]) -> None:
     assert not can(_user(admin=True, active=False), SystemAction.MANAGE_USERS)
 
 
-# Class lists (PLAN B60) --------------------------------------------------------------
+# Class lists (PLAN B65, B69) ---------------------------------------------------------
 
 C = ClassListAction
 
-# action: (owner, other teacher, admin on someone else's list)
-CLASS_LIST_EXPECTED: dict[ClassListAction, tuple[bool, bool, bool]] = {
+# Team list. action: (team contact, member, teacher outside the team, admin outside)
+TEAM_LIST_EXPECTED: dict[ClassListAction, tuple[bool, bool, bool, bool]] = {
+    C.VIEW: (True, True, False, True),
+    C.USE: (True, True, False, True),
+    C.RENAME: (True, False, False, True),
+    C.REPLACE: (True, False, False, True),
+    C.DELETE: (True, False, False, True),
+}
+
+# List without team (B69, B60 still applies). action: (owner, other teacher, admin)
+UNASSIGNED_LIST_EXPECTED: dict[ClassListAction, tuple[bool, bool, bool]] = {
     C.VIEW: (True, True, True),
     C.USE: (True, True, True),
-    C.COPY: (True, True, True),
     C.RENAME: (True, False, True),
     C.REPLACE: (True, False, True),
     C.DELETE: (True, False, True),
@@ -131,18 +140,39 @@ CLASS_LIST_EXPECTED: dict[ClassListAction, tuple[bool, bool, bool]] = {
 
 
 def test_class_list_matrix_covers_every_action() -> None:
-    assert set(CLASS_LIST_EXPECTED) == set(ClassListAction) == set(CLASS_LIST_MATRIX)
+    assert set(TEAM_LIST_EXPECTED) == set(ClassListAction) == set(CLASS_LIST_MATRIX)
+    assert set(UNASSIGNED_LIST_EXPECTED) == set(ClassListAction)
 
 
 @pytest.mark.parametrize("action", list(ClassListAction))
-def test_class_list_matrix(action: ClassListAction, people: dict[str, User]) -> None:
-    owner, other, admin = CLASS_LIST_EXPECTED[action]
-    owner_id = people[OWNER].id
-    assert can_class_list(people[OWNER], action, owner_id) is owner
-    assert can_class_list(people[OTHER], action, owner_id) is other
-    assert can_class_list(people[ADMIN], action, owner_id) is admin
-    assert not can_class_list(None, action, owner_id)
-    assert not can_class_list(_user(active=False), action, owner_id)
+def test_team_class_list_matrix(action: ClassListAction, people: dict[str, User]) -> None:
+    team = uuid.uuid4()
+    ref = ClassListRef(owner_id=people[OWNER].id, team_id=team)
+    contact = TeamContext(member_of=frozenset({team}), contact_of=frozenset({team}))
+    member = TeamContext(member_of=frozenset({team}))
+    # the creator has no rights of his own on a team list
+    outsider = TeamContext(member_of=frozenset({uuid.uuid4()}), contact_of=frozenset())
+    got = (
+        can_class_list(people[REVIEWER], contact, action, ref),
+        can_class_list(people[OTHER], member, action, ref),
+        can_class_list(people[OWNER], outsider, action, ref),
+        can_class_list(people[ADMIN], TeamContext(), action, ref),
+    )
+    assert got == TEAM_LIST_EXPECTED[action]
+    assert not can_class_list(None, contact, action, ref)
+    assert not can_class_list(_user(active=False), contact, action, ref)
+
+
+@pytest.mark.parametrize("action", list(ClassListAction))
+def test_unassigned_class_list_matrix(action: ClassListAction, people: dict[str, User]) -> None:
+    ref = ClassListRef(owner_id=people[OWNER].id, team_id=None)
+    contact = TeamContext(member_of=frozenset({uuid.uuid4()}), contact_of=frozenset())
+    got = (
+        can_class_list(people[OWNER], TeamContext(), action, ref),
+        can_class_list(people[OTHER], contact, action, ref),
+        can_class_list(people[ADMIN], TeamContext(), action, ref),
+    )
+    assert got == UNASSIGNED_LIST_EXPECTED[action]
 
 
 # Education teams (PLAN B63) --------------------------------------------------------
@@ -158,6 +188,7 @@ TEAM_EXPECTED: dict[TeamAction, tuple[bool, bool, bool, bool]] = {
     T.EDIT: (True, False, False, False),
     T.MANAGE_CREBOS: (True, False, False, False),
     T.DELETE: (True, False, False, False),
+    T.MANAGE_CLASS_LISTS: (True, True, False, False),
 }
 
 

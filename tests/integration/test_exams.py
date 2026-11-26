@@ -631,10 +631,24 @@ CSV = (
 )
 
 
+@pytest.fixture
+def tcp_client(client: TestClient, db: Session, clock: FrozenClock, services: Services,
+               teacher: User) -> TestClient:  # fmt: skip
+    """The teacher as team contact of a team: only they import class lists (PLAN B65)."""
+    admin = create_user(db, clock, "admin@school.nl", name="Admin", admin=True)
+    team = services.teams.create(db, admin, "ICT", "", ip=None)
+    secret = enable_totp(db, services, teacher)
+    services.teams.add_member(db, admin, team, teacher.id, contact=True, ip=None)
+    login(client, secret=secret, clock=clock)
+    return client
+
+
 def _upload_csv(client: TestClient, data: bytes, name: str = "ICT-2A") -> Any:
+    form = client.get("/examens/klassenlijsten/nieuw").text
+    team_id = extract(r'name="team_id" value="([^"]+)"', form)  # one team: a hidden field
     return client.post(
         "/examens/klassenlijsten/nieuw",
-        data={"csrf_token": _csrf(client), "name": name},
+        data={"csrf_token": _csrf(client), "name": name, "team_id": team_id},
         files={"file": ("lijst.csv", data, "text/csv")},
         follow_redirects=False,
     )
@@ -645,6 +659,7 @@ def _mapping_form(page: str, action: str, **overrides: str) -> dict[str, str]:
         "csv_b64": extract(r'name="csv_b64" value="([^"]+)"', page),
         "delimiter": extract(r'name="delimiter" value="([^"]+)"', page),
         "name": extract(r'id="name" name="name" [^>]*value="([^"]*)"', page),
+        "team_id": extract(r'name="team_id" value="([^"]*)"', page),
         "has_header": "true",
         "map_student_number": "0", "map_first_name": "1", "map_infix": "2",
         "map_last_name": "3", "map_class_name": "4",
@@ -659,72 +674,80 @@ def _mapping_form(page: str, action: str, **overrides: str) -> dict[str, str]:
     [CSV.encode("utf-8"), b"\xef\xbb\xbf" + CSV.encode("utf-8"), CSV.encode("cp1252")],
     ids=["utf8", "utf8-bom", "cp1252"],
 )
-def test_class_list_import(tclient: TestClient, db: Session, encoded: bytes) -> None:
-    page = _upload_csv(tclient, encoded)
+def test_class_list_import(tcp_client: TestClient, db: Session, encoded: bytes) -> None:
+    page = _upload_csv(tcp_client, encoded)
     assert page.status_code == 200
     # Columns are recognised from the header.
     assert '<option value="0" selected>Studentnummer</option>' in page.text
-    checked = post(tclient, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "check"))
+    checked = post(
+        tcp_client, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "check")
+    )
     assert "2 geldige rijen" in checked.text
     assert "Ångström" in checked.text
-    saved = post(tclient, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save"))
+    saved = post(tcp_client, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save"))
     assert saved.status_code == 303
-    detail = tclient.get(saved.headers["location"])
+    detail = tcp_client.get(saved.headers["location"])
     assert "Zoë" in detail.text
     assert "Ångström" in detail.text
     assert events(db, "class_list.imported")[0].details["rows"] == 2
 
 
-def test_class_list_import_comma_and_errors(tclient: TestClient, db: Session) -> None:
+def test_class_list_import_comma_and_errors(tcp_client: TestClient, db: Session) -> None:
     data = b"nr,voornaam,achternaam\n123456,Jan,Vries\n123456,Piet,Jansen\n"
-    page = _upload_csv(tclient, data)
+    page = _upload_csv(tcp_client, data)
     assert 'name="delimiter" value=","' in page.text
     mapping = {"map_student_number": "0", "map_first_name": "1", "map_infix": "",
                "map_last_name": "2", "map_class_name": ""}  # fmt: skip
     checked = post(
-        tclient, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "check", **mapping)
+        tcp_client,
+        "/examens/klassenlijsten/importeren",
+        _mapping_form(page.text, "check", **mapping),
     )
     assert "Dubbel studentnummer" in checked.text
     assert "Klassenlijst opslaan" not in checked.text
     saved = post(
-        tclient, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save", **mapping)
+        tcp_client,
+        "/examens/klassenlijsten/importeren",
+        _mapping_form(page.text, "save", **mapping),
     )
     assert saved.status_code == 400
     assert "Herstel eerst de fouten" in saved.text
 
 
-def test_roster_snapshot_and_privacy(tclient: TestClient, db: Session, clock: FrozenClock) -> None:
-    page = _upload_csv(tclient, CSV.encode())
-    saved = post(tclient, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save"))
+def test_roster_snapshot_and_privacy(
+    tcp_client: TestClient, db: Session, clock: FrozenClock
+) -> None:
+    page = _upload_csv(tcp_client, CSV.encode())
+    saved = post(tcp_client, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save"))
     class_list_id = saved.headers["location"].rsplit("/", 1)[1]
-    exam = create_exam(tclient, class_list_id=class_list_id)
+    exam = create_exam(tcp_client, class_list_id=class_list_id)
     roster = list(db.scalars(select(ExamRosterEntry).where(ExamRosterEntry.exam_id == exam.id)))
     assert {r.student_number for r in roster} == {"123456", "123457"}
 
     # The library list can be deleted; the exam keeps its snapshot.
-    post(tclient, f"/examens/klassenlijsten/{class_list_id}/verwijderen")
+    post(tcp_client, f"/examens/klassenlijsten/{class_list_id}/verwijderen")
     db.expire_all()
     assert db.scalars(select(ExamRosterEntry).where(ExamRosterEntry.exam_id == exam.id)).all()
 
     # Presentation mode shows the counter but never names.
-    present = tclient.get(f"/examens/{exam.id}/presentatie")
+    present = tcp_client.get(f"/examens/{exam.id}/presentatie")
     assert "0 van 2 ingeleverd" in present.text
     assert "Vries" not in present.text
-    counter = tclient.get(f"/examens/{exam.id}/presentatie/teller")
+    counter = tcp_client.get(f"/examens/{exam.id}/presentatie/teller")
     assert "0 van 2 ingeleverd" in counter.text
 
-    other = other_client(tclient, db, clock, "ander@school.nl")
+    other = other_client(tcp_client, db, clock, "ander@school.nl")
     assert other.get(f"/examens/klassenlijsten/{class_list_id}").status_code == 404
 
 
-def test_set_roster_on_existing_exam(tclient: TestClient, db: Session) -> None:
-    exam = create_exam(tclient)
-    page = _upload_csv(tclient, CSV.encode())
-    saved = post(tclient, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save"))
+def test_set_roster_on_existing_exam(tcp_client: TestClient, db: Session) -> None:
+    exam = create_exam(tcp_client)
+    page = _upload_csv(tcp_client, CSV.encode())
+    saved = post(tcp_client, "/examens/klassenlijsten/importeren", _mapping_form(page.text, "save"))
     class_list_id = saved.headers["location"].rsplit("/", 1)[1]
-    post(tclient, f"/examens/{exam.id}/klassenlijst", {"class_list_id": class_list_id})
+    post(tcp_client, f"/examens/{exam.id}/klassenlijst", {"class_list_id": class_list_id})
     assert events(db, "exam.roster_set", str(exam.id))[-1].details["entries"] == 2
-    post(tclient, f"/examens/{exam.id}/klassenlijst", {"class_list_id": ""})
+    post(tcp_client, f"/examens/{exam.id}/klassenlijst", {"class_list_id": ""})
     db.expire_all()
     assert not db.scalars(select(ExamRosterEntry)).all()
 

@@ -4,6 +4,7 @@ team contacts, two-step verification for team contacts and the users overview.""
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -21,6 +22,7 @@ from inleverboks.db.models import (
     User,
     UserSession,
 )
+from inleverboks.services import branding
 from inleverboks.services.container import Services
 from inleverboks.services.errors import DomainError, PermissionDeniedError
 from tests.conftest import create_user, enable_totp, login, post
@@ -320,3 +322,12 @@ def test_users_page_shows_teams_and_accounts_without_team(
     filtered = admin_client.get("/admin/gebruikers?toon=zonder-team").text
     assert "Zonder Team" in filtered
     assert "Lid van ICT" not in filtered
+
+
+def test_team_contact_colours_match_the_contrast_check() -> None:
+    css = (Path(__file__).parents[2] / "src/inleverboks/web/static/css/app.css").read_text()
+    for name, value in (("tcp", branding.TCP), ("tcp-strong", branding.TCP_STRONG),
+                        ("tcp-bg", branding.TCP_BG), ("tcp-text", branding.TCP_TEXT)):  # fmt: skip
+        assert f"--color-{name}: {value};" in css
+    keys = {pair.key for pair in branding.CONTRAST_PAIRS}
+    assert {"tcp_button", "tcp_button_hover", "tcp_badge"} <= keys

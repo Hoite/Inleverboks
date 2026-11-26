@@ -22,6 +22,10 @@
   --color-admin: #7a5200;
   --color-admin-bg: #f6c445;
   --color-admin-text: #2b2100;
+  --color-tcp: #0b5e66;
+  --color-tcp-strong: #08454b;
+  --color-tcp-bg: #dcf1f3;
+  --color-tcp-text: #06353a;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -177,6 +181,13 @@ a:hover { color: var(--color-primary-strong); }
 .tabs a.admin-tab, .view-switch a.admin-tab { color: var(--color-admin); }
 .tabs a.admin-tab[aria-current="page"] { border-bottom-color: var(--color-admin); }
 .view-switch a.admin-tab { border-color: var(--color-admin); }
+
+/* Team-contact (TCP) functions: a group icon and a fixed teal colour, the same in every
+   house style (see CONTRAST_PAIRS). */
+.tcp-mark { flex: none; vertical-align: -.15em; margin-right: .3rem; }
+.button.button-tcp { background: var(--color-tcp); border-color: var(--color-tcp); color: #fff; }
+.button.button-tcp:hover { background: var(--color-tcp-strong); border-color: var(--color-tcp-strong); color: #fff; }
+.badge-tcp { color: var(--color-tcp-text); background: var(--color-tcp-bg); }
 
 /* My/all switch above a list (server-side filter, no JS); same colours as .tabs. */
 .view-switch { display: flex; flex-wrap: wrap; gap: .25rem; margin: 0 0 1rem; }

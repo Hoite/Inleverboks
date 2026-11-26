@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-26 16:21+0100\n"
+"POT-Creation-Date: 2026-11-26 16:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -352,6 +352,15 @@ msgstr "Admin-tabbladen op de achtergrond"
 msgid "Admin tab on the light tint (current tab)"
 msgstr "Admin-tabblad op de lichte tint (huidig tabblad)"
 
+msgid "Team-contact buttons (fixed colours)"
+msgstr "Knoppen voor teamcontactpersonen (vaste kleuren)"
+
+msgid "Team-contact buttons on hover"
+msgstr "Knoppen voor teamcontactpersonen bij aanwijzen"
+
+msgid "Team-contact label"
+msgstr "Label teamcontactpersoon"
+
 msgid "Primary colour"
 msgstr "Hoofdkleur"
 
@@ -396,6 +405,9 @@ msgstr "Vul een naam in voor de klassenlijst."
 
 msgid "Fix the errors in the file first."
 msgstr "Herstel eerst de fouten in het bestand."
+
+msgid "Choose the education team of the class list."
+msgstr "Kies het onderwijsteam van de klassenlijst."
 
 msgid "Student number missing"
 msgstr "Studentnummer ontbreekt"
@@ -1665,23 +1677,20 @@ msgstr "Klassenlijsten"
 msgid "All exams"
 msgstr "Alle examens"
 
-msgid "Owner"
-msgstr "Eigenaar"
+msgid "Education team"
+msgstr "Onderwijsteam"
 
-msgid "You"
-msgstr "Jij"
+msgid "not assigned to a team"
+msgstr "nog niet aan een team toegewezen"
 
-msgid "Imported"
-msgstr "Geïmporteerd"
+msgid "Imported by"
+msgstr "Geïmporteerd door"
 
-msgid "Copy to my lists"
-msgstr "Kopiëren naar mijn lijsten"
+msgid "you"
+msgstr "jou"
 
 msgid "Replace list"
 msgstr "Lijst vervangen"
-
-msgid "This is your own copy of the class list. You can change it."
-msgstr "Dit is je eigen kopie van de klassenlijst. Die kun je aanpassen."
 
 msgid "The name has been changed."
 msgstr "De naam is gewijzigd."
@@ -1760,26 +1769,44 @@ msgid "Separated by ; or , in UTF-8 or Windows-1252. You choose the columns in t
 msgstr "Gescheiden door ; of , in UTF-8 of Windows-1252. In de volgende stap kies je de kolommen."
 
 msgid ""
-"Every teacher can view and use every class list. Only the owner and admins can change or remove "
-"one."
+"Class lists belong to an education team. The members of the team use them; its team contacts "
+"import, replace and remove them."
 msgstr ""
-"Elke docent kan alle klassenlijsten bekijken en gebruiken. Alleen de eigenaar en admins kunnen "
-"een lijst wijzigen of verwijderen."
+"Klassenlijsten horen bij een onderwijsteam. De leden van het team gebruiken ze; de "
+"teamcontactpersonen importeren, vervangen en verwijderen ze."
 
-msgid "Show class lists"
-msgstr "Klassenlijsten tonen"
+msgid "Not assigned to a team yet"
+msgstr "Nog niet aan een team toegewezen"
 
-msgid "My lists"
-msgstr "Mijn lijsten"
+#, python-format
+msgid "for %(team)s"
+msgstr "voor %(team)s"
 
-msgid "All lists"
-msgstr "Alle lijsten"
+msgid ""
+"These lists date from before the education teams. Everyone can use them until an admin assigns "
+"them to a team."
+msgstr ""
+"Deze lijsten zijn van vóór de onderwijsteams. Iedereen kan ze gebruiken totdat een admin ze aan "
+"een team toewijst."
 
-msgid "No class lists yet."
-msgstr "Nog geen klassenlijsten."
+msgid "Imported"
+msgstr "Geïmporteerd"
 
-msgid "You have no class lists yet. Import one, or copy one from all lists."
-msgstr "Je hebt nog geen klassenlijsten. Importeer er een, of kopieer er een uit alle lijsten."
+msgid "Owner"
+msgstr "Eigenaar"
+
+msgid "You"
+msgstr "Jij"
+
+msgid "This team has no class lists yet."
+msgstr "Dit team heeft nog geen klassenlijsten."
+
+msgid ""
+"You are not in an education team yet, so there are no class lists for you. Without a class list "
+"every student can hand in."
+msgstr ""
+"Je zit nog niet in een onderwijsteam, dus er zijn geen klassenlijsten voor jou. Zonder "
+"klassenlijst kan elke student inleveren."
 
 msgid "New exam"
 msgstr "Nieuw examen"

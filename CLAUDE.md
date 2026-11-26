@@ -144,10 +144,14 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   `<select>` en laad `js/combobox.js`. Het script geeft het id van de select aan het
   zoekveld (zodat `<label for>` blijft kloppen); zoek de select in andere scripts dus op
   `name`, niet op id.
-- **Klassenlijsten** zijn gedeeld (PLAN B60): iedereen bekijkt, gebruikt en kopieert ze; alleen
-  de eigenaar en admins hernoemen, vervangen en verwijderen (`policy.CLASS_LIST_MATRIX`). Haal
-  een lijst altijd op met `ClassListService.get(db, user, id, ClassListAction.X)`, nooit met
-  `db.get` plus een eigen check. Admins zien alle sjablonen (`?toon=alle`, B61) maar beheren
+- **Klassenlijsten** horen bij een onderwijsteam (PLAN B65): de leden bekijken en gebruiken ze,
+  de TCP's en admins importeren, hernoemen, vervangen en verwijderen ze
+  (`policy.CLASS_LIST_MATRIX` met `ClassListRef` en `TeamContext`). Lijsten zonder team volgen
+  B60 tot ze zijn toegewezen (B69). Haal een lijst altijd op met
+  `ClassListService.get(db, user, id, ClassListAction.X)`, nooit met `db.get` plus een eigen
+  check; keuzelijsten komen uit `ClassListService.usable`. TCP-functies markeer je met
+  `{% include "_tcp_mark.html.j2" %}` en `button-tcp`/`badge-tcp` (vaste kleuren `TCP*` in
+  `services/branding.py`). Admins zien alle sjablonen (`?toon=alle`, B61) maar beheren
   persoonlijke sjablonen van anderen niet. De presentatieteller telt studenten met een actieve of
   ongeldige inlevering (`handed_in_count`, B62).
 - **Onderwijsteams** (PLAN B63–B69, §9): `services/teams.py` en `web/routes/teams.py`

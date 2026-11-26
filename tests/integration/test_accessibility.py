@@ -134,8 +134,13 @@ def test_teacher_and_admin_pages(
     crebo_template = services.exams.templates_from_qualification(
         db, owner, qualification, ["B1-K1"], shared=False, ip=None
     )[0]
+    admin = create_user(db, clock, "admin@school.nl", admin=True)
+    secret = enable_totp(db, services, admin)
+    team = services.teams.create(db, admin, "ICT", "Applicatieontwikkeling", ip=None)
+    services.teams.add_member(db, admin, team, owner.id, ip=None)
+    services.teams.add_crebo(db, admin, team, "27016", ip=None)
     class_list = services.classlists.save(
-        db, owner, "ICT-2A", ImportResult(entries=[ParsedEntry(
+        db, admin, team.id, "ICT-2A", ImportResult(entries=[ParsedEntry(
             row_number=2, student_number="123456", first_name="Jan", infix="de",
             last_name="Vries", class_name="ICT-2A",
         )]), ip=None,
@@ -146,7 +151,7 @@ def test_teacher_and_admin_pages(
         f"/examens/{exam.id}/bewerken", f"/examens/{exam.id}/auditlog",
         f"/examens/{exam.id}/geavanceerd",
         f"/examens/{exam.id}/studenten/123456",
-        "/examens/klassenlijsten", "/examens/klassenlijsten/nieuw", "/account",
+        "/examens/klassenlijsten", "/account",
         "/account/wachtwoord", "/account/tweestaps", "/examens/sjablonen/nieuw",
         f"/examens/sjablonen/{template.id}", f"/examens/sjablonen/{template.id}/bewerken",
         f"/examens/nieuw?sjabloon={template.id}",
@@ -155,15 +160,10 @@ def test_teacher_and_admin_pages(
         f"/examens/nieuw?sjabloon={crebo_template.id}&wp=B1-K1-W3",
         f"/examens/{exam.id}/herkansing",
         "/examens/gedeeld", "/examens/klassenlijsten?toon=alle",
-        f"/examens/klassenlijsten/{class_list.id}", f"/examens/klassenlijsten/{class_list.id}/vervangen",
+        f"/examens/klassenlijsten/{class_list.id}",
     ]  # fmt: skip
     problems = [p for url in urls for p in audit(teacher, url)]
 
-    admin = create_user(db, clock, "admin@school.nl", admin=True)
-    secret = enable_totp(db, services, admin)
-    team = services.teams.create(db, admin, "ICT", "Applicatieontwikkeling", ip=None)
-    services.teams.add_member(db, admin, team, owner.id, ip=None)
-    services.teams.add_crebo(db, admin, team, "27016", ip=None)
     problems += audit(teacher, f"/examens/teams/{team.id}")
     ac = TestClient(client.app)
     login(ac, "admin@school.nl", secret=secret, clock=clock)
@@ -173,7 +173,8 @@ def test_teacher_and_admin_pages(
         "/admin/ontvangstbewijs", f"/examens/{exam.id}/geavanceerd",
         f"/examens/alle?eigenaar={owner.id}", "/examens/sjablonen?toon=alle",
         f"/examens/sjablonen/{template.id}",  # another teacher's personal template
-        f"/examens/klassenlijsten/{class_list.id}",  # another teacher's class list
+        f"/examens/klassenlijsten/{class_list.id}", "/examens/klassenlijsten/nieuw",
+        f"/examens/klassenlijsten/{class_list.id}/vervangen",
         "/admin/onderwijsteams", f"/admin/onderwijsteams/{team.id}",
         "/admin/gebruikers?toon=zonder-team", f"/examens/teams/{team.id}",
     ]  # fmt: skip

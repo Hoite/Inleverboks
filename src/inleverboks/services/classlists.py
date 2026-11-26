@@ -1,4 +1,4 @@
-"""Class list import (CSV) and the shared library of class lists (PLAN B60)."""
+"""Class list import (CSV) and the class lists of the education teams (PLAN B65)."""
 
 from __future__ import annotations
 
@@ -12,10 +12,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import Clock
-from inleverboks.db.models import ClassList, ClassListEntry, User
-from inleverboks.policy import ClassListAction, can_class_list
+from inleverboks.db.models import ClassList, ClassListEntry, Team, User
+from inleverboks.policy import (
+    ClassListAction,
+    ClassListRef,
+    TeamAction,
+    TeamContext,
+    can_class_list,
+    can_team,
+)
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
+from inleverboks.services.teams import team_context
 
 MAX_CSV_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 2000
@@ -181,31 +189,89 @@ def _valid_name(name: str) -> str:
     return name
 
 
+def ref(class_list: ClassList) -> ClassListRef:
+    return ClassListRef(owner_id=class_list.owner_id, team_id=class_list.team_id)
+
+
+@dataclass(frozen=True)
+class LibrarySection:
+    """The lists of one team, or (``team`` None) the lists without a team (PLAN B69)."""
+
+    team: Team | None
+    class_lists: list[ClassList]
+    may_manage: bool  # create lists for this team
+
+
 class ClassListService:
-    """Every teacher sees and uses every class list; the owner and admins change them
-    (PLAN B60, ``policy.CLASS_LIST_MATRIX``)."""
+    """Class lists belong to an education team: its members see and use them, its team
+    contacts and admins change them (PLAN B65, ``policy.CLASS_LIST_MATRIX``). Lists without
+    a team keep the shared rules of B60 until an admin assigns them (B69)."""
 
     def __init__(self, clock: Clock, audit: AuditService) -> None:
         self.clock = clock
         self.audit = audit
 
-    def library(self, db: Session, user: User, *, everyone: bool = False) -> list[ClassList]:
-        """The user's own lists, or (``everyone``) all lists: own lists first, then by name."""
-        query = select(ClassList)
-        if not everyone:
-            query = query.where(ClassList.owner_id == user.id)
-        lists = list(db.scalars(query.order_by(ClassList.name, ClassList.created_at)))
-        return sorted(lists, key=lambda cl: cl.owner_id != user.id)
+    def library(self, db: Session, user: User) -> list[LibrarySection]:
+        """Per team the user is in (an admin: every team), then the unassigned lists."""
+        teams = team_context(db, user.id)
+        team_query = select(Team)
+        if not user.is_admin:
+            team_query = team_query.where(Team.id.in_(teams.member_of))
+        team_rows = sorted(db.scalars(team_query), key=lambda t: t.name.lower())
+        lists = self._visible(db, user, teams)
+        sections = [
+            LibrarySection(
+                team=team,
+                class_lists=[cl for cl in lists if cl.team_id == team.id],
+                may_manage=can_team(user, teams, TeamAction.MANAGE_CLASS_LISTS, team.id),
+            )
+            for team in team_rows
+        ]
+        unassigned = [cl for cl in lists if cl.team_id is None]
+        if unassigned:
+            sections.append(LibrarySection(None, unassigned, False))
+        return sections
+
+    def usable(self, db: Session, user: User) -> list[ClassList]:
+        """The lists the user may put into an exam."""
+        teams = team_context(db, user.id)
+        return [
+            cl
+            for cl in self._visible(db, user, teams)
+            if can_class_list(user, teams, ClassListAction.USE, ref(cl))
+        ]
+
+    def creatable_teams(self, db: Session, user: User) -> list[Team]:
+        """The teams the user may create class lists for (team contact or admin)."""
+        teams = team_context(db, user.id)
+        return [
+            team
+            for team in sorted(db.scalars(select(Team)), key=lambda t: t.name.lower())
+            if can_team(user, teams, TeamAction.MANAGE_CLASS_LISTS, team.id)
+        ]
+
+    def _visible(self, db: Session, user: User, teams: TeamContext) -> list[ClassList]:
+        query = select(ClassList).order_by(ClassList.name, ClassList.created_at)
+        return [
+            cl
+            for cl in db.scalars(query)
+            if can_class_list(user, teams, ClassListAction.VIEW, ref(cl))
+        ]
+
+    def permissions(self, db: Session, user: User, class_list: ClassList) -> dict[str, bool]:
+        teams = team_context(db, user.id)
+        return {a.value: can_class_list(user, teams, a, ref(class_list)) for a in ClassListAction}
 
     def get(
         self, db: Session, user: User, class_list_id: uuid.UUID, action: ClassListAction
     ) -> ClassList:
         class_list = db.get(ClassList, class_list_id)
+        teams = team_context(db, user.id)
         if class_list is None or not can_class_list(
-            user, ClassListAction.VIEW, class_list.owner_id
+            user, teams, ClassListAction.VIEW, ref(class_list)
         ):
             raise NotFoundError("class_list_not_found")
-        if not can_class_list(user, action, class_list.owner_id):
+        if not can_class_list(user, teams, action, ref(class_list)):
             raise PermissionDeniedError()
         return class_list
 
@@ -213,17 +279,26 @@ class ClassListService:
         return {
             "class_list_id": str(class_list.id),
             "owner_id": str(class_list.owner_id),
+            "team_id": str(class_list.team_id) if class_list.team_id else None,
             "name": class_list.name,
             **extra,
         }
 
     def save(
-        self, db: Session, owner: User, name: str, result: ImportResult, *, ip: str | None
-    ) -> ClassList:
+        self, db: Session, owner: User, team_id: uuid.UUID | None, name: str,
+        result: ImportResult, *, ip: str | None,
+    ) -> ClassList:  # fmt: skip
+        """A new list for a team; only its team contacts and admins create one (B65)."""
+        if team_id is None or db.get(Team, team_id) is None:
+            raise DomainError("class_list_team_required")
+        if not can_team(owner, team_context(db, owner.id), TeamAction.MANAGE_CLASS_LISTS, team_id):
+            raise PermissionDeniedError()
         name = _valid_name(name)
         if not result.ok:
             raise DomainError("class_list_has_errors")
-        class_list = ClassList(owner_id=owner.id, name=name, created_at=self.clock.now())
+        class_list = ClassList(
+            owner_id=owner.id, team_id=team_id, name=name, created_at=self.clock.now()
+        )
         class_list.entries = _entries(result)
         db.add(class_list)
         db.flush()
@@ -234,44 +309,13 @@ class ClassListService:
             ip=ip,
             details={
                 "class_list_id": str(class_list.id),
+                "team_id": str(team_id),
                 "name": name,
                 "rows": len(result.entries),
             },
         )
         db.commit()
         return class_list
-
-    def copy(
-        self, db: Session, user: User, class_list_id: uuid.UUID, *, ip: str | None
-    ) -> ClassList:
-        """A copy in the user's own lists, which they can then change."""
-        source = self.get(db, user, class_list_id, ClassListAction.COPY)
-        copy = ClassList(
-            owner_id=user.id, name=f"{source.name} (kopie)"[:200], created_at=self.clock.now()
-        )
-        copy.entries = [
-            ClassListEntry(
-                student_number=e.student_number, first_name=e.first_name, infix=e.infix,
-                last_name=e.last_name, class_name=e.class_name,
-            )
-            for e in source.entries
-        ]  # fmt: skip
-        db.add(copy)
-        db.flush()
-        self.audit.append(
-            db,
-            "class_list.copied",
-            actor=Actor.for_user(user),
-            ip=ip,
-            details={
-                "class_list_id": str(copy.id),
-                "source_class_list_id": str(source.id),
-                "source_owner_id": str(source.owner_id),
-                "rows": len(copy.entries),
-            },
-        )
-        db.commit()
-        return copy
 
     def rename(
         self, db: Session, user: User, class_list_id: uuid.UUID, name: str, *, ip: str | None

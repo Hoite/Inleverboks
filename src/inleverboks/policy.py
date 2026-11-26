@@ -97,52 +97,7 @@ def can_exam(user: User | None, action: ExamAction, exam: ExamRef) -> bool:
     return bool(exam_roles(user, exam) & EXAM_MATRIX[action])
 
 
-# Class lists (PLAN B60) ------------------------------------------------------------
-
-
-class ClassListRole(StrEnum):
-    ADMIN = "admin"  # admin looking at someone else's list
-    OWNER = "owner"
-    OTHER_TEACHER = "other_teacher"
-
-
-class ClassListAction(StrEnum):
-    VIEW = "view"  # library, detail page (names and student numbers)
-    USE = "use"  # snapshot into an exam
-    COPY = "copy"  # copy to one's own lists
-    RENAME = "rename"
-    REPLACE = "replace"  # import a new CSV over the entries
-    DELETE = "delete"
-
-
-_CA, _CO, _CT = ClassListRole.ADMIN, ClassListRole.OWNER, ClassListRole.OTHER_TEACHER
-
-CLASS_LIST_MATRIX: dict[ClassListAction, frozenset[ClassListRole]] = {
-    # PLAN B60: every teacher sees and uses every class list; only the owner and admins
-    # change or delete one.
-    ClassListAction.VIEW: frozenset({_CA, _CO, _CT}),
-    ClassListAction.USE: frozenset({_CA, _CO, _CT}),
-    ClassListAction.COPY: frozenset({_CA, _CO, _CT}),
-    ClassListAction.RENAME: frozenset({_CA, _CO}),
-    ClassListAction.REPLACE: frozenset({_CA, _CO}),
-    ClassListAction.DELETE: frozenset({_CA, _CO}),
-}
-
-
-def class_list_roles(user: User, owner_id: uuid.UUID) -> frozenset[ClassListRole]:
-    roles = {ClassListRole.OWNER if owner_id == user.id else ClassListRole.OTHER_TEACHER}
-    if user.is_admin:
-        roles.add(ClassListRole.ADMIN)
-    return frozenset(roles)
-
-
-def can_class_list(user: User | None, action: ClassListAction, owner_id: uuid.UUID) -> bool:
-    if user is None or not user.is_active:
-        return False
-    return bool(class_list_roles(user, owner_id) & CLASS_LIST_MATRIX[action])
-
-
-# Education teams (PLAN B63) ---------------------------------------------------------
+# Team context (PLAN B63) ------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -151,6 +106,78 @@ class TeamContext:
 
     member_of: frozenset[uuid.UUID] = frozenset()
     contact_of: frozenset[uuid.UUID] = frozenset()
+
+
+# Class lists (PLAN B65, B69) ---------------------------------------------------------
+
+
+class ClassListRole(StrEnum):
+    ADMIN = "admin"  # admin, for any list
+    CONTACT = "contact"  # team contact of the list's team
+    MEMBER = "member"  # member of the list's team
+    OUTSIDER = "outsider"  # a team list of a team the user is not in
+    # A list without team (from before B65, not yet assigned): B60 still applies.
+    UNASSIGNED_OWNER = "unassigned_owner"
+    UNASSIGNED_OTHER = "unassigned_other"
+
+
+class ClassListAction(StrEnum):
+    VIEW = "view"  # library, detail page (names and student numbers)
+    USE = "use"  # snapshot into an exam
+    RENAME = "rename"
+    REPLACE = "replace"  # import a new CSV over the entries
+    DELETE = "delete"
+
+
+_CA, _CC, _CM = ClassListRole.ADMIN, ClassListRole.CONTACT, ClassListRole.MEMBER
+_CUO, _CUT = ClassListRole.UNASSIGNED_OWNER, ClassListRole.UNASSIGNED_OTHER
+
+CLASS_LIST_MATRIX: dict[ClassListAction, frozenset[ClassListRole]] = {
+    # PLAN B65: the members of the team see and use its lists; its team contacts and
+    # admins change them. B69: lists without a team keep B60 until they are assigned.
+    ClassListAction.VIEW: frozenset({_CA, _CC, _CM, _CUO, _CUT}),
+    ClassListAction.USE: frozenset({_CA, _CC, _CM, _CUO, _CUT}),
+    ClassListAction.RENAME: frozenset({_CA, _CC, _CUO}),
+    ClassListAction.REPLACE: frozenset({_CA, _CC, _CUO}),
+    ClassListAction.DELETE: frozenset({_CA, _CC, _CUO}),
+}
+
+
+@dataclass(frozen=True)
+class ClassListRef:
+    """The minimum the policy needs to know about a class list."""
+
+    owner_id: uuid.UUID
+    team_id: uuid.UUID | None
+
+
+def class_list_roles(
+    user: User, teams: TeamContext, class_list: ClassListRef
+) -> frozenset[ClassListRole]:
+    roles: set[ClassListRole] = set()
+    if class_list.team_id is None:
+        owner = class_list.owner_id == user.id
+        roles.add(ClassListRole.UNASSIGNED_OWNER if owner else ClassListRole.UNASSIGNED_OTHER)
+    elif class_list.team_id in teams.contact_of:
+        roles.add(ClassListRole.CONTACT)
+    elif class_list.team_id in teams.member_of:
+        roles.add(ClassListRole.MEMBER)
+    else:
+        roles.add(ClassListRole.OUTSIDER)
+    if user.is_admin:
+        roles.add(ClassListRole.ADMIN)
+    return frozenset(roles)
+
+
+def can_class_list(
+    user: User | None, teams: TeamContext, action: ClassListAction, class_list: ClassListRef
+) -> bool:
+    if user is None or not user.is_active:
+        return False
+    return bool(class_list_roles(user, teams, class_list) & CLASS_LIST_MATRIX[action])
+
+
+# Education teams (PLAN B63) ---------------------------------------------------------
 
 
 class TeamRole(StrEnum):
@@ -168,6 +195,7 @@ class TeamAction(StrEnum):
     EDIT = "edit"  # name and description
     MANAGE_CREBOS = "manage_crebos"
     DELETE = "delete"  # only when empty: the service enforces that
+    MANAGE_CLASS_LISTS = "manage_class_lists"  # create lists for the team (B65)
 
 
 _TA, _TC, _TM, _TT = TeamRole.ADMIN, TeamRole.CONTACT, TeamRole.MEMBER, TeamRole.OTHER_TEACHER
@@ -180,6 +208,7 @@ TEAM_MATRIX: dict[TeamAction, frozenset[TeamRole]] = {
     TeamAction.EDIT: frozenset({_TA}),
     TeamAction.MANAGE_CREBOS: frozenset({_TA}),
     TeamAction.DELETE: frozenset({_TA}),
+    TeamAction.MANAGE_CLASS_LISTS: frozenset({_TA, _TC}),
 }
 
 

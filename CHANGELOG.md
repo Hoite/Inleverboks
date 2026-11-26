@@ -14,8 +14,16 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   verwijderen als het leeg is. Leden zien hun teams op de accountpagina; een TCP voegt
   daar bestaande accounts toe of haalt leden uit het team. Een TCP moet tweestapsverificatie
   gebruiken. De gebruikerspagina toont de teams per account en de weergave *Zonder
-  onderwijsteam*; de teamlijst markeert teams zonder TCP. Klassenlijsten, sjablonen en
-  examens volgen in de volgende stappen.
+  onderwijsteam*; de teamlijst markeert teams zonder TCP.
+
+### Gewijzigd
+
+- **Klassenlijsten per onderwijsteam** (PLAN B65, vervangt B60): alleen de
+  teamcontactpersonen van een team (en admins) importeren, vervangen en verwijderen de
+  lijsten van dat team. De leden van het team bekijken en gebruiken ze; andere docenten zien
+  ze niet. *Kopiëren naar mijn lijsten* is vervallen. Bestaande lijsten zonder team blijven
+  voor iedereen bruikbaar tot een admin ze aan een team toewijst. Functies voor
+  teamcontactpersonen hebben een eigen icoon en een vaste kleur.
 
 ### Opgelost
 

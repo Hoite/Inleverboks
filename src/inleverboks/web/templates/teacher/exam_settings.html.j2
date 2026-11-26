@@ -142,7 +142,7 @@
       <label for="class_list_id">{{ _("Use class list") }}</label>
       <select id="class_list_id" name="class_list_id">
         <option value="">{{ _("No class list") }}</option>
-        {% for cl in class_lists %}<option value="{{ cl.id }}">{{ cl.name }} ({{ cl.entries|length }}){% if cl.owner_id != current_user.id %} · {{ owner_names.get(cl.owner_id, "") }}{% endif %}</option>{% endfor %}
+        {% for cl in class_lists %}<option value="{{ cl.id }}">{{ cl.name }} ({{ cl.entries|length }}) · {{ team_names.get(cl.team_id) or _("not assigned to a team") }}</option>{% endfor %}
       </select>
     </div>
     <button type="submit" class="button button-secondary">{{ _("Apply") }}</button>

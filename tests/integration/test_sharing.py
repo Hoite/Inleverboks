@@ -17,6 +17,7 @@ from inleverboks.adapters.clock import FrozenClock
 from inleverboks.db.models import (
     AuditEvent,
     ClassList,
+    ClassListEntry,
     Exam,
     ExamRosterEntry,
     ExamTemplate,
@@ -89,28 +90,38 @@ def _result(*numbers: str) -> ImportResult:
 
 
 @pytest.fixture
-def class_list(db: Session, services: Services, teacher: User) -> ClassList:
-    return services.classlists.save(db, teacher, "ICT-2A", _result("123456", "123457"), ip=None)
+def class_list(db: Session, clock: FrozenClock, teacher: User) -> ClassList:
+    """A list from before the education teams (no team): PLAN B69 keeps B60 for it."""
+    class_list = ClassList(owner_id=teacher.id, name="ICT-2A", created_at=clock.now())
+    class_list.entries = [
+        ClassListEntry(student_number=n, first_name="Jan", last_name=f"Student{n}",
+                       class_name="ICT-2A")
+        for n in ("123456", "123457")
+    ]  # fmt: skip
+    db.add(class_list)
+    db.commit()
+    return class_list
 
 
-# Class lists: everyone uses them, the owner manages them ---------------------------
+# Class lists without a team: everyone uses them, the owner manages them (B60, B69) --
 
 
-def test_library_filter_and_owner_column(
+def test_unassigned_lists_are_listed_for_everyone_with_owner(
     clients: dict[str, TestClient], class_list: ClassList
 ) -> None:
-    mine = clients["other"].get("/examens/klassenlijsten").text
-    assert "ICT-2A" not in mine
-    assert 'href="/examens/klassenlijsten" aria-current="page"' in mine
-    everyone = clients["other"].get("/examens/klassenlijsten?toon=alle").text
-    assert f'href="/examens/klassenlijsten/{class_list.id}"' in everyone
-    assert '<th scope="col">Eigenaar</th>' in everyone
-    assert "Anna Eigenaar" in everyone
-    assert 'href="/examens/klassenlijsten?toon=alle" aria-current="page"' in everyone
+    page = clients["other"].get("/examens/klassenlijsten").text
+    assert "Nog niet aan een team toegewezen" in page
+    assert f'href="/examens/klassenlijsten/{class_list.id}"' in page
+    assert '<th scope="col">Eigenaar</th>' in page
+    assert "Anna Eigenaar" in page
     # The owner sees "Jij" in the owner column of their own list.
     assert re.search(
-        r"ICT-2A</a></td><td>Jij</td>", clients["owner"].get("/examens/klassenlijsten").text
+        r"ICT-2A</a></td><td>2</td><td>[^<]*</td><td>Jij</td>",
+        clients["owner"].get("/examens/klassenlijsten").text,
     )
+    # Nobody here is a team contact: nobody imports new lists (B65).
+    assert "/examens/klassenlijsten/nieuw" not in page
+    assert clients["other"].get("/examens/klassenlijsten/nieuw").status_code == 403
 
 
 @pytest.mark.parametrize("role", ["owner", "other", "admin"])
@@ -120,12 +131,13 @@ def test_detail_visible_to_everyone_buttons_by_role(
     page = clients[role].get(f"/examens/klassenlijsten/{class_list.id}")
     assert page.status_code == 200
     assert "Student123456" in page.text
-    assert "Kopiëren naar mijn lijsten" in page.text
+    assert "Kopiëren naar mijn lijsten" not in page.text  # B65: no personal copies
     manages = role != "other"
     assert ("Lijst vervangen" in page.text) is manages
     assert (f"/examens/klassenlijsten/{class_list.id}/verwijderen" in page.text) is manages
     assert (f"/examens/klassenlijsten/{class_list.id}/naam" in page.text) is manages
-    assert ("Eigenaar: Anna Eigenaar" in page.text) is (role != "owner")
+    assert ("Geïmporteerd door Anna Eigenaar" in page.text) is (role != "owner")
+    assert "Onderwijsteam: nog niet aan een team toegewezen" in page.text
 
 
 def _replace(client: TestClient, class_list_id: uuid.UUID, csv: bytes) -> Any:
@@ -191,7 +203,7 @@ def test_owner_and_admin_rename_replace_delete(
     renamed = events(db, "class_list.renamed")[0]
     assert renamed.actor_id == str(actor.id)
     assert renamed.details == {
-        "class_list_id": str(class_list.id), "owner_id": str(teacher.id),
+        "class_list_id": str(class_list.id), "owner_id": str(teacher.id), "team_id": None,
         "name": "ICT-2A", "new_name": "ICT-2B",
     }  # fmt: skip
 
@@ -216,26 +228,9 @@ def test_owner_and_admin_rename_replace_delete(
     assert deleted.details["owner_id"] == str(teacher.id)
 
 
-def test_copy_to_my_lists(
-    db: Session, clients: dict[str, TestClient], class_list: ClassList, colleague: User
-) -> None:
-    other = clients["other"]
-    response = post(other, f"/examens/klassenlijsten/{class_list.id}/kopie")
-    copy_id = uuid.UUID(response.headers["location"].split("/")[3].split("?")[0])
-    copy = db.get(ClassList, copy_id)
-    assert copy is not None and copy.owner_id == colleague.id
-    assert copy.name == "ICT-2A (kopie)"
-    assert sorted(e.student_number for e in copy.entries) == ["123456", "123457"]
-    event = events(db, "class_list.copied")[0]
-    assert event.details["class_list_id"] == str(copy_id)
-    assert event.details["source_class_list_id"] == str(class_list.id)
-    # The copy is the colleague's own: they may change it, the original stays.
-    assert (
-        post(other, f"/examens/klassenlijsten/{copy_id}/naam", {"name": "Mijn ICT"}).status_code
-        == 303
-    )
-    assert "ICT-2A (kopie)" not in other.get("/examens/klassenlijsten").text
-    assert "Mijn ICT" in other.get("/examens/klassenlijsten").text
+def test_copying_a_list_is_gone(clients: dict[str, TestClient], class_list: ClassList) -> None:
+    response = post(clients["other"], f"/examens/klassenlijsten/{class_list.id}/kopie")
+    assert response.status_code in {404, 405}
 
 
 def test_other_teacher_uses_list_in_exam_and_snapshot_stays(
@@ -244,14 +239,17 @@ def test_other_teacher_uses_list_in_exam_and_snapshot_stays(
 ) -> None:  # fmt: skip
     other = clients["other"]
     new_form = other.get("/examens/nieuw").text
-    assert f'<option value="{class_list.id}">ICT-2A (2) · Anna Eigenaar</option>' in new_form
+    assert (
+        f'<option value="{class_list.id}">ICT-2A (2) · nog niet aan een team toegewezen</option>'
+        in new_form
+    )
     exam = make_exam(db, services, colleague, class_list_id=class_list.id)
     roster = db.scalars(select(ExamRosterEntry).where(ExamRosterEntry.exam_id == exam.id))
     assert {r.student_number for r in roster} == {"123456", "123457"}
     # Also on an existing exam via the settings page.
     second = make_exam(db, services, colleague, slug="linux-p4")
     settings_page = other.get(f"/examens/{second.id}/instellingen").text
-    assert "ICT-2A (2) · Anna Eigenaar" in settings_page
+    assert "ICT-2A (2) · nog niet aan een team toegewezen" in settings_page
     response = post(
         other, f"/examens/{second.id}/klassenlijst", {"class_list_id": str(class_list.id)}
     )
@@ -276,7 +274,10 @@ def test_template_based_exam_uses_another_teachers_list(
     template = services.exams.save_as_template(db, colleague, source, "Bert sjabloon", ip=None)
     other = clients["other"]
     page = other.get(f"/examens/nieuw?sjabloon={template.id}").text
-    assert f'<option value="{class_list.id}">ICT-2A (2) · Anna Eigenaar</option>' in page
+    assert (
+        f'<option value="{class_list.id}">ICT-2A (2) · nog niet aan een team toegewezen</option>'
+        in page
+    )
     response = post(other, "/examens/nieuw", exam_form(
         name="Uit sjabloon", source_template_id=str(template.id),
         class_list_id=str(class_list.id), allow_unlisted="",

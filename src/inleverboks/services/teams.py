@@ -55,6 +55,17 @@ class Membership:
     is_contact: bool
 
 
+def team_context(db: Session, user_id: uuid.UUID) -> TeamContext:
+    """The teams of a user and those where he is team contact, for ``policy``."""
+    rows = db.execute(
+        select(TeamMember.team_id, TeamMember.is_contact).where(TeamMember.user_id == user_id)
+    ).all()
+    return TeamContext(
+        member_of=frozenset(team_id for team_id, _ in rows),
+        contact_of=frozenset(team_id for team_id, contact in rows if contact),
+    )
+
+
 def _clean(value: str) -> str:
     return " ".join(value.split())
 
@@ -68,13 +79,7 @@ class TeamService:
     # Lookups -------------------------------------------------------------------------
 
     def context(self, db: Session, user: User) -> TeamContext:
-        rows = db.execute(
-            select(TeamMember.team_id, TeamMember.is_contact).where(TeamMember.user_id == user.id)
-        ).all()
-        return TeamContext(
-            member_of=frozenset(team_id for team_id, _ in rows),
-            contact_of=frozenset(team_id for team_id, contact in rows if contact),
-        )
+        return team_context(db, user.id)
 
     def is_contact_anywhere(self, db: Session, user_id: uuid.UUID) -> bool:
         query = select(TeamMember.team_id).where(
@@ -87,6 +92,9 @@ class TeamService:
             selectinload(Team.members).selectinload(TeamMember.user), selectinload(Team.crebos)
         )
         return sorted(db.scalars(query), key=lambda t: t.name.lower())
+
+    def names(self, db: Session) -> dict[uuid.UUID, str]:
+        return {row.id: row.name for row in db.execute(select(Team.id, Team.name))}
 
     def get(self, db: Session, user: User, team_id: uuid.UUID, action: TeamAction) -> Team:
         """A team the user may act on. Unknown and forbidden look the same (404)."""

@@ -9,7 +9,17 @@
   {{ errors_box(errors) }}
   <form method="post" action="/examens/klassenlijsten/nieuw" enctype="multipart/form-data" class="stack">
     {{ csrf() }}
-    {% if target %}<input type="hidden" name="replace_id" value="{{ target.id }}">{% endif %}
+    {% if target %}<input type="hidden" name="replace_id" value="{{ target.id }}">
+    {% elif teams|length == 1 %}<input type="hidden" name="team_id" value="{{ teams[0].id }}">
+    <p>{{ _("Education team") }}: <strong>{{ teams[0].name }}</strong></p>
+    {% else %}
+    <div class="field">
+      <label for="team_id">{{ _("Education team") }}</label>
+      <select id="team_id" name="team_id" required>
+        {% for t in teams %}<option value="{{ t.id }}"{% if t.id|string == team_id %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
     <div class="field">
       <label for="name">{{ _("Name") }}</label>
       <input id="name" name="name" type="text" maxlength="200" value="{{ name }}" placeholder="{{ _('e.g. ICT-2A 2026') }}">

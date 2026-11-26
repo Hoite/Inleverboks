@@ -84,6 +84,9 @@ def pair_labels() -> dict[str, str]:
         "admin_link": _("Admin link in the header (fixed colours)"),
         "admin_tabs": _("Admin tabs on the background"),
         "admin_tab_current": _("Admin tab on the light tint (current tab)"),
+        "tcp_button": _("Team-contact buttons (fixed colours)"),
+        "tcp_button_hover": _("Team-contact buttons on hover"),
+        "tcp_badge": _("Team-contact label"),
     }
 
 

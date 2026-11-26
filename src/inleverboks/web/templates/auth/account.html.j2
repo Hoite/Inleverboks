@@ -29,7 +29,7 @@
   <h2>{{ _("Education teams") }}</h2>
   {% if my_teams %}
   <ul class="plain-list">
-    {% for t in my_teams %}<li><a href="/examens/teams/{{ t.team_id }}">{{ t.name }}</a>{% if t.is_contact %} <span class="badge badge-neutral">{{ _("Team contact") }}</span>{% endif %}</li>{% endfor %}
+    {% for t in my_teams %}<li><a href="/examens/teams/{{ t.team_id }}">{{ t.name }}</a>{% if t.is_contact %} <span class="badge badge-tcp">{% include "_tcp_mark.html.j2" %}{{ _("Team contact") }}</span>{% endif %}</li>{% endfor %}
   </ul>
   {% else %}
   <p class="muted">{{ _("You are not in an education team yet. Ask an admin or the team contact of your team.") }}</p>

@@ -34,7 +34,7 @@
         {% for u in candidates %}<option value="{{ u.id }}">{{ u.name }} ({{ u.email }})</option>{% endfor %}
       </select>
     </div>
-    <button type="submit" class="button button-secondary">{{ _("Add") }}</button>
+    <button type="submit" class="button button-tcp">{% include "_tcp_mark.html.j2" %}{{ _("Add") }}</button>
   </form>
   {% endif %}
   <p class="hint">{{ _("You can add existing accounts. An admin invites new colleagues and appoints team contacts.") }}</p>

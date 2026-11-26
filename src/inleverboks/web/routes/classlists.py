@@ -1,7 +1,8 @@
 """Class list library: CSV import with column mapping and preview.
 
-Every teacher sees and uses every list; the owner and admins rename, replace and delete
-(PLAN B60, ``policy.CLASS_LIST_MATRIX``)."""
+Lists belong to an education team: its members see and use them, its team contacts and
+admins import, rename, replace and delete them (PLAN B65, ``policy.CLASS_LIST_MATRIX``).
+Lists without a team follow B60 until an admin assigns them (B69)."""
 
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ from fastapi.responses import RedirectResponse, Response
 
 from inleverboks.db.models import ClassList, User
 from inleverboks.i18n import gettext as _
-from inleverboks.policy import ClassListAction, can_class_list
+from inleverboks.policy import ClassListAction
 from inleverboks.services.classlists import (
     FIELDS,
     MAX_CSV_BYTES,
@@ -28,7 +29,7 @@ from inleverboks.services.classlists import (
     read_rows,
 )
 from inleverboks.services.container import Services
-from inleverboks.services.errors import DomainError, NotFoundError
+from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
 from inleverboks.web.deps import Db, Svc, Teacher, client_ip
 from inleverboks.web.templating import render
 
@@ -50,6 +51,7 @@ def import_messages() -> dict[str, str]:
         "mapping_incomplete": _("Choose a column for student number, first name and last name."),
         "class_list_name_invalid": _("Enter a name for the class list."),
         "class_list_has_errors": _("Fix the errors in the file first."),
+        "class_list_team_required": _("Choose the education team of the class list."),
         "missing_number": _("Student number missing"),
         "invalid_number": _("Invalid student number"),
         "missing_name": _("First or last name missing"),
@@ -68,12 +70,25 @@ def field_labels() -> dict[str, str]:
 
 
 @router.get("")
-def library(request: Request, ctx: Teacher, db: Db, services: Svc, toon: str = "") -> Response:
-    everyone = toon == "alle"
+def library(request: Request, ctx: Teacher, db: Db, services: Svc) -> Response:
     return render(
-        request, "teacher/classlists.html.j2", tab="classlists", everyone=everyone,
-        class_lists=services.classlists.library(db, ctx.user, everyone=everyone),
+        request, "teacher/classlists.html.j2", tab="classlists",
+        sections=services.classlists.library(db, ctx.user),
+        creatable=bool(services.classlists.creatable_teams(db, ctx.user)),
         owner_names=services.users.names(db),
+    )  # fmt: skip
+
+
+def _upload_page(
+    request: Request, db: Db, services: Services, user: User, *, errors: list[str],
+    name: str, target: ClassList | None, team_id: str = "", status: int = 200,
+) -> Response:  # fmt: skip
+    teams = [] if target else services.classlists.creatable_teams(db, user)
+    if target is None and not teams:
+        raise PermissionDeniedError()  # only team contacts and admins import (B65)
+    return render(
+        request, "teacher/classlist_upload.html.j2", status_code=status, errors=errors,
+        name=name, target=target, teams=teams, team_id=team_id,
     )  # fmt: skip
 
 
@@ -90,8 +105,9 @@ def _replace_target(db: Db, services: Services, user: User, replace_id: str) -> 
 
 
 @router.get("/nieuw")
-def upload_form(request: Request, ctx: Teacher) -> Response:
-    return render(request, "teacher/classlist_upload.html.j2", errors=[], name="", target=None)
+def upload_form(request: Request, ctx: Teacher, db: Db, services: Svc, team: str = "") -> Response:
+    return _upload_page(request, db, services, ctx.user, errors=[], name="", target=None,
+                        team_id=team)  # fmt: skip
 
 
 @router.get("/{class_list_id}/vervangen")
@@ -99,9 +115,8 @@ def replace_form(
     request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
 ) -> Response:
     target = services.classlists.get(db, ctx.user, class_list_id, ClassListAction.REPLACE)
-    return render(
-        request, "teacher/classlist_upload.html.j2", errors=[], name=target.name, target=target
-    )
+    return _upload_page(request, db, services, ctx.user, errors=[], name=target.name,
+                        target=target)  # fmt: skip
 
 
 def _mapping_page(
@@ -115,6 +130,7 @@ def _mapping_page(
     result: ImportResult | None,
     errors: list[str],
     target: ClassList | None,
+    team_id: str,
     status: int = 200,
 ) -> Response:
     rows = read_rows(text, delimiter)
@@ -146,6 +162,7 @@ def _mapping_page(
         messages=import_messages(),
         errors=errors,
         target=target,
+        team_id=team_id,
     )
 
 
@@ -157,18 +174,15 @@ def upload(
     services: Svc,
     name: Annotated[str, Form(max_length=200)] = "",
     replace_id: Annotated[str, Form(max_length=36)] = "",
+    team_id: Annotated[str, Form(max_length=36)] = "",
     file: Annotated[UploadFile | None, File()] = None,
 ) -> Response:
     target = _replace_target(db, services, ctx.user, replace_id)
     if file is None:
-        return render(
-            request,
-            "teacher/classlist_upload.html.j2",
-            status_code=400,
-            errors=[import_messages()["csv_empty"]],
-            name=name,
-            target=target,
-        )
+        return _upload_page(
+            request, db, services, ctx.user, errors=[import_messages()["csv_empty"]],
+            name=name, target=target, team_id=team_id, status=400,
+        )  # fmt: skip
     data = from_thread.run(file.read, MAX_CSV_BYTES + 1)
     try:
         text = decode_csv(data)
@@ -177,17 +191,24 @@ def upload(
         if not rows:
             raise DomainError("csv_empty")
     except DomainError as exc:
-        return render(
-            request, "teacher/classlist_upload.html.j2", status_code=400,
-            errors=[import_messages().get(exc.code, exc.code)], name=name, target=target,
+        return _upload_page(
+            request, db, services, ctx.user, errors=[import_messages().get(exc.code, exc.code)],
+            name=name, target=target, team_id=team_id, status=400,
         )  # fmt: skip
     mapping = guess_mapping(rows[0])
     has_header = any(v is not None for v in mapping.values())
     return _mapping_page(
         request, name=name or (file.filename or "").rsplit(".", 1)[0], text=text,
         delimiter=delimiter, has_header=has_header, mapping=mapping, result=None, errors=[],
-        target=target,
+        target=target, team_id=team_id,
     )  # fmt: skip
+
+
+def _team_id(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
 
 
 async def _form(request: Request) -> Any:
@@ -230,15 +251,20 @@ def import_rows(request: Request, ctx: Teacher, db: Db, services: Svc) -> Respon
                     db, ctx.user, target.id, name, result, ip=client_ip(request)
                 )
                 return _redirect(f"/examens/klassenlijsten/{class_list.id}?ok=replaced")
-            class_list = services.classlists.save(db, ctx.user, name, result, ip=client_ip(request))
+            class_list = services.classlists.save(
+                db, ctx.user, _team_id(text_field("team_id")), name, result,
+                ip=client_ip(request),
+            )  # fmt: skip
             return _redirect(f"/examens/klassenlijsten/{class_list.id}")
+    except PermissionDeniedError:
+        raise  # 403 from the app's handler
     except DomainError as exc:
         db.rollback()
         errors.append(import_messages().get(exc.code, exc.code))
     return _mapping_page(
         request, name=name, text=text, delimiter=delimiter, has_header=has_header,
         mapping=mapping, result=result, errors=errors, target=target,
-        status=400 if errors else 200,
+        team_id=text_field("team_id"), status=400 if errors else 200,
     )  # fmt: skip
 
 
@@ -253,17 +279,10 @@ def detail(
         request, "teacher/classlist_detail.html.j2", class_list=class_list, entries=entries,
         owner_name=services.users.names(db).get(class_list.owner_id, ""),
         own=class_list.owner_id == ctx.user.id,
-        perms={a.value: can_class_list(ctx.user, a, class_list.owner_id) for a in ClassListAction},
+        team_name=services.teams.names(db).get(class_list.team_id) if class_list.team_id else None,
+        perms=services.classlists.permissions(db, ctx.user, class_list),
         ok=ok, errors=[import_messages().get(error, error)] if error else [],
     )  # fmt: skip
-
-
-@router.post("/{class_list_id}/kopie")
-def copy(
-    request: Request, class_list_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc
-) -> Response:
-    class_list = services.classlists.copy(db, ctx.user, class_list_id, ip=client_ip(request))
-    return _redirect(f"/examens/klassenlijsten/{class_list.id}?ok=copied")
 
 
 @router.post("/{class_list_id}/naam")

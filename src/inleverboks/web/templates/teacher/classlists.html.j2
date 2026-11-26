@@ -1,28 +1,35 @@
 {% extends "base.html.j2" %}
-{% from "teacher/_view_switch.html.j2" import view_switch %}
 {% block title %}{{ _("Class lists") }} · {{ app_name }}{% endblock %}
 {% block content %}
 <div class="page-head">
   <h1>{{ _("Exams") }}</h1>
-  <a class="button" href="/examens/klassenlijsten/nieuw">{{ _("Import class list") }}</a>
+  {% if creatable %}<a class="button button-tcp" href="/examens/klassenlijsten/nieuw">{% include "_tcp_mark.html.j2" %}{{ _("Import class list") }}</a>{% endif %}
 </div>
 {% include "teacher/_tabs.html.j2" %}
-<p class="hint">{{ _("Every teacher can view and use every class list. Only the owner and admins can change or remove one.") }}</p>
-{{ view_switch(_("Show class lists"), "/examens/klassenlijsten", everyone, _("My lists"), _("All lists")) }}
-{% if class_lists %}
-<div class="table-wrap">
-<table>
-  <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Owner") }}</th><th scope="col">{{ _("Students") }}</th><th scope="col">{{ _("Imported") }}</th></tr></thead>
-  <tbody>
-  {% for cl in class_lists %}
-    <tr><td><a href="/examens/klassenlijsten/{{ cl.id }}">{{ cl.name }}</a></td><td>{% if cl.owner_id == current_user.id %}{{ _("You") }}{% else %}{{ owner_names.get(cl.owner_id, "") }}{% endif %}</td><td>{{ cl.entries|length }}</td><td>{{ cl.created_at|localtime }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-</div>
-{% elif everyone %}
-<p class="muted">{{ _("No class lists yet.") }}</p>
+<p class="hint">{{ _("Class lists belong to an education team. The members of the team use them; its team contacts import, replace and remove them.") }}</p>
+{% for section in sections %}
+<section>
+  <div class="page-head">
+    <h2>{% if section.team %}{{ section.team.name }}{% else %}{{ _("Not assigned to a team yet") }}{% endif %}</h2>
+    {% if section.may_manage %}<a class="button button-small button-tcp" href="/examens/klassenlijsten/nieuw?team={{ section.team.id }}">{% include "_tcp_mark.html.j2" %}{{ _("Import class list") }}<span class="visually-hidden"> {{ _("for %(team)s", team=section.team.name) }}</span></a>{% endif %}
+  </div>
+  {% if not section.team %}<p class="hint">{{ _("These lists date from before the education teams. Everyone can use them until an admin assigns them to a team.") }}</p>{% endif %}
+  {% if section.class_lists %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th scope="col">{{ _("Name") }}</th><th scope="col">{{ _("Students") }}</th><th scope="col">{{ _("Imported") }}</th>{% if not section.team %}<th scope="col">{{ _("Owner") }}</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for cl in section.class_lists %}
+      <tr><td><a href="/examens/klassenlijsten/{{ cl.id }}">{{ cl.name }}</a></td><td>{{ cl.entries|length }}</td><td>{{ cl.created_at|localtime }}</td>{% if not section.team %}<td>{% if cl.owner_id == current_user.id %}{{ _("You") }}{% else %}{{ owner_names.get(cl.owner_id, "") }}{% endif %}</td>{% endif %}</tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ _("This team has no class lists yet.") }}</p>
+  {% endif %}
+</section>
 {% else %}
-<p class="muted">{{ _("You have no class lists yet. Import one, or copy one from all lists.") }}</p>
-{% endif %}
+<p class="muted">{{ _("You are not in an education team yet, so there are no class lists for you. Without a class list every student can hand in.") }}</p>
+{% endfor %}
 {% endblock %}

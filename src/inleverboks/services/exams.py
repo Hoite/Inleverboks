@@ -34,11 +34,13 @@ from inleverboks.db.models import (
 from inleverboks.policy import ClassListAction, ExamAction, ExamRef, can_class_list, can_exam
 from inleverboks.services import slugs
 from inleverboks.services.audit import Actor, AuditService
+from inleverboks.services.classlists import ref as class_list_ref
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
 from inleverboks.services.ipranges import parse_cidrs
 from inleverboks.services.qualifications import CODE_RE
 from inleverboks.services.security import human_code
 from inleverboks.services.system_settings import SettingsService, parse_extensions
+from inleverboks.services.teams import team_context
 from inleverboks.services.template_files import StoredTemplate
 from inleverboks.services.timeutil import default_window
 
@@ -580,11 +582,12 @@ class ExamService:
         self._validate_limits(data, problems)
         self._validate_slots(db, data, problems)
         if data.class_list_id is not None:
-            # Every teacher may use every class list (PLAN B60); the policy decides.
+            # The owner must be allowed to use the list (PLAN B65); the policy decides.
             class_list = db.get(ClassList, data.class_list_id)
             if class_list is None or not can_class_list(
-                db.get(User, owner_id), ClassListAction.USE, class_list.owner_id
-            ):
+                db.get(User, owner_id), team_context(db, owner_id), ClassListAction.USE,
+                class_list_ref(class_list),
+            ):  # fmt: skip
                 problems["class_list_id"] = "invalid"
         if problems:
             raise ExamValidationError(problems)
@@ -1395,7 +1398,7 @@ class ExamService:
         if class_list_id is not None:
             class_list = db.get(ClassList, class_list_id)
             if class_list is None or not can_class_list(
-                user, ClassListAction.USE, class_list.owner_id
+                user, team_context(db, user.id), ClassListAction.USE, class_list_ref(class_list)
             ):
                 raise NotFoundError("class_list_not_found")
         count = self._set_roster(db, exam, class_list)
