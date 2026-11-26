@@ -62,6 +62,13 @@ plan afwijkt van de spec staat dat in §1.
 | B60 | Klassenlijsten gedeeld | **Wijkt af van spec §4.7** (persoonlijke bibliotheek per docent). Elke docent ziet en gebruikt alle klassenlijsten: het overzicht, de detailpagina en de keuze bij een nieuw examen en in de instellingen. Iedere docent kan een eigen kopie maken (*Kopiëren naar mijn lijsten*). Alleen de eigenaar en admins wijzigen de naam, vervangen de inhoud (een nieuwe CSV) of verwijderen een lijst. Dat staat als matrix in `policy.CLASS_LIST_MATRIX` en wordt in de service afgedwongen, niet alleen door knoppen te verbergen. Het overzicht toont een kolom *Eigenaar* en de keuze *Mijn lijsten / Alle lijsten* (`?toon=alle`, standaard mijn lijsten, zonder JS). Kopiëren, hernoemen, vervangen en verwijderen komen in het auditlog met de id's (`class_list_id`, `owner_id`, `source_class_list_id`). Een examen houdt zijn eigen momentopname: vervangen of verwijderen verandert bestaande examens niet. **Privacy, geaccepteerd door de eigenaar (25-11-2026):** een klassenlijst bevat namen, studentnummers en klassen; met deze keuze kan elke docent van de school alle lijsten inzien. Er staan geen cijfers of andere gegevens in, studenten zien de lijst nooit, en het bekijken wordt niet gelogd (wel kopiëren, wijzigen en verwijderen). |
 | B61 | Admin-overzichten | Geen aparte adminpagina, maar de bestaande pagina's uitgebreid. *Alle examens* krijgt een kolom *Eigenaar* en een filter op eigenaar (`?eigenaar=<id>`, keuzelijst met knop, zonder JS). *Gedeeld met mij* en (voor admins) *Afgeronde examens* krijgen ook de kolom *Eigenaar*. Onder *Examensjablonen* heeft een admin de weergave *Alle sjablonen* (`?toon=alle`): alle persoonlijke en gedeelde sjablonen, met een kolom *Eigenaar*. Een admin mag een persoonlijk sjabloon van een ander bekijken, er een examen mee maken en het kopiëren naar zijn eigen of naar de gedeelde sjablonen (een gedeelde kopie). Het origineel wijzigen, verwijderen of delen blijft bij de eigenaar: B53 en `can_manage_template` zijn ongewijzigd. Het origineel delen zou het sjabloon bij de eigenaar weghalen, omdat alleen admins gedeelde sjablonen beheren. Voor docenten blijven persoonlijke sjablonen privé. De rechten van een admin op examens van anderen blijven zoals in B4. |
 | B62 | Teller presentatiemodus | Telt het aantal **studenten** met een actieve of ongeldige inlevering (één per student, `ExamService.handed_in_count`). Ongeldig verklaren verlaagt de teller dus niet. Een door de docent geannuleerde inlevering telt niet mee, want die student levert opnieuw in. Het docentoverzicht houdt zijn eigen tellers (§6.2 van de spec): daar staat een ongeldig verklaarde student onder *ongeldig* en ook onder *nog niet ingeleverd*. De kolom *Ingeleverd* op het dashboard telt nog alleen actieve inleveringen. |
+| B63 | Onderwijsteams | **Goedgekeurd (26-11-2026), in uitvoering (T1 klaar).** Een team heeft leden (een docent kan in meerdere teams zitten), één of meer **TCP's** (teamcontactpersonen) en gekoppelde **crebo's** (een crebo kan bij meerdere teams horen). Alleen admins maken, wijzigen en verwijderen teams, koppelen crebo's en wijzen TCP's aan. Een TCP voegt **bestaande** accounts toe aan zijn team of haalt leden eruit, maar nodigt niemand uit, maakt niemand TCP en haalt geen TCP uit het team. Een team is alleen te verwijderen als er geen klassenlijsten, sjablonen en examens meer aan hangen. Uitwerking in §9. |
+| B64 | Tweestaps voor TCP | Verplicht, net als voor admins (`totp_required`: admin of TCP van ten minste één team). Heeft die gebruiker nog geen tweestapsverificatie, dan worden bij het aanwijzen zijn sessies beëindigd, zodat hij bij de volgende login de tweestapsverificatie instelt. |
+| B65 | Klassenlijsten per team | **Vervangt B60.** Een klassenlijst hoort bij één team. Alleen de TCP's van dat team (en admins) maken, hernoemen, vervangen en verwijderen een lijst. De leden van het team bekijken en gebruiken de lijsten van hun teams (de detailpagina blijft, zodat een docent kan controleren of iedereen erop staat). Er zijn geen persoonlijke klassenlijsten meer en *Kopiëren naar mijn lijsten* vervalt. Een examen kan alleen een lijst van zijn eigen team gebruiken. Wie geen team heeft, ziet geen teamlijsten en heeft *anderen mogen ook inleveren* altijd aan (zoals B50). |
+| B66 | Teamsjablonen | **Vervangt de gedeelde sjablonen van B53.** Soorten: *persoonlijk* (ongewijzigd, B53/B61) en *team*. Een teamsjabloon wordt beheerd door de TCP's van het team en door admins, en gebruikt (en gekopieerd naar de eigen sjablonen) door de leden. Een TCP kan een eigen persoonlijk sjabloon kopiëren naar een team dat hij beheert. Bij een sjabloon uit SBB toont de zoeklijst voor een TCP alleen de crebo's van het gekozen team (plus de opvolgers via `previous_crebo`). Hoort de crebo bij één team van de TCP, dan kiest de server dat team zelf; anders kiest de TCP. |
+| B67 | Examen en team | Een examen heeft een vast `team_id` (of geen, als de eigenaar in geen team zit). Uit een teamsjabloon komt het team van het sjabloon; anders kiest de docent uit zijn eigen teams (vooraf ingevuld als hij er één heeft). Een kopie en een herkansing krijgen hetzelfde team. Daarna kan alleen een admin het team wijzigen (in het auditlog van het examen). Een lid dat het team verlaat, houdt zijn examens, en die blijven bij het team. |
+| B68 | Rechten van een TCP op examens | Op de examens van zijn teams (ook afgeronde) mag een TCP wat een admin mag volgens B4: inleveringen bekijken, bestanden downloaden, exporteren (CSV, proces-verbaal), het auditlog bekijken en de bewaren-vlag zetten. Daarnaast mag hij het eigendom **binnen het team** overdragen (de nieuwe eigenaar moet lid van het team zijn). Instellingen wijzigen, verlengen en ongeldig verklaren blijven bij de eigenaar; definitief verwijderen blijft bij de admin. De tweede beoordelaar mag iemand buiten het team zijn; de keuzelijst toont de teamleden bovenaan. |
+| B69 | Overgang | De migratie maakt alleen tabellen en lege kolommen; ze raadt niets. Wat nog geen team heeft, gedraagt zich zoals nu: bestaande klassenlijsten volgen B60, gedeelde sjablonen B53, examens zijn alleen van eigenaar, tweede beoordelaar en admin. Nieuwe klassenlijsten en sjablonen voor een team krijgen altijd een team. De admin wijst het bestaande toe via de pagina *Nog toe te wijzen* (§9.5). Daarop staan ook de accounts zonder team en de teams zonder TCP. |
 | B40 | Opruimen | Objecten onder `tmp/`, sjablonen zonder verwijzing en ingeleverde objecten zonder databaserij worden verwijderd als ze ouder zijn dan 1 uur (zodat een lopende upload niet geraakt wordt). Proces-verbalen worden nooit opgeruimd. (Fase 6) |
 | B18 | UI-paden | Nederlandse paden (`/docent`, `/admin/gebruikers`, `/uitnodiging/…`). Ze staan op de lijst met gereserveerde slugs. (Fase 2) |
 | B5 | Concept-examen | Een concept wordt actief via de knop **Publiceren**. De link van een concept werkt wel, maar toont alleen: "Deze inleverlink is nog niet opengezet door de docent." |
@@ -224,3 +231,76 @@ Volgens §16 van de spec. Na elke fase zijn ruff, mypy en pytest groen, en krijg
 - **Docker** 29.9.3 draait. Compose v5 en buildx zijn aanwezig.
 - **uv ontbreekt** op deze Mac, net als Node (Node is niet nodig). Installeer uv zelf: `brew install uv`. uv haalt daarna zelf Python 3.15 op. Zonder uv kan ik alles in een Docker-container laten draaien, maar dat is trager.
 - **PostgreSQL en MinIO** voor de tests draaien via `compose.scale.yaml`.
+
+## 9. Onderwijsteams (goedgekeurd 26-11-2026)
+
+Besluiten B63–B69 hierboven. Dit hoofdstuk werkt ze uit. Versie: **0.4.0**.
+
+### 9.1 Datamodel
+
+| Tabel / kolom | Inhoud |
+|---|---|
+| `team` | id, name (uniek), description (optioneel), created_at |
+| `team_member` | team_id (CASCADE), user_id (CASCADE), is_contact (bool, de TCP-rol), added_by_id, added_at. Primaire sleutel (team_id, user_id). |
+| `team_crebo` | team_id (CASCADE), crebo (`String(10)`). Primaire sleutel (team_id, crebo). Gekoppeld op crebo, niet op een `qualification`-rij, zodat een nieuwe dossierversie vanzelf meekomt. |
+| `class_list.team_id` | FK naar `team`, **RESTRICT**, nullable (leeg = nog niet toegewezen, B69). `owner_id` blijft en betekent voortaan "aangemaakt door". |
+| `exam_template.team_id` | idem. `shared` blijft voorlopig bestaan voor de nog niet toegewezen gedeelde sjablonen; bij toewijzen gaat `shared` uit. Een sjabloon met `team_id` is een teamsjabloon. Een CHECK-constraint voorkomt `shared` en `team_id` tegelijk. |
+| `exam.team_id` | idem. |
+
+RESTRICT, omdat een team alleen leeg verwijderd mag worden (B63): de service controleert het vooraf, de database is het vangnet. Op SQLite gaat de migratie via batch mode met de FK-controle van `migrations/env.py`.
+
+### 9.2 Rechten (`policy.py`)
+
+Alles blijft als data in de matrices, zodat de tests het per cel controleren. De policy krijgt naast de `User` een `TeamContext` (de team-id's waarvan iemand lid is en waarvan hij TCP is), die `web/deps.py` één keer per request laadt.
+
+- **Examens:** een nieuwe rol `TEAM_CONTACT` in `EXAM_MATRIX`, als `exam.team_id` een team van de TCP is. Hij krijgt `VIEW_SUBMISSIONS`, `DOWNLOAD_FILES`, `EXPORT`, `VIEW_AUDIT`, `SET_HOLD` en `TRANSFER_OWNERSHIP` (de service eist dat de nieuwe eigenaar teamlid is). `ExamRef` krijgt `team_id`.
+- **Klassenlijsten:** `CLASS_LIST_MATRIX` krijgt de rollen admin, TCP, teamlid en overig. Bekijken en gebruiken: admin, TCP en teamlid. Aanmaken, hernoemen, vervangen, verwijderen: admin en TCP. `COPY` vervalt. Lijsten zonder team houden tot ze zijn toegewezen de regels van B60.
+- **Sjablonen:** een nieuwe `TEMPLATE_MATRIX` vervangt `can_manage_template`, met de soorten persoonlijk, team en (overgang) gedeeld.
+- **Teams:** een `TEAM_MATRIX`. Admin: alles. TCP: leden toevoegen en verwijderen (geen TCP's). Teamlid: het team en de leden bekijken.
+
+### 9.3 Schermen
+
+Alle paden vallen onder bestaande voorvoegsels, dus er komen geen nieuwe gereserveerde slugs bij.
+
+- **Admin**
+  - `/admin/onderwijsteams`: lijst met naam, aantal leden, TCP's, crebo's en het signaal *geen TCP*.
+  - `/admin/onderwijsteams/{id}`:
+    - naam en omschrijving;
+    - leden toevoegen met een zoekbare keuzelijst, TCP aan of uit;
+    - crebo's koppelen, zoeken in de kwalificaties;
+    - de inhoud (aantal lijsten, sjablonen en examens), plus verwijderen als het team leeg is.
+  - `/admin/gebruikers`: een kolom *Teams* en het filter *zonder team*.
+- **TCP en teamlid**
+  - `/examens/team`: een tabblad met alle examens van de teams van de TCP, ook afgeronde, met filters op team en eigenaar. Alleen TCP's zien het tabblad.
+  - `/examens/teams/{id}`: de teampagina (leden, TCP's, crebo's). Leden kijken mee, een TCP beheert de leden.
+  - Klassenlijsten en sjablonen tonen per team een kopje. De beheerknoppen zijn alleen zichtbaar voor TCP's, en worden in de service afgedwongen.
+- **Examenformulier:** een keuzelijst *Onderwijsteam* bij meer dan één team. Die is vast bij een teamsjabloon en alleen-lezen bij bewerken. De klassenlijsten in de keuzelijst zijn gefilterd op dat team.
+- **Markering:** TCP-functies krijgen een eigen icoon (een groepje) en vaste kleuren `TCP*` in `services/branding.py` met `CONTRAST_PAIRS`, net als de kroon voor admins (`_tcp_badge.html.j2`, klasse `tcp-link`/`tcp-tab`).
+
+### 9.4 Auditlog
+
+- **Systeemketen:** `team.created`, `team.updated`, `team.deleted`, `team.member_added`, `team.member_removed`, `team.contact_set`, `team.contact_unset`, `team.crebo_added`, `team.crebo_removed`, `class_list.assigned` en `template.assigned`.
+- **Keten van het examen:** `exam.team_changed`.
+
+Overal alleen id's, geen namen.
+
+### 9.5 Overgang (B69)
+
+`/admin/onderwijsteams/toewijzen` (*Nog toe te wijzen*) toont:
+- accounts zonder team;
+- teams zonder TCP;
+- klassenlijsten zonder team;
+- gedeelde sjablonen zonder team;
+- examens zonder team waarvan de eigenaar wel in een team zit.
+
+Per regel kies je een team. Voor examens kan het ook in één keer voor alle examens van een eigenaar.
+
+### 9.6 Fasering
+
+Elke stap is een eigen commit met tests (SQLite en PostgreSQL), en daarna wacht ik op je akkoord.
+
+1. **T1. Teams.** Modellen, migratie, policy (`TeamContext`, `TEAM_MATRIX`), adminschermen, crebo's, TCP aanwijzen met tweestaps (B64), en de kolom en het filter op de gebruikerspagina.
+2. **T2. Klassenlijsten** (B65). Team-id, nieuwe matrix, schermen, filter in het examenformulier, en de TCP-markering.
+3. **T3. Sjablonen** (B66). Teamsjablonen, `TEMPLATE_MATRIX`, SBB-zoeken per team, en kopiëren naar een team.
+4. **T4. Examens** (B67, B68). Team bij aanmaken, kopie en herkansing; het tabblad *Team*; de rechten van de TCP; eigendom overdragen binnen het team; tweede beoordelaars met teamleden bovenaan.
+5. **T5. Afronding.** *Nog toe te wijzen* (§9.5), toegankelijkheidstests voor de nieuwe pagina's, `demo-seed` met teams, `docs/`, CLAUDE.md en CHANGELOG.
