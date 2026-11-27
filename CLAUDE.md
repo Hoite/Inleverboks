@@ -163,7 +163,8 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   toegewezen). Een TCP moet tweestaps gebruiken (`AuthService.totp_required`). Controleer
   rechten op een examen altijd met `services.exams.may(db, user, action, exam)` (met de
   teamcontext), niet met `policy.can_exam` zonder `teams`. Het team van een nieuw examen
-  bepaalt `ExamService._resolve_team`; templates vragen `is_team_contact()`.
+  bepaalt `ExamService._resolve_team`; templates vragen `is_team_contact()`. Wat van vóór de
+  teams is, wijst een admin toe op `/admin/onderwijsteams/toewijzen` (`TeamService.unassigned`).
 - **Toegankelijkheid:** `tests/integration/test_accessibility.py` loopt alle paginatypen af
   (taal, één `h1`, labels, alt, knopnamen). Voeg een nieuwe pagina daar aan toe.
 - **CSP:** strikt (`script-src 'self'`, geen inline). Er komen geen inline `<script>` of
@@ -192,3 +193,4 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
 - [x] Fase 5: docentkant
 - [x] Fase 6: levenscyclus
 - [x] Fase 7: afronding
+- [x] Onderwijsteams (PLAN §9, T1–T5)

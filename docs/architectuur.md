@@ -47,8 +47,14 @@ erDiagram
   app_user ||--o{ password_reset : "voor"
   app_user ||--o{ exam : "eigenaar"
   app_user |o--o{ exam : "tweede beoordelaar"
-  app_user ||--o{ class_list : bezit
+  app_user ||--o{ class_list : "importeert"
   app_user ||--o{ exam_template : bezit
+  team ||--o{ team_member : leden
+  app_user ||--o{ team_member : "lid / TCP"
+  team ||--o{ team_crebo : crebo
+  team |o--o{ class_list : "van het team"
+  team |o--o{ exam_template : "teamsjabloon"
+  team |o--o{ exam : "van het team"
   class_list ||--o{ class_list_entry : bevat
   exam_template ||--o{ exam_template_slot : bevat
   exam_template_slot |o--o| template_file : sjabloon
@@ -105,6 +111,11 @@ erDiagram
     string storage_key "null na verwijdering"
     string sha256
     json warnings
+  }
+  team_member {
+    uuid team_id PK
+    uuid user_id PK
+    bool is_contact "TCP"
   }
   audit_event {
     uuid id PK
@@ -182,37 +193,55 @@ Deze matrix staat in `policy.py` en wordt cel voor cel getest in `tests/unit/tes
 De afwijking B4 uit het plan is verwerkt: een admin mag ook bij examens van anderen bestanden
 downloaden en exporteren.
 
-| Actie | Admin (examen van ander) | Eigenaar | Tweede beoordelaar | Andere docent |
-|---|---|---|---|---|
-| Instellingen, bestandseisen, tijden, code, IP wijzigen | ✗ | ✓ | ✗ | ✗ |
-| Overzicht en metadata van inleveringen | ✓ | ✓ | ✓ | ✗ |
-| Bestanden downloaden | ✓ (B4) | ✓ | ✓ | ✗ |
-| Proces-verbaal en CSV | ✓ (B4) | ✓ | ✓ | ✗ |
-| Auditlog van het examen | ✓ | ✓ | ✓ | ✗ |
-| Ongedaan maken, ongeldig verklaren, verlenging | ✗ | ✓ | ✗ | ✗ |
-| Bewaren-vlag | ✓ | ✓ | ✗ | ✗ |
-| Eigendom overdragen | ✓ | ✗ | ✗ | ✗ |
-| Afgerond examen definitief verwijderen | ✓ | ✗ | ✗ | ✗ |
-| Concept verwijderen, dupliceren, als sjabloon opslaan | ✗ | ✓ | ✗ | ✗ |
+| Actie | Admin (examen van ander) | Eigenaar | Tweede beoordelaar | TCP van het team (B68) | Andere docent |
+|---|---|---|---|---|---|
+| Instellingen, bestandseisen, tijden, code, IP wijzigen | ✗ | ✓ | ✗ | ✗ | ✗ |
+| Overzicht en metadata van inleveringen | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Bestanden downloaden | ✓ (B4) | ✓ | ✓ | ✓ | ✗ |
+| Proces-verbaal en CSV | ✓ (B4) | ✓ | ✓ | ✓ | ✗ |
+| Auditlog van het examen | ✓ | ✓ | ✓ | ✓ | ✗ |
+| Ongedaan maken, ongeldig verklaren, verlenging | ✗ | ✓ | ✗ | ✗ | ✗ |
+| Bewaren-vlag | ✓ | ✓ | ✗ | ✓ | ✗ |
+| Eigendom overdragen | ✓ | ✗ | ✗ | ✓ (binnen het team) | ✗ |
+| Afgerond examen definitief verwijderen | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Concept verwijderen, dupliceren, als sjabloon opslaan | ✗ | ✓ | ✗ | ✗ | ✗ |
+| Ander onderwijsteam kiezen (B67) | ✓ | ✗ | ✗ | ✗ | ✗ |
+
+De teamrol telt alleen met de teamcontext van de gebruiker: controleer daarom altijd met
+`services.exams.may(db, user, action, exam)`.
 
 Een admin die zelf eigenaar is van een examen heeft daarop ook alle rechten van een eigenaar.
 Een ontvangstbewijs controleren (*Admin → Ontvangstbewijs controleren*,
 `/admin/ontvangstbewijs`) mag alleen een admin; dat kan voor elk examen
 (`SystemAction.VERIFY_RECEIPT`).
 
-**Klassenlijsten** (B60) hebben een eigen matrix, `policy.CLASS_LIST_MATRIX`:
+**Onderwijsteams** (B63) hebben `policy.TEAM_MATRIX`:
 
-| Actie | Admin (lijst van ander) | Eigenaar | Andere docent |
-|---|---|---|---|
-| Bekijken (namen en studentnummers) | ✓ | ✓ | ✓ |
-| Gebruiken bij een examen (momentopname) | ✓ | ✓ | ✓ |
-| Kopiëren naar eigen lijsten | ✓ | ✓ | ✓ |
-| Hernoemen, vervangen (nieuwe CSV), verwijderen | ✓ | ✓ | ✗ |
+| Actie | Admin | TCP van het team | Lid | Andere docent |
+|---|---|---|---|---|
+| Teampagina bekijken (crebo's, leden) | ✓ | ✓ | ✓ | ✗ |
+| Bestaand account toevoegen, gewoon lid verwijderen | ✓ | ✓ | ✗ | ✗ |
+| TCP aanwijzen of weghalen, TCP uit het team halen | ✓ | ✗ | ✗ | ✗ |
+| Naam, omschrijving, crebo's; team verwijderen (alleen leeg) | ✓ | ✗ | ✗ | ✗ |
+| Klassenlijsten en sjablonen voor het team maken | ✓ | ✓ | ✗ | ✗ |
 
-**Examensjablonen** (B53, B61): persoonlijke sjablonen zijn alleen voor de eigenaar; gedeelde
-sjablonen gebruikt iedereen, en alleen admins beheren ze. Een admin mag een persoonlijk sjabloon
-van een ander bekijken, gebruiken en kopiëren (ook als gedeelde kopie), maar niet wijzigen,
-verwijderen of delen.
+Een TCP moet tweestapsverificatie gebruiken (B64).
+
+**Klassenlijsten** (B65) hebben `policy.CLASS_LIST_MATRIX`. Lijsten zonder team (van vóór B65)
+volgen B60 tot een admin ze toewijst (B69).
+
+| Actie | Admin | TCP van het team | Lid | Andere docent | Lijst zonder team: eigenaar / anderen |
+|---|---|---|---|---|---|
+| Bekijken (namen en studentnummers) | ✓ | ✓ | ✓ | ✗ | ✓ / ✓ |
+| Gebruiken bij een examen van hetzelfde team | ✓ | ✓ | ✓ | ✗ | ✓ / ✓ |
+| Hernoemen, vervangen (nieuwe CSV), verwijderen | ✓ | ✓ | ✗ | ✗ | ✓ / ✗ |
+
+**Examensjablonen** (B53, B61, B66) hebben `policy.TEMPLATE_MATRIX`: een persoonlijk sjabloon is
+van de eigenaar (een admin mag het bekijken, gebruiken en kopiëren, niet wijzigen). Een
+teamsjabloon gebruiken en kopiëren de leden; de TCP's van het team en admins wijzigen en
+verwijderen het. Een gedeeld sjabloon van vóór de teams gebruikt iedereen, en alleen admins
+beheren het, tot het is toegewezen. Nieuwe gedeelde sjablonen bestaan niet meer.
+
 Studenten hebben geen account. Er bestaat **geen enkele route** waarmee een student ingeleverde
 bestanden kan opvragen.
 

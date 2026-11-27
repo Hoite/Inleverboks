@@ -47,6 +47,24 @@ class TeamContents:
 
 
 @dataclass(frozen=True)
+class Unassigned:
+    """What an admin still has to sort out after introducing teams (PLAN B69)."""
+
+    users_without_team: list[User]
+    teams_without_contact: list[Team]
+    class_lists: list[ClassList]
+    shared_templates: list[ExamTemplate]
+    exams: list[Exam]  # without team, owner in a team
+
+    @property
+    def empty(self) -> bool:
+        return not (
+            self.users_without_team or self.teams_without_contact or self.class_lists
+            or self.shared_templates or self.exams
+        )  # fmt: skip
+
+
+@dataclass(frozen=True)
 class Membership:
     """One team of a user, for the users page and the account page."""
 
@@ -274,6 +292,74 @@ class TeamService:
         # next login sets it up.
         if value and not needed_totp and not user.totp_enabled:
             self.auth.revoke_all(db, user.id)
+
+    # Assigning what dates from before the teams (admin, PLAN B69) -------------------
+
+    def unassigned(self, db: Session) -> Unassigned:
+        members = select(TeamMember.user_id)
+        contacts = select(TeamMember.team_id).where(TeamMember.is_contact.is_(True))
+        users = db.scalars(
+            select(User)
+            .where(User.is_active.is_(True), User.id.not_in(members))
+            .order_by(func.lower(User.name), User.email)
+        )
+        teams = db.scalars(select(Team).where(Team.id.not_in(contacts)))
+        exams = db.scalars(
+            select(Exam)
+            .where(Exam.team_id.is_(None), Exam.owner_id.in_(members))
+            .order_by(Exam.owner_id, Exam.starts_at.desc())
+        )
+        return Unassigned(
+            users_without_team=list(users),
+            teams_without_contact=sorted(teams, key=lambda t: t.name.lower()),
+            class_lists=list(db.scalars(
+                select(ClassList).where(ClassList.team_id.is_(None)).order_by(ClassList.name)
+            )),
+            shared_templates=list(db.scalars(
+                select(ExamTemplate)
+                .where(ExamTemplate.shared.is_(True), ExamTemplate.team_id.is_(None))
+                .order_by(ExamTemplate.name)
+            )),
+            exams=list(exams),
+        )  # fmt: skip
+
+    def assign_class_list(
+        self, db: Session, admin: User, class_list_id: uuid.UUID, team_id: uuid.UUID, *,
+        ip: str | None,
+    ) -> None:  # fmt: skip
+        if not can(admin, SystemAction.MANAGE_TEAMS):
+            raise PermissionDeniedError()
+        class_list = db.get(ClassList, class_list_id)
+        team = db.get(Team, team_id)
+        if class_list is None or team is None:
+            raise NotFoundError()
+        if class_list.team_id == team.id:
+            return
+        old = class_list.team_id
+        class_list.team_id = team.id
+        self._log(db, admin, "class_list.assigned", team, ip=ip, class_list_id=str(class_list.id),
+                  old_team_id=str(old) if old else None)  # fmt: skip
+        db.commit()
+
+    def assign_template(
+        self, db: Session, admin: User, template_id: uuid.UUID, team_id: uuid.UUID, *,
+        ip: str | None,
+    ) -> None:  # fmt: skip
+        """A shared template (B53) becomes a team template (B66)."""
+        if not can(admin, SystemAction.MANAGE_TEAMS):
+            raise PermissionDeniedError()
+        template = db.get(ExamTemplate, template_id)
+        team = db.get(Team, team_id)
+        if template is None or team is None or not (template.shared or template.team_id):
+            raise NotFoundError()
+        if template.team_id == team.id:
+            return
+        old = template.team_id
+        template.shared = False
+        template.team_id = team.id
+        self._log(db, admin, "template.assigned", team, ip=ip, template_id=str(template.id),
+                  old_team_id=str(old) if old else None)  # fmt: skip
+        db.commit()
 
     # Crebos (admin) ------------------------------------------------------------------
 

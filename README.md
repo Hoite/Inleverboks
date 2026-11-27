@@ -97,29 +97,45 @@ sjabloonbestanden, extensies, limieten en toegangsinstellingen. Je maakt ze daar
 een bestaand examen op als sjabloon (tabblad *Geavanceerd*). Bij **Nieuw examen** kies je
 bovenaan een sjabloon. Tijden, linknaam en klassenlijst kies je altijd per examen. De verwachte
 bestanden van een examen uit een sjabloon zie je alleen ter inzage: je wijzigt ze in het
-sjabloon (sjabloonbestanden uploaden op het examen kan wel). Sjablonen zijn persoonlijk en
-hebben een eigen (paarse) kleur, zodat je ze niet met een examen verwart.
+sjabloon (sjabloonbestanden uploaden op het examen kan wel). Sjablonen zijn persoonlijk of van
+een onderwijsteam, en hebben een eigen (paarse) kleur, zodat je ze niet met een examen verwart.
 
 Een nieuw examen staat standaard op de eerstvolgende werkdag van 09:00 tot 17:00. Verschuif je
 de start, dan schuift het einde mee. Keuzelijsten met veel namen (sjabloon, klassenlijst,
 tweede beoordelaar, nieuwe eigenaar) zijn doorzoekbaar op naam en e-mailadres.
 
-**Klassenlijsten** (tabblad *Klassenlijsten*) importeer je als CSV. Elke docent kan alle
-klassenlijsten van de school bekijken en gebruiken bij een examen (kies *Alle lijsten*), en er
-een eigen kopie van maken. Alleen de eigenaar en admins kunnen een lijst hernoemen, vervangen
-door een nieuwe CSV of verwijderen. Een examen bewaart een eigen kopie van de lijst: als die
-later verandert, blijft het examen ongewijzigd.
+**Onderwijsteams.** Docenten zitten in een of meer onderwijsteams. Een team heeft crebo's en
+een of meer **teamcontactpersonen** (TCP's). Een admin beheert de teams onder
+*Admin → Onderwijsteams*: aanmaken, leden toevoegen, TCP's aanwijzen en crebo's koppelen. Een TCP
+moet tweestapsverificatie gebruiken en kan zelf bestaande accounts aan zijn team toevoegen of
+gewone leden uit het team halen (op de teampagina, te vinden via *Account*). Functies voor
+TCP's herken je aan een groepjesicoon en een petrolkleur.
+
+- **Klassenlijsten** (tabblad *Klassenlijsten*) horen bij een team. De TCP's importeren ze als
+  CSV, vervangen en verwijderen ze; de leden van het team bekijken en gebruiken ze. Een examen
+  bewaart een eigen kopie van de lijst: als die later verandert, blijft het examen ongewijzigd.
+- **Teamsjablonen** maakt een TCP uit de crebo's van zijn team, of hij kopieert een eigen
+  sjabloon naar het team. De leden gebruiken ze en kunnen er een eigen kopie van maken.
+- **Examens** krijgen het team van het teamsjabloon, of je kiest een van je teams (met één team
+  gaat dat vanzelf). De TCP's zien onder *Teamexamens* alle examens van hun teams, ook
+  afgeronde, en mogen de inleveringen bekijken, downloaden en exporteren, de bewaren-vlag zetten
+  en een examen overdragen aan een ander teamlid.
+- **Van vóór de teams:** bestaande klassenlijsten, gedeelde sjablonen en examens hebben nog geen
+  team en werken zoals voorheen. Een admin wijst ze toe onder
+  *Admin → Onderwijsteams → Nog toe te wijzen*; daar staan ook de accounts zonder team en de
+  teams zonder TCP.
 
 **Admins** zien onder *Alle examens* alle examens met hun eigenaar, en kunnen op eigenaar
 filteren. Onder *Examensjablonen → Alle sjablonen* zien ze ook de persoonlijke sjablonen van
-alle docenten; die kunnen ze bekijken en kopiëren (naar hun eigen of naar de gedeelde sjablonen),
-maar niet wijzigen.
+alle docenten; die kunnen ze bekijken en kopiëren (naar hun eigen sjablonen of naar een team),
+maar niet wijzigen. Alleen een admin verplaatst een examen naar een ander team (tabblad
+*Geavanceerd*).
 
 **Sjablonen uit een kwalificatie:** onder *Examensjablonen → Sjabloon uit crebo* zoek je een
 opleiding op crebonummer of naam van de uitstroom (bijvoorbeeld 27016). Kies de kerntaken: elke
 kerntaak wordt een sjabloon met een vakje per werkproces, zoals `B1-K1-W1 [naam]`. De
-sjabloonbestanden upload je daarna zelf. Een admin kan sjablonen **delen** met alle docenten;
-alleen admins beheren gedeelde sjablonen. Bij een nieuw examen kies je welke werkprocessen
+sjabloonbestanden upload je daarna zelf. Een TCP kiest of de sjablonen van hem zelf zijn of van
+zijn team; voor een team toont de zoeklijst alleen de crebo's van dat team. Bij een nieuw examen kies je welke werkprocessen
 meedoen (een **deelexamen**). Vanuit het overzicht maak je met één klik een **herkansing** voor
 een of meer studenten, met alleen de werkprocessen die voor hen nog openstaan. De kwalificaties
 komen uit de kwalificatiestructuur van SBB.

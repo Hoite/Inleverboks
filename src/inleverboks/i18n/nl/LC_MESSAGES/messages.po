@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-27 11:05+0100\n"
+"POT-Creation-Date: 2026-11-27 11:16+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -1108,8 +1108,91 @@ msgstr ""
 "Dit team heeft nog %(lists)s klassenlijst(en), %(templates)s sjabloon/sjablonen en %(exams)s "
 "examen(s). Wijs die toe aan een ander team voordat je het verwijdert."
 
+msgid "Still to assign"
+msgstr "Nog toe te wijzen"
+
+#, python-format
+msgid "Education team for %(name)s"
+msgstr "Onderwijsteam voor %(name)s"
+
+msgid "Assign"
+msgstr "Toewijzen"
+
+msgid "Assigned to the education team."
+msgstr "Toegewezen aan het onderwijsteam."
+
+msgid ""
+"Everything from before the education teams. Until you assign it, it works as before: class lists "
+"and shared templates are available to every teacher, and an exam only to its owner, second "
+"reviewer and admins."
+msgstr ""
+"Alles van vóór de onderwijsteams. Tot je het toewijst, werkt het zoals voorheen: klassenlijsten "
+"en gedeelde sjablonen zijn beschikbaar voor alle docenten, en een examen alleen voor de eigenaar,"
+" de tweede beoordelaar en admins."
+
+msgid "Nothing left to assign."
+msgstr "Er is niets meer toe te wijzen."
+
+msgid "Create an education team first."
+msgstr "Maak eerst een onderwijsteam aan."
+
+msgid "Accounts without education team"
+msgstr "Accounts zonder onderwijsteam"
+
+msgid "Add them to a team on the page of that team."
+msgstr "Voeg ze toe aan een team op de pagina van dat team."
+
+msgid "Teams without team contact"
+msgstr "Teams zonder teamcontactpersoon"
+
+msgid "Class lists without team"
+msgstr "Klassenlijsten zonder team"
+
+msgid "Class list"
+msgstr "Klassenlijst"
+
+msgid "Owner"
+msgstr "Eigenaar"
+
+msgid "Education team"
+msgstr "Onderwijsteam"
+
+msgid "Shared templates without team"
+msgstr "Gedeelde sjablonen zonder team"
+
+msgid "Template"
+msgstr "Sjabloon"
+
+msgid ""
+"An assigned template becomes a team template: only the members of the team use it, and its team "
+"contacts manage it."
+msgstr ""
+"Een toegewezen sjabloon wordt een teamsjabloon: alleen de leden van het team gebruiken het, en de"
+" teamcontactpersonen beheren het."
+
+msgid "Exams without team"
+msgstr "Examens zonder team"
+
+msgid "Exams of teachers who are in a team now. Assign them all at once per teacher, or one by one."
+msgstr ""
+"Examens van docenten die nu in een team zitten. Wijs ze per docent in één keer toe, of één voor "
+"één."
+
+#, python-format
+msgid "all %(n)s exams of %(name)s"
+msgstr "alle %(n)s examens van %(name)s"
+
+msgid "Exam"
+msgstr "Examen"
+
+msgid "Start"
+msgstr "Start"
+
 msgid "The education team has been deleted."
 msgstr "Het onderwijsteam is verwijderd."
+
+msgid "Some accounts, teams, class lists, templates or exams still need a team."
+msgstr "Er zijn nog accounts, teams, klassenlijsten, sjablonen of examens die een team nodig hebben."
 
 msgid "New education team"
 msgstr "Nieuw onderwijsteam"
@@ -1230,9 +1313,6 @@ msgstr "Controleren"
 
 msgid "The codes match a stored hand-in."
 msgstr "De codes horen bij een opgeslagen inlevering."
-
-msgid "Exam"
-msgstr "Examen"
 
 msgid "Handed in at"
 msgstr "Ingeleverd om"
@@ -1425,9 +1505,6 @@ msgstr "Examinator (eigenaar)"
 
 msgid "Second reviewer"
 msgstr "Tweede beoordelaar"
-
-msgid "Start"
-msgstr "Start"
 
 msgid "End"
 msgstr "Einde"
@@ -1698,9 +1775,6 @@ msgstr "Teamexamens"
 msgid "All exams"
 msgstr "Alle examens"
 
-msgid "Education team"
-msgstr "Onderwijsteam"
-
 msgid "not assigned to a team"
 msgstr "nog niet aan een team toegewezen"
 
@@ -1812,9 +1886,6 @@ msgstr ""
 
 msgid "Imported"
 msgstr "Geïmporteerd"
-
-msgid "Owner"
-msgstr "Eigenaar"
 
 msgid "You"
 msgstr "Jij"
@@ -2006,9 +2077,6 @@ msgstr "Toepassen"
 
 msgid "Use template"
 msgstr "Sjabloon gebruiken"
-
-msgid "Template"
-msgstr "Sjabloon"
 
 #, python-format
 msgid "Based on template %(name)s. Times, link name and class list are not part of a template."
@@ -2266,9 +2334,6 @@ msgstr "Sjabloonbestand voor %(label)s"
 
 msgid "Upload"
 msgstr "Uploaden"
-
-msgid "Class list"
-msgstr "Klassenlijst"
 
 #, python-format
 msgid "%(n)s students on the class list."

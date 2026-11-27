@@ -38,6 +38,12 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   inleveringen bekijken en downloaden, exporteren, het auditlog en de bewaren-vlag. Ze dragen
   een examen alleen over aan een lid van het team. Alleen een admin verplaatst een examen
   naar een ander team (tabblad *Geavanceerd*).
+- **Nog toe te wijzen** (PLAN B69, *Admin → Onderwijsteams → Nog toe te wijzen*): accounts
+  zonder team, teams zonder teamcontactpersoon, en de klassenlijsten, gedeelde sjablonen en
+  examens van vóór de teams. Een admin wijst ze per stuk toe, en examens ook in één keer per
+  docent. Elke toewijzing komt in het auditlog. De teamlijst wijst erop zolang er iets open staat.
+- De demodata (`demo-seed`) heeft een demoteam met de demodocent als lid, de demo-crebo en een
+  klassenlijst.
 
 ### Opgelost
 

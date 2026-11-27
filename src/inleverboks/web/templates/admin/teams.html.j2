@@ -6,6 +6,10 @@
 {% include "admin/_nav.html.j2" %}
 {% if ok == "deleted" %}{{ ok_box(_("The education team has been deleted.")) }}{% endif %}
 {{ errors_box(errors) }}
+{% if not todo.empty %}
+<div class="alert alert-warning" role="status"><span class="alert-icon" aria-hidden="true">!</span>
+  <div><p>{{ _("Some accounts, teams, class lists, templates or exams still need a team.") }} <a href="/admin/onderwijsteams/toewijzen">{{ _("Still to assign") }}</a></p></div></div>
+{% endif %}
 
 <section class="card">
   <h2>{{ _("New education team") }}</h2>

@@ -179,6 +179,7 @@ def test_teacher_and_admin_pages(
         f"/examens/klassenlijsten/{class_list.id}", "/examens/klassenlijsten/nieuw",
         f"/examens/klassenlijsten/{class_list.id}/vervangen",
         "/admin/onderwijsteams", f"/admin/onderwijsteams/{team.id}", "/examens/team",
+        "/admin/onderwijsteams/toewijzen",
         f"/examens/sjablonen/crebo?team={team.id}",
         f"/examens/sjablonen/crebo/{qualification.id}?team={team.id}",
         f"/examens/sjablonen/{team_template.id}",

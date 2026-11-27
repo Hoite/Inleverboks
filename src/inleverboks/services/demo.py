@@ -24,7 +24,16 @@ from sqlalchemy.orm import Session
 from inleverboks.adapters.clock import FrozenClock
 from inleverboks.adapters.storage import StorageBackend
 from inleverboks.config import Settings
-from inleverboks.db.models import Exam, ExamRosterEntry, User
+from inleverboks.db.models import (
+    ClassList,
+    ClassListEntry,
+    Exam,
+    ExamRosterEntry,
+    Team,
+    TeamCrebo,
+    TeamMember,
+    User,
+)
 from inleverboks.services.asyncutil import call_async
 from inleverboks.services.audit import Actor
 from inleverboks.services.container import Services, build_services
@@ -110,6 +119,27 @@ class _Seeder:
         self.db.commit()
         return user, password
 
+    def team(self, member: User) -> Team:
+        """An education team (PLAN B63) with the demo teacher as member (not as team
+        contact: that needs two-step verification), the demo crebo and a class list. The
+        exams below get the team automatically."""
+        now = self.clock.now()
+        team = Team(name="Demo-team ICT", description="Voorbeeldteam", created_at=now)
+        team.crebos = [TeamCrebo(crebo=DEMO_QUALIFICATION.crebo)]
+        team.members = [TeamMember(user_id=member.id, added_at=now)]
+        class_list = ClassList(owner_id=member.id, name="Demo ICT-1A", created_at=now)
+        class_list.entries = [
+            ClassListEntry(student_number=number, first_name=first, infix=infix or None,
+                           last_name=last, class_name="ICT-1A")
+            for number, first, infix, last in STUDENTS
+        ]  # fmt: skip
+        self.db.add(team)
+        self.db.flush()
+        class_list.team_id = team.id
+        self.db.add(class_list)
+        self.db.commit()
+        return team
+
     def exam(
         self, owner: User, data: ExamInput, *, publish: bool = True, roster: bool = True
     ) -> Exam:
@@ -178,6 +208,7 @@ def seed(
         today = local_now.date()
         seeder = _Seeder(env, storage, db, now - timedelta(days=1, hours=2))
         owner, password = seeder.teacher()
+        seeder.team(owner)
         result = DemoResult(created=True, password=password)
         s = STUDENTS
 

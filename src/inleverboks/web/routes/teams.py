@@ -4,14 +4,15 @@ page for members and team contacts under /examens/teams."""
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse, Response
 
-from inleverboks.db.models import Team, TeamMember
+from inleverboks.db.models import Exam, Team, TeamMember
 from inleverboks.policy import TeamAction, can_team
-from inleverboks.services.errors import DomainError
+from inleverboks.services.errors import DomainError, NotFoundError
 from inleverboks.web.deps import Admin, Db, Svc, Teacher, client_ip
 from inleverboks.web.messages import describe
 from inleverboks.web.templating import render
@@ -42,6 +43,7 @@ def _list_page(
         "admin/teams.html.j2",
         status_code=status,
         teams=teams,
+        todo=services.teams.unassigned(db),
         crebo_names=services.teams.crebo_names(db),
         errors=errors or [],
         ok=ok,
@@ -69,6 +71,82 @@ def create_team(
             description=description,
         )  # fmt: skip
     return _redirect(f"{ADMIN_BASE}/{team.id}?ok=created")
+
+
+# Admin: what is still to assign (PLAN B69) --------------------------------------
+
+ASSIGN = ADMIN_BASE + "/toewijzen"
+
+
+@router.get(ASSIGN)
+def unassigned(
+    request: Request, ctx: Admin, db: Db, services: Svc, ok: str | None = None,
+    error: str | None = None,
+) -> Response:  # fmt: skip
+    todo = services.teams.unassigned(db)
+    memberships = services.teams.memberships(db)
+    by_owner: dict[uuid.UUID, list[Exam]] = {}
+    for exam in todo.exams:
+        by_owner.setdefault(exam.owner_id, []).append(exam)
+    return render(
+        request, "admin/team_assign.html.j2", todo=todo, teams=services.teams.all(db),
+        memberships=memberships, owner_names=services.users.names(db), by_owner=by_owner,
+        ok=ok, errors=describe(DomainError(error)) if error else [],
+    )  # fmt: skip
+
+
+def _assigned(action: Callable[[], object], db: Db) -> RedirectResponse:
+    try:
+        action()
+    except DomainError as exc:
+        db.rollback()
+        return _redirect(f"{ASSIGN}?error={exc.code}")
+    return _redirect(f"{ASSIGN}?ok=assigned")
+
+
+@router.post(ASSIGN + "/klassenlijst/{class_list_id:uuid}")
+def assign_class_list(
+    request: Request, class_list_id: uuid.UUID, ctx: Admin, db: Db, services: Svc,
+    team_id: Annotated[uuid.UUID, Form()],
+) -> Response:  # fmt: skip
+    return _assigned(lambda: services.teams.assign_class_list(
+        db, ctx.user, class_list_id, team_id, ip=client_ip(request)), db)  # fmt: skip
+
+
+@router.post(ASSIGN + "/sjabloon/{template_id:uuid}")
+def assign_template(
+    request: Request, template_id: uuid.UUID, ctx: Admin, db: Db, services: Svc,
+    team_id: Annotated[uuid.UUID, Form()],
+) -> Response:  # fmt: skip
+    return _assigned(lambda: services.teams.assign_template(
+        db, ctx.user, template_id, team_id, ip=client_ip(request)), db)  # fmt: skip
+
+
+@router.post(ASSIGN + "/examen/{exam_id:uuid}")
+def assign_exam(
+    request: Request, exam_id: uuid.UUID, ctx: Admin, db: Db, services: Svc,
+    team_id: Annotated[uuid.UUID, Form()],
+) -> Response:  # fmt: skip
+    exam = db.get(Exam, exam_id)
+    if exam is None:
+        raise NotFoundError()
+    return _assigned(lambda: services.exams.set_team(
+        db, ctx.user, exam, team_id, ip=client_ip(request)), db)  # fmt: skip
+
+
+@router.post(ASSIGN + "/eigenaar/{owner_id:uuid}")
+def assign_owner_exams(
+    request: Request, owner_id: uuid.UUID, ctx: Admin, db: Db, services: Svc,
+    team_id: Annotated[uuid.UUID, Form()],
+) -> Response:  # fmt: skip
+    """All exams without a team of one owner at once, each with its own audit entry."""
+    exams = [e for e in services.teams.unassigned(db).exams if e.owner_id == owner_id]
+
+    def assign_all() -> None:
+        for exam in exams:
+            services.exams.set_team(db, ctx.user, exam, team_id, ip=client_ip(request))
+
+    return _assigned(assign_all, db)
 
 
 # Admin: one team -----------------------------------------------------------------

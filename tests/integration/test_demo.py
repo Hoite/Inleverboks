@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 
 from inleverboks.adapters.clock import FrozenClock
 from inleverboks.config import Settings, get_settings
-from inleverboks.db.models import Exam, Submission, SubmissionFile
+from inleverboks.db.models import ClassList, Exam, Submission, SubmissionFile, Team
 from inleverboks.services.container import Services
 from inleverboks.services.demo import DEMO_TEACHER, seed
 from tests.conftest import TEST_SECRET, login
@@ -34,6 +34,10 @@ def test_seed_creates_realistic_data(
         "demo-databases-p3": "scheduled",
         "demo-concept": "concept",
     }
+    # PLAN B63: a demo team with the teacher as member; the exams belong to it.
+    team = db.scalars(select(Team)).one()
+    assert {e.team_id for e in exams.values()} == {team.id}
+    assert db.scalars(select(ClassList)).one().team_id == team.id
     submissions = list(db.scalars(select(Submission)))
     assert sorted(s.status for s in submissions).count("cancelled") == 1
     assert len([s for s in submissions if s.status == "active"]) == 6
@@ -50,6 +54,7 @@ def test_seed_creates_realistic_data(
     login(teacher, DEMO_TEACHER, password=result.password)
     page = teacher.get("/examens").text
     assert "Demo: Netwerken P2" in page
+    assert "Demo ICT-1A" in teacher.get("/examens/klassenlijsten").text
     overview = teacher.get(f"/examens/{closed.id}").text
     assert "Identiek aan" in overview
     # Running it again changes nothing.

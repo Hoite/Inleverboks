@@ -1,0 +1,100 @@
+{% extends "base.html.j2" %}
+{% from "_macros.html.j2" import csrf, errors_box, ok_box with context %}
+{% block title %}{{ _("Still to assign") }} · {{ _("Education teams") }} · {{ app_name }}{% endblock %}
+{% macro team_select(id, selected=none) %}
+<select id="{{ id }}" name="team_id" required>
+  {% for t in teams %}<option value="{{ t.id }}"{% if t.id == selected %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+</select>
+{% endmacro %}
+{% macro assign_form(action, id, label, selected=none) %}
+<form method="post" action="{{ action }}" class="row-form assign-form">
+  {{ csrf() }}
+  <div class="field">
+    <label for="{{ id }}" class="visually-hidden">{{ _("Education team for %(name)s", name=label) }}</label>
+    {{ team_select(id, selected) }}
+  </div>
+  <button type="submit" class="button button-small button-secondary">{{ _("Assign") }}<span class="visually-hidden"> {{ label }}</span></button>
+</form>
+{% endmacro %}
+{% block content %}
+<p class="breadcrumb"><a href="/admin/onderwijsteams">{{ _("Education teams") }}</a></p>
+<h1>{{ _("Still to assign") }}</h1>
+{% if ok == "assigned" %}{{ ok_box(_("Assigned to the education team.")) }}{% endif %}
+{{ errors_box(errors) }}
+<p class="hint">{{ _("Everything from before the education teams. Until you assign it, it works as before: class lists and shared templates are available to every teacher, and an exam only to its owner, second reviewer and admins.") }}</p>
+{% if todo.empty %}<p>{{ _("Nothing left to assign.") }}</p>{% endif %}
+{% if not teams %}<p class="muted">{{ _("Create an education team first.") }}</p>{% endif %}
+
+{% if todo.users_without_team %}
+<section class="card">
+  <h2>{{ _("Accounts without education team") }} ({{ todo.users_without_team|length }})</h2>
+  <ul class="plain-list">
+    {% for u in todo.users_without_team %}<li>{{ u.name }} <span class="muted">({{ u.email }})</span></li>{% endfor %}
+  </ul>
+  <p class="hint">{{ _("Add them to a team on the page of that team.") }}</p>
+</section>
+{% endif %}
+
+{% if todo.teams_without_contact %}
+<section class="card">
+  <h2>{{ _("Teams without team contact") }} ({{ todo.teams_without_contact|length }})</h2>
+  <ul class="plain-list">
+    {% for t in todo.teams_without_contact %}<li><a href="/admin/onderwijsteams/{{ t.id }}#leden">{{ t.name }}</a></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if teams and todo.class_lists %}
+<section class="card">
+  <h2>{{ _("Class lists without team") }} ({{ todo.class_lists|length }})</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">{{ _("Class list") }}</th><th scope="col">{{ _("Owner") }}</th><th scope="col">{{ _("Education team") }}</th></tr></thead>
+    <tbody>
+    {% for cl in todo.class_lists %}
+      {% set owner_teams = memberships.get(cl.owner_id, []) %}
+      <tr><td><a href="/examens/klassenlijsten/{{ cl.id }}">{{ cl.name }}</a></td><td>{{ owner_names.get(cl.owner_id, "") }}</td>
+        <td>{{ assign_form("/admin/onderwijsteams/toewijzen/klassenlijst/" ~ cl.id, "cl-" ~ cl.id, cl.name, owner_teams[0].team_id if owner_teams|length == 1 else none) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endif %}
+
+{% if teams and todo.shared_templates %}
+<section class="card">
+  <h2>{{ _("Shared templates without team") }} ({{ todo.shared_templates|length }})</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">{{ _("Template") }}</th><th scope="col">{{ _("Education team") }}</th></tr></thead>
+    <tbody>
+    {% for t in todo.shared_templates %}
+      <tr><td><a href="/examens/sjablonen/{{ t.id }}">{{ t.name }}</a></td>
+        <td>{{ assign_form("/admin/onderwijsteams/toewijzen/sjabloon/" ~ t.id, "tpl-" ~ t.id, t.name) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="hint">{{ _("An assigned template becomes a team template: only the members of the team use it, and its team contacts manage it.") }}</p>
+</section>
+{% endif %}
+
+{% if teams and todo.exams %}
+<section class="card">
+  <h2>{{ _("Exams without team") }} ({{ todo.exams|length }})</h2>
+  <p class="hint">{{ _("Exams of teachers who are in a team now. Assign them all at once per teacher, or one by one.") }}</p>
+  {% for owner_id, exams in by_owner.items() %}
+  {% set owner_teams = memberships.get(owner_id, []) %}
+  {% set default_team = owner_teams[0].team_id if owner_teams|length == 1 else none %}
+  <h3>{{ owner_names.get(owner_id, "") }}</h3>
+  {{ assign_form("/admin/onderwijsteams/toewijzen/eigenaar/" ~ owner_id, "owner-" ~ owner_id, _("all %(n)s exams of %(name)s", n=exams|length, name=owner_names.get(owner_id, "")), default_team) }}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">{{ _("Exam") }}</th><th scope="col">{{ _("Start") }}</th><th scope="col">{{ _("Education team") }}</th></tr></thead>
+    <tbody>
+    {% for e in exams %}
+      <tr><td><a href="/examens/{{ e.id }}">{{ e.name }}</a></td><td>{{ e.starts_at|localtime }}</td>
+        <td>{{ assign_form("/admin/onderwijsteams/toewijzen/examen/" ~ e.id, "exam-" ~ e.id, e.name, default_team) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

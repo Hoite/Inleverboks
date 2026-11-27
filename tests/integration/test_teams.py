@@ -3,6 +3,7 @@ team contacts, two-step verification for team contacts and the users overview.""
 
 from __future__ import annotations
 
+import uuid
 from datetime import date
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from inleverboks.adapters.clock import FrozenClock
 from inleverboks.db.models import (
     AuditEvent,
     ClassList,
+    Exam,
+    ExamTemplate,
     Qualification,
     Team,
     TeamCrebo,
@@ -26,6 +29,7 @@ from inleverboks.services import branding
 from inleverboks.services.container import Services
 from inleverboks.services.errors import DomainError, PermissionDeniedError
 from tests.conftest import create_user, enable_totp, login, post
+from tests.student_helpers import make_exam
 
 
 @pytest.fixture
@@ -331,3 +335,67 @@ def test_team_contact_colours_match_the_contrast_check() -> None:
         assert f"--color-{name}: {value};" in css
     keys = {pair.key for pair in branding.CONTRAST_PAIRS}
     assert {"tcp_button", "tcp_button_hover", "tcp_badge"} <= keys
+
+
+# Still to assign (B69) -----------------------------------------------------------
+
+
+def test_admin_assigns_what_dates_from_before_the_teams(
+    admin_client: TestClient, db: Session, clock: FrozenClock, services: Services,
+    admin: tuple[User, str], team: Team,
+) -> None:  # fmt: skip
+    owner = create_user(db, clock, name="Oude Docent")
+    old_list = ClassList(owner_id=owner.id, name="Oude lijst", created_at=clock.now())
+    db.add(old_list)
+    db.commit()
+    first = make_exam(db, services, owner, slug="oud-1")
+    make_exam(db, services, owner, slug="oud-2")
+    source = make_exam(db, services, owner, slug="bron")
+    shared = services.exams.save_as_template(db, owner, source, "Gedeeld", ip=None)
+    shared.shared = True
+    db.commit()
+    assert first.team_id is None  # no team yet when it was made
+
+    listing = admin_client.get("/admin/onderwijsteams").text
+    assert 'href="/admin/onderwijsteams/toewijzen"' in listing
+    page = admin_client.get("/admin/onderwijsteams/toewijzen").text
+    assert "Oude Docent" in page  # account without team
+    assert "Oude lijst" in page and "Gedeeld" in page
+    assert "/oud-1" not in page  # exams only once the owner is in a team
+
+    base = "/admin/onderwijsteams/toewijzen"
+    tid = {"team_id": str(team.id)}
+    assert (
+        post(admin_client, f"{base}/klassenlijst/{old_list.id}", tid).headers["location"]
+        == f"{base}?ok=assigned"
+    )
+    assert post(admin_client, f"{base}/sjabloon/{shared.id}", tid).status_code == 303
+    services.teams.add_member(db, admin[0], team, owner.id, ip=None)
+    page = admin_client.get(base).text
+    assert "Oude Docent" in page and str(first.id) in page
+    assert post(admin_client, f"{base}/examen/{first.id}", tid).status_code == 303
+    assert post(admin_client, f"{base}/eigenaar/{owner.id}", tid).status_code == 303
+
+    db.expire_all()
+    assert db.get(ClassList, old_list.id).team_id == team.id  # type: ignore[union-attr]
+    template = db.get(ExamTemplate, shared.id)
+    assert template is not None and template.team_id == team.id and not template.shared
+    assert {e.team_id for e in db.scalars(select(Exam))} == {team.id}
+    assert len(_events(db, "exam.team_changed")) == 3
+    assert [e.details["class_list_id"] for e in _events(db, "class_list.assigned")] == [
+        str(old_list.id)
+    ]
+    assert [e.details["template_id"] for e in _events(db, "template.assigned")] == [str(shared.id)]
+    done = admin_client.get(base).text
+    assert "Oude lijst" not in done and "/oud-2" not in done
+
+
+def test_teachers_cannot_assign(
+    client: TestClient, db: Session, clock: FrozenClock, team: Team
+) -> None:
+    create_user(db, clock)
+    login(client)
+    assert client.get("/admin/onderwijsteams/toewijzen").status_code == 403
+    response = post(client, f"/admin/onderwijsteams/toewijzen/klassenlijst/{uuid.uuid4()}",
+                    {"team_id": str(team.id)})  # fmt: skip
+    assert response.status_code == 403
