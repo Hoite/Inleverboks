@@ -6,6 +6,18 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-27
+
+### Let op bij het upgraden
+
+- De migratie voegt de onderwijsteams toe, maar wijst zelf niets toe. Na de update werkt alles
+  zoals voorheen. Maak daarna onder *Admin → Onderwijsteams* de teams aan, voeg de docenten toe,
+  wijs de teamcontactpersonen aan en koppel de crebo's. Wijs vervolgens onder *Nog toe te wijzen*
+  de bestaande klassenlijsten, gedeelde sjablonen en examens toe.
+- Docenten maken geen klassenlijsten en gedeelde sjablonen meer; dat doen de
+  teamcontactpersonen voor hun team (en admins).
+- Teamcontactpersonen moeten tweestapsverificatie gebruiken.
+
 ### Toegevoegd
 
 - **Onderwijsteams** (eerste stap, PLAN B63/B64): een admin maakt teams aan onder
