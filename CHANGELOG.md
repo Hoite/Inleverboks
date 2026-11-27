@@ -30,6 +30,14 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   gebruiken teamsjablonen en kunnen er een eigen kopie van maken; alleen de
   teamcontactpersonen en admins wijzigen ze. *Delen met alle docenten* is vervallen;
   bestaande gedeelde sjablonen blijven bruikbaar tot een admin ze aan een team toewijst.
+- **Examens per onderwijsteam** (PLAN B67/B68): een nieuw examen krijgt het team van het
+  teamsjabloon of van het examen waarvan het een herkansing of kopie is; anders kiest de
+  docent een van zijn teams (met één team gaat dat vanzelf). Een klassenlijst moet bij
+  hetzelfde team horen. Teamcontactpersonen hebben het tabblad *Teamexamens* met alle
+  examens van hun teams (ook afgeronde) en hebben daarop dezelfde rechten als een admin:
+  inleveringen bekijken en downloaden, exporteren, het auditlog en de bewaren-vlag. Ze dragen
+  een examen alleen over aan een lid van het team. Alleen een admin verplaatst een examen
+  naar een ander team (tabblad *Geavanceerd*).
 
 ### Opgelost
 

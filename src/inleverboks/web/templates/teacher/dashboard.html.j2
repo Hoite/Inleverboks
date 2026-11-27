@@ -10,8 +10,18 @@
 {% include "teacher/_tabs.html.j2" %}
 {% if ok is defined and ok == "deleted" %}<div class="alert alert-success" role="status"><span class="alert-icon" aria-hidden="true">✓</span><div><p>{{ _("The exam has been deleted permanently.") }}</p></div></div>{% endif %}
 {% set show_owner = owner_names is defined and owner_names is not none %}
+{% set show_team = team_names is defined and team_names is not none %}
 {% if owners is defined %}
-<form method="get" action="/examens/alle" class="row-form filter-form">
+<form method="get" action="{{ filter_action|default('/examens/alle') }}" class="row-form filter-form">
+  {% if filter_teams is defined and filter_teams|length > 1 %}
+  <div class="field">
+    <label for="team">{{ _("Education team") }}</label>
+    <select id="team" name="team">
+      <option value="">{{ _("All my teams") }}</option>
+      {% for t in filter_teams %}<option value="{{ t.id }}"{% if team_filter == t.id %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+    </select>
+  </div>
+  {% endif %}
   <div class="field">
     <label for="eigenaar">{{ _("Owner") }}</label>
     <select id="eigenaar" name="eigenaar" data-combobox data-config="{{ combobox_config() }}">
@@ -29,6 +39,7 @@
     <tr>
       <th scope="col">{{ _("Exam") }}</th>
       {% if show_owner %}<th scope="col">{{ _("Owner") }}</th>{% endif %}
+      {% if show_team %}<th scope="col">{{ _("Education team") }}</th>{% endif %}
       <th scope="col">{{ _("Status") }}</th>
       <th scope="col">{{ _("Start") }}</th>
       <th scope="col">{{ _("End") }}</th>
@@ -43,6 +54,7 @@
         {% if row.retention.warning(now) %}<br><a class="signal" href="/examens/{{ row.exam.id }}/geavanceerd#bewaartermijn"><span aria-hidden="true">!</span> {{ _("Files are deleted on %(d)s", d=row.retention.due|localtime("%d-%m-%Y")) }}</a>{% endif %}
         {% if row.retention.held %}<br><span class="signal signal-extension"><span aria-hidden="true">i</span> {{ _("Retention hold") }}</span>{% endif %}</td>
       {% if show_owner %}<td>{% if row.exam.owner_id == current_user.id %}{{ _("You") }}{% else %}{{ owner_names.get(row.exam.owner_id, "") }}{% endif %}</td>{% endif %}
+      {% if show_team %}<td>{{ team_names.get(row.exam.team_id, "") }}</td>{% endif %}
       <td>{{ status_badge(row.status, status_labels) }}</td>
       <td>{{ row.exam.starts_at|localtime }}</td>
       <td>{{ row.exam.ends_at|localtime }}</td>
@@ -54,6 +66,6 @@
 </table>
 </div>
 {% else %}
-<p class="muted">{{ _("No exams yet.") }}</p>
+<p class="muted">{% if tab == "team" %}{{ _("Your teams have no exams yet.") }}{% else %}{{ _("No exams yet.") }}{% endif %}</p>
 {% endif %}
 {% endblock %}

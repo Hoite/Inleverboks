@@ -4,6 +4,9 @@
   <a href="/examens/afgerond"{% if tab == "finalized" %} aria-current="page"{% endif %}>{{ _("Finalized exams") }}</a>
   <a href="/examens/sjablonen"{% if tab == "templates" %} aria-current="page"{% endif %}>{{ _("Exam templates") }}</a>
   <a href="/examens/klassenlijsten"{% if tab == "classlists" %} aria-current="page"{% endif %}>{{ _("Class lists") }}</a>
+  {% if is_team_contact() %}
+  <a class="tcp-tab" href="/examens/team"{% if tab == "team" %} aria-current="page"{% endif %}>{% include "_tcp_mark.html.j2" %}{{ _("Team exams") }}</a>
+  {% endif %}
   {% if current_user.is_admin %}
   <a class="admin-tab" href="/examens/alle"{% if tab == "all" %} aria-current="page"{% endif %}>{% include "_admin_crown.html.j2" %}{{ _("All exams") }}</a>
   {% endif %}

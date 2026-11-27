@@ -138,6 +138,7 @@ def test_teacher_and_admin_pages(
     secret = enable_totp(db, services, admin)
     team = services.teams.create(db, admin, "ICT", "Applicatieontwikkeling", ip=None)
     services.teams.add_member(db, admin, team, owner.id, ip=None)
+    services.teams.add_member(db, admin, team, admin.id, contact=True, ip=None)
     services.teams.add_crebo(db, admin, team, "27016", ip=None)
     class_list = services.classlists.save(
         db, admin, team.id, "ICT-2A", ImportResult(entries=[ParsedEntry(
@@ -177,7 +178,7 @@ def test_teacher_and_admin_pages(
         f"/examens/sjablonen/{template.id}",  # another teacher's personal template
         f"/examens/klassenlijsten/{class_list.id}", "/examens/klassenlijsten/nieuw",
         f"/examens/klassenlijsten/{class_list.id}/vervangen",
-        "/admin/onderwijsteams", f"/admin/onderwijsteams/{team.id}",
+        "/admin/onderwijsteams", f"/admin/onderwijsteams/{team.id}", "/examens/team",
         f"/examens/sjablonen/crebo?team={team.id}",
         f"/examens/sjablonen/crebo/{qualification.id}?team={team.id}",
         f"/examens/sjablonen/{team_template.id}",

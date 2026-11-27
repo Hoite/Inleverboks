@@ -15,11 +15,11 @@ from sqlalchemy.orm import Session
 
 from inleverboks.db.models import AuditEvent, Exam, ProcesVerbaal, Submission, SubmissionFile, User
 from inleverboks.i18n import gettext as _
-from inleverboks.policy import ExamAction, ExamRef, can_exam
+from inleverboks.policy import ExamAction
 from inleverboks.services.audit import Actor
 from inleverboks.services.container import Services
 from inleverboks.services.errors import DomainError, NotFoundError
-from inleverboks.services.exams import ExamStatus
+from inleverboks.services.exams import ExamStatus, may
 from inleverboks.services.exports import (
     IntegrityReport,
     build_zip,
@@ -49,10 +49,6 @@ AUDIT_PAGE_SIZE = 200
 
 def _redirect(url: str) -> RedirectResponse:
     return RedirectResponse(url, status_code=303)
-
-
-def _ref(exam: Exam) -> ExamRef:
-    return ExamRef(owner_id=exam.owner_id, second_reviewer_id=exam.second_reviewer_id)
 
 
 def signal_labels() -> dict[str, str]:
@@ -126,7 +122,7 @@ def overview(
         "row_status_labels": row_status_labels(),
         "signal_labels": signal_labels(),
         "polling": exam_status is ExamStatus.OPEN,
-        "perms": {a.value: can_exam(ctx.user, a, _ref(exam)) for a in ExamAction},
+        "perms": {a.value: may(db, ctx.user, a, exam) for a in ExamAction},
         "ok": ok,
         "error": [describe(DomainError(error))[0]] if error else [],
         "retention": services.lifecycle.retention(db, exam),
@@ -180,7 +176,7 @@ def student_detail(
         signal_labels=signal_labels(),
         warning_labels=warning_labels(),
         row_status_labels=row_status_labels(),
-        perms={a.value: can_exam(ctx.user, a, _ref(exam)) for a in ExamAction},
+        perms={a.value: may(db, ctx.user, a, exam) for a in ExamAction},
         extension=services.exams.end_for_student(db, exam, student_number),
         ok=ok,
         errors=[describe(DomainError(error))[0]] if error else [],

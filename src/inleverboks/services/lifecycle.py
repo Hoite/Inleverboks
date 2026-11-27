@@ -32,11 +32,11 @@ from inleverboks.db.models import (
     SubmissionFile,
     User,
 )
-from inleverboks.policy import ExamAction, ExamRef, can_exam
+from inleverboks.policy import ExamAction
 from inleverboks.services.asyncutil import call_async
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.errors import DomainError, PermissionDeniedError
-from inleverboks.services.exams import ExamService, ExamStatus
+from inleverboks.services.exams import ExamService, ExamStatus, may
 from inleverboks.services.pv import ProcesVerbaalService, RenderPv, generate
 from inleverboks.services.system_settings import SettingsService
 from inleverboks.services.template_files import unreferenced
@@ -135,7 +135,7 @@ class LifecycleService:
     # Hold flag -----------------------------------------------------------------------
 
     def set_hold(self, db: Session, user: User, exam: Exam, reason: str, *, ip: str | None) -> None:
-        if not can_exam(user, ExamAction.SET_HOLD, ExamRef(exam.owner_id, exam.second_reviewer_id)):
+        if not may(db, user, ExamAction.SET_HOLD, exam):
             raise PermissionDeniedError()
         if exam.finalized_at is not None:
             raise DomainError("exam_finalized")
@@ -155,7 +155,7 @@ class LifecycleService:
     def remove_hold(
         self, db: Session, user: User, exam: Exam, reason: str, *, ip: str | None
     ) -> None:
-        if not can_exam(user, ExamAction.SET_HOLD, ExamRef(exam.owner_id, exam.second_reviewer_id)):
+        if not may(db, user, ExamAction.SET_HOLD, exam):
             raise PermissionDeniedError()
         if not exam.hold:
             return
@@ -233,9 +233,7 @@ class LifecycleService:
     def delete_permanently(
         self, db: Session, admin: User, exam: Exam, reason: str, *, ip: str | None
     ) -> None:
-        if not can_exam(
-            admin, ExamAction.DELETE_FINALIZED, ExamRef(exam.owner_id, exam.second_reviewer_id)
-        ):
+        if not may(db, admin, ExamAction.DELETE_FINALIZED, exam):
             raise PermissionDeniedError()
         if exam.finalized_at is None:
             raise DomainError("not_finalized")

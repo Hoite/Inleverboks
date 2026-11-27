@@ -103,6 +103,25 @@
       </select>
       {{ err("second_reviewer_id") }}
     </div>
+    {% if not is_template %}
+    {# PLAN B67: the team is fixed by a team template, a resit or an existing exam. #}
+    {% set fixed_team = exam.team_id if exam else (source_template.team_id if source_template and source_template.team_id else (resit_from.team_id if resit_from else none)) %}
+    {% if exam or (source_template and source_template.team_id) or resit_from %}
+    {% if fixed_team %}<p class="field">{{ _("Education team") }}: <strong>{{ team_names.get(fixed_team, "") }}</strong></p>{% endif %}
+    {% elif exam_teams|length == 1 %}
+    <p class="field">{{ _("Education team") }}: <strong>{{ exam_teams[0].name }}</strong></p>
+    {% elif exam_teams %}
+    <div class="field">
+      <label for="team_id">{{ _("Education team") }}</label>
+      <select id="team_id" name="team_id"{{ invalid("team_id") }} aria-describedby="team_id-hint">
+        <option value="">{{ _("No team") if current_user.is_admin else _("Choose a team") }}</option>
+        {% for t in exam_teams %}<option value="{{ t.id }}"{% if values.team_id == t.id|string %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+      <p class="hint" id="team_id-hint">{{ _("The team contacts of the team can see the hand-ins of this exam. Choose a class list of the same team.") }}</p>
+      {{ err("team_id") }}
+    </div>
+    {% endif %}
+    {% endif %}
     <div class="field">
       <label for="slug">{{ _("Link name") }}</label>
       {% set short_base = base_url.split("://", 1)[-1] %}

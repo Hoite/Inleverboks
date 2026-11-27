@@ -87,6 +87,8 @@ def pair_labels() -> dict[str, str]:
         "tcp_button": _("Team-contact buttons (fixed colours)"),
         "tcp_button_hover": _("Team-contact buttons on hover"),
         "tcp_badge": _("Team-contact label"),
+        "tcp_tabs": _("Team-contact tabs on the background"),
+        "tcp_tab_current": _("Team-contact tab on the light tint (current tab)"),
     }
 
 

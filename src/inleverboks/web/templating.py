@@ -13,9 +13,11 @@ from fastapi import Request
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from sqlalchemy import select
 
 from inleverboks import __version__
 from inleverboks.config import Settings
+from inleverboks.db.models import TeamMember
 from inleverboks.i18n import DEFAULT_LOCALE, get_translations
 from inleverboks.i18n import gettext as _
 from inleverboks.services.branding import Branding
@@ -50,10 +52,27 @@ def combobox_config() -> str:
     return json.dumps(combobox_texts(), ensure_ascii=False)
 
 
+def _team_contact_check(request: Request, user: Any) -> Any:
+    """``is_team_contact()`` for templates: asked only where a template needs it (the exam
+    tabs), so other pages do no extra query."""
+
+    def check() -> bool:
+        if user is None:
+            return False
+        with request.app.state.sessionmaker() as db:
+            query = select(TeamMember.team_id).where(
+                TeamMember.user_id == user.id, TeamMember.is_contact.is_(True)
+            )
+            return db.scalar(query.limit(1)) is not None
+
+    return check
+
+
 def _context(request: Request) -> dict[str, Any]:
     auth = getattr(request.state, "auth", None)
     brand: Branding = request.app.state.brand()
     return {
+        "is_team_contact": _team_contact_check(request, auth.user if auth else None),
         "brand": brand,
         "app_name": brand.app_name,
         "csrf_token": getattr(request.state, "csrf_token", ""),

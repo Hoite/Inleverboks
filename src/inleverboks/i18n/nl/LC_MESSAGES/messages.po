@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-27 10:54+0100\n"
+"POT-Creation-Date: 2026-11-27 11:05+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -59,6 +59,9 @@ msgstr "Vul minimaal één IP-bereik in of kies een preset."
 
 msgid "Value out of range."
 msgstr "Waarde buiten het toegestane bereik."
+
+msgid "This class list belongs to another education team than the exam."
+msgstr "Deze klassenlijst hoort bij een ander onderwijsteam dan het examen."
 
 msgid "May not exceed the maximum per submission."
 msgstr "Mag niet groter zijn dan het maximum per inlevering."
@@ -196,6 +199,9 @@ msgstr "Alleen een admin kan een teamcontactpersoon uit het team halen."
 
 msgid "Choose a crebo from the imported qualifications."
 msgstr "Kies een crebo uit de geïmporteerde kwalificaties."
+
+msgid "Choose a member of the education team of the exam."
+msgstr "Kies een lid van het onderwijsteam van het examen."
 
 msgid "This crebo is not linked to the chosen education team."
 msgstr "Deze crebo is niet aan het gekozen onderwijsteam gekoppeld."
@@ -363,6 +369,12 @@ msgstr "Knoppen voor teamcontactpersonen bij aanwijzen"
 
 msgid "Team-contact label"
 msgstr "Label teamcontactpersoon"
+
+msgid "Team-contact tabs on the background"
+msgstr "Tabbladen voor teamcontactpersonen op de achtergrond"
+
+msgid "Team-contact tab on the light tint (current tab)"
+msgstr "Tabblad voor teamcontactpersonen op de lichte tint (huidig tabblad)"
 
 msgid "Primary colour"
 msgstr "Hoofdkleur"
@@ -1680,6 +1692,9 @@ msgstr "Examensjablonen"
 msgid "Class lists"
 msgstr "Klassenlijsten"
 
+msgid "Team exams"
+msgstr "Teamexamens"
+
 msgid "All exams"
 msgstr "Alle examens"
 
@@ -1820,6 +1835,9 @@ msgstr "Nieuw examen"
 msgid "The exam has been deleted permanently."
 msgstr "Het examen is definitief verwijderd."
 
+msgid "All my teams"
+msgstr "Al mijn teams"
+
 msgid "All teachers"
 msgstr "Alle docenten"
 
@@ -1829,6 +1847,9 @@ msgstr "Link"
 #, python-format
 msgid "Files are deleted on %(d)s"
 msgstr "Bestanden worden verwijderd op %(d)s"
+
+msgid "Your teams have no exams yet."
+msgstr "Je teams hebben nog geen examens."
 
 msgid "No exams yet."
 msgstr "Nog geen examens."
@@ -1844,6 +1865,9 @@ msgstr "De bewaren-vlag staat aan. De bestanden worden niet verwijderd."
 
 msgid "The retention hold has been removed."
 msgstr "De bewaren-vlag is weggehaald."
+
+msgid "The education team of the exam has been changed."
+msgstr "Het onderwijsteam van het examen is gewijzigd."
 
 msgid "Only the owner of the exam can use these actions."
 msgstr "Alleen de eigenaar van het examen kan deze acties gebruiken."
@@ -1875,6 +1899,22 @@ msgstr "Eigendom overdragen aan"
 
 msgid "Transfer"
 msgstr "Overdragen"
+
+msgid "This exam is not in an education team."
+msgstr "Dit examen hoort niet bij een onderwijsteam."
+
+msgid "Move to another team"
+msgstr "Naar een ander team verplaatsen"
+
+msgid "No team"
+msgstr "Geen team"
+
+msgid ""
+"The team contacts of the team see the hand-ins of the exam. The class list of the exam stays as "
+"it is."
+msgstr ""
+"De teamcontactpersonen van het team zien de inleveringen van het examen. De klassenlijst van het "
+"examen blijft zoals hij is."
 
 #, python-format
 msgid "Files deleted on %(d)s."
@@ -1979,6 +2019,16 @@ msgstr "Naam van het sjabloon"
 
 msgid "Second reviewer (optional)"
 msgstr "Tweede beoordelaar (optioneel)"
+
+msgid "Choose a team"
+msgstr "Kies een team"
+
+msgid ""
+"The team contacts of the team can see the hand-ins of this exam. Choose a class list of the same "
+"team."
+msgstr ""
+"De teamcontactpersonen van het team kunnen de inleveringen van dit examen zien. Kies een "
+"klassenlijst van hetzelfde team."
 
 msgid "Link name"
 msgstr "Linknaam"

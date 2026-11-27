@@ -55,6 +55,7 @@ def error_messages() -> dict[str, str]:
         "already_member": _("This account is already a member of the team."),
         "contact_protected": _("Only an admin can remove a team contact from the team."),
         "unknown_crebo": _("Choose a crebo from the imported qualifications."),
+        "owner_not_in_team": _("Choose a member of the education team of the exam."),
         "crebo_not_in_team": _("This crebo is not linked to the chosen education team."),
         "template_not_found": _("Exam template not found."),
         "exam_not_found": _("Exam not found."),

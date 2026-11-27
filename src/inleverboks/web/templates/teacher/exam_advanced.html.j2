@@ -18,6 +18,7 @@
   "unpublished": _("The exam is a concept again."), "owner": _("Ownership transferred."),
   "hold_set": _("The retention hold is set. Files will not be deleted."),
   "hold_removed": _("The retention hold has been removed."),
+  "team_changed": _("The education team of the exam has been changed."),
 } %}
 {% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
 {{ errors_box(errors) }}
@@ -59,6 +60,25 @@
     </div>
     <button type="submit" class="button button-secondary">{{ _("Transfer") }}</button>
   </form>
+  {% endif %}
+</section>
+
+<section class="card" id="onderwijsteam">
+  <h2>{{ _("Education team") }}</h2>
+  <p>{% if exam.team_id %}{{ team_names.get(exam.team_id, "") }}{% else %}<span class="muted">{{ _("This exam is not in an education team.") }}</span>{% endif %}</p>
+  {% if current_user.is_admin %}
+  <form method="post" action="/examens/{{ exam.id }}/team" class="row-form">
+    {{ csrf() }}
+    <div class="field grow">
+      <label for="exam-team">{% include "_admin_crown.html.j2" %}{{ _("Move to another team") }}</label>
+      <select id="exam-team" name="team_id">
+        <option value="">{{ _("No team") }}</option>
+        {% for t in teams %}<option value="{{ t.id }}"{% if t.id == exam.team_id %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="button button-secondary">{{ _("Save") }}</button>
+  </form>
+  <p class="hint">{{ _("The team contacts of the team see the hand-ins of the exam. The class list of the exam stays as it is.") }}</p>
   {% endif %}
 </section>
 

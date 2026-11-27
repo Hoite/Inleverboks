@@ -87,6 +87,8 @@ CONTRAST_PAIRS = (
     ContrastPair("tcp_button", _WHITE, TCP, 4.5),
     ContrastPair("tcp_button_hover", _WHITE, TCP_STRONG, 4.5),
     ContrastPair("tcp_badge", TCP_TEXT, TCP_BG, 4.5),
+    ContrastPair("tcp_tabs", TCP, "bg", 4.5),
+    ContrastPair("tcp_tab_current", TCP, "primary_tint", 4.5),
 )
 
 

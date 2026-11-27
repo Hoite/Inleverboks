@@ -34,6 +34,7 @@ def field_messages() -> dict[str, str]:
         "ip_too_many": _("Too many IP ranges."),
         "ip_required": _("Enter at least one IP range or choose a preset."),
         "range": _("Value out of range."),
+        "other_team": _("This class list belongs to another education team than the exam."),
         "exceeds_submission": _("May not exceed the maximum per submission."),
         "too_many": _("Too many expected files."),
         "no_files_possible": _("Add an expected file or allow an extra file."),
@@ -160,6 +161,7 @@ def parse_exam_form(
         class_list_id=_uuid(form, "class_list_id"),
         source_template_id=_uuid(form, "source_template_id"),
         source_exam_id=_uuid(form, "source_exam_id"),
+        team_id=_uuid(form, "team_id"),
     )
     numbers = [n for n in form.getlist("roster_number") if isinstance(n, str) and n]
     data.roster_numbers = numbers[:200]
@@ -202,6 +204,7 @@ def form_values(data: ExamInput, tz: ZoneInfo, raw: dict[str, str] | None = None
         "class_list_id": str(data.class_list_id or ""),
         "source_template_id": str(data.source_template_id or ""),
         "source_exam_id": str(data.source_exam_id or ""),
+        "team_id": str(data.team_id or ""),
         "roster_numbers": list(data.roster_numbers),
         "slots": [
             {

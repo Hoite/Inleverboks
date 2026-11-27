@@ -17,6 +17,7 @@ class ExamRole(StrEnum):
     ADMIN = "admin"  # admin looking at someone else's exam
     OWNER = "owner"
     SECOND_REVIEWER = "second_reviewer"
+    TEAM_CONTACT = "team_contact"  # team contact of the exam's team (PLAN B68)
     OTHER_TEACHER = "other_teacher"
 
 
@@ -46,23 +47,26 @@ class SystemAction(StrEnum):
     MANAGE_TEAMS = "manage_teams"  # create teams, see all of them (PLAN B63)
 
 
-_A, _O, _S, _T = (
+_A, _O, _S, _C, _T = (
     ExamRole.ADMIN,
     ExamRole.OWNER,
     ExamRole.SECOND_REVIEWER,
+    ExamRole.TEAM_CONTACT,
     ExamRole.OTHER_TEACHER,
 )
 
 EXAM_MATRIX: dict[ExamAction, frozenset[ExamRole]] = {
     ExamAction.EDIT_SETTINGS: frozenset({_O}),
-    ExamAction.VIEW_SUBMISSIONS: frozenset({_A, _O, _S}),
+    # PLAN B68: a team contact has the rights of an admin (B4) on the exams of his teams,
+    # plus transferring them within the team (the service checks the new owner).
+    ExamAction.VIEW_SUBMISSIONS: frozenset({_A, _O, _S, _C}),
     # PLAN B4: admins may download files of other teachers' exams.
-    ExamAction.DOWNLOAD_FILES: frozenset({_A, _O, _S}),
-    ExamAction.EXPORT: frozenset({_A, _O, _S}),
-    ExamAction.VIEW_AUDIT: frozenset({_A, _O, _S}),
+    ExamAction.DOWNLOAD_FILES: frozenset({_A, _O, _S, _C}),
+    ExamAction.EXPORT: frozenset({_A, _O, _S, _C}),
+    ExamAction.VIEW_AUDIT: frozenset({_A, _O, _S, _C}),
     ExamAction.MANAGE_SUBMISSIONS: frozenset({_O}),
-    ExamAction.SET_HOLD: frozenset({_A, _O}),
-    ExamAction.TRANSFER_OWNERSHIP: frozenset({_A}),
+    ExamAction.SET_HOLD: frozenset({_A, _O, _C}),
+    ExamAction.TRANSFER_OWNERSHIP: frozenset({_A, _C}),
     ExamAction.DELETE_FINALIZED: frozenset({_A}),
     ExamAction.DELETE_CONCEPT: frozenset({_O}),
     ExamAction.DUPLICATE: frozenset({_O}),
@@ -75,10 +79,12 @@ class ExamRef:
 
     owner_id: uuid.UUID
     second_reviewer_id: uuid.UUID | None
+    team_id: uuid.UUID | None = None
 
 
-def exam_roles(user: User, exam: ExamRef) -> frozenset[ExamRole]:
-    """All roles a user holds on an exam. An admin who owns the exam is both."""
+def exam_roles(user: User, exam: ExamRef, teams: TeamContext | None = None) -> frozenset[ExamRole]:
+    """All roles a user holds on an exam. An admin who owns the exam is both; a team
+    contact who is second reviewer too."""
     roles: set[ExamRole] = set()
     if exam.owner_id == user.id:
         roles.add(ExamRole.OWNER)
@@ -86,15 +92,20 @@ def exam_roles(user: User, exam: ExamRef) -> frozenset[ExamRole]:
         roles.add(ExamRole.SECOND_REVIEWER)
     else:
         roles.add(ExamRole.OTHER_TEACHER)
+    if teams is not None and exam.team_id is not None and exam.team_id in teams.contact_of:
+        roles.add(ExamRole.TEAM_CONTACT)
     if user.is_admin:
         roles.add(ExamRole.ADMIN)
     return frozenset(roles)
 
 
-def can_exam(user: User | None, action: ExamAction, exam: ExamRef) -> bool:
+def can_exam(
+    user: User | None, action: ExamAction, exam: ExamRef, teams: TeamContext | None = None
+) -> bool:
+    """``teams`` is the user's team context; without it, team roles do not count."""
     if user is None or not user.is_active:
         return False
-    return bool(exam_roles(user, exam) & EXAM_MATRIX[action])
+    return bool(exam_roles(user, exam, teams) & EXAM_MATRIX[action])
 
 
 # Team context (PLAN B63) ------------------------------------------------------------

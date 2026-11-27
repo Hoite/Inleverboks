@@ -11,9 +11,10 @@ from sqlalchemy.orm import Session
 
 from inleverboks.adapters.clock import Clock
 from inleverboks.db.models import Exam, Submission, User
-from inleverboks.policy import ExamAction, ExamRef, can_exam
+from inleverboks.policy import ExamAction
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
+from inleverboks.services.exams import may
 
 MAX_REASON = 1000
 
@@ -24,9 +25,7 @@ class ReviewService:
         self.audit = audit
 
     def _load(self, db: Session, user: User, exam: Exam, submission_id: uuid.UUID) -> Submission:
-        if not can_exam(
-            user, ExamAction.MANAGE_SUBMISSIONS, ExamRef(exam.owner_id, exam.second_reviewer_id)
-        ):
+        if not may(db, user, ExamAction.MANAGE_SUBMISSIONS, exam):
             raise PermissionDeniedError()
         submission = db.get(Submission, submission_id)
         if submission is None or submission.exam_id != exam.id:

@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from inleverboks.db.models import Exam, ExamTemplate, IpPreset, Qualification, Team, User
 from inleverboks.i18n import gettext as _
-from inleverboks.policy import ExamAction, ExamRef, SystemAction, can, can_exam
+from inleverboks.policy import ExamAction, SystemAction, can
 from inleverboks.services.container import Services
 from inleverboks.services.errors import DomainError, NotFoundError, PermissionDeniedError
 from inleverboks.services.exams import (
@@ -26,6 +26,7 @@ from inleverboks.services.exams import (
     ExamValidationError,
     can_manage_template,
     can_use_template,
+    may,
 )
 from inleverboks.services.overview import build_overview
 from inleverboks.services.template_files import store_template, unreferenced
@@ -127,6 +128,31 @@ def finalized(
         request, "finalized", _rows(db, services, services.exams.finalized(db, ctx.user)), ok=ok,
         # Admins see every finalized exam, so they get the owner column too.
         owner_names=services.users.names(db) if ctx.user.is_admin else None,
+    )  # fmt: skip
+
+
+@router.get("/team")
+def team_exams(
+    request: Request, ctx: Teacher, db: Db, services: Svc, team: str = "", eigenaar: str = ""
+) -> Response:
+    """PLAN B68: a team contact sees every exam of his teams, also the finalized ones."""
+    teams = services.exams.contact_teams(db, ctx.user)
+    if not teams:
+        raise PermissionDeniedError()
+    team_id = _uuid_or_none(team)
+    team_id = team_id if team_id in {t.id for t in teams} else None
+    owner_id = _uuid_or_none(eigenaar)
+    exams = services.exams.team_exams(db, ctx.user, team_id=team_id)
+    names = services.users.names(db)
+    owners = sorted(
+        {(e.owner_id, names.get(e.owner_id, "")) for e in exams}, key=lambda i: i[1].lower()
+    )
+    if owner_id is not None:
+        exams = [e for e in exams if e.owner_id == owner_id]
+    return _dashboard(
+        request, "team", _rows(db, services, exams), owner_names=names, owners=owners,
+        owner_filter=owner_id, team_names=services.teams.names(db), filter_teams=teams,
+        team_filter=team_id, filter_action="/examens/team",
     )  # fmt: skip
 
 
@@ -467,6 +493,7 @@ def _form_context(db: Session, services: Services, user: User) -> dict[str, Any]
         "teachers": teachers,
         "presets": presets,
         "class_lists": services.classlists.usable(db, user),
+        "exam_teams": services.exams.exam_teams(db, user),
         "team_names": services.teams.names(db),
         "owner_names": services.users.names(db),
         "field_messages": field_messages(),
@@ -645,9 +672,8 @@ def update_exam(
 # Detail --------------------------------------------------------------------------
 
 
-def _perms(user: User, exam: Exam) -> dict[str, bool]:
-    ref = ExamRef(owner_id=exam.owner_id, second_reviewer_id=exam.second_reviewer_id)
-    return {action.value: can_exam(user, action, ref) for action in ExamAction}
+def _perms(db: Session, user: User, exam: Exam) -> dict[str, bool]:
+    return {action.value: may(db, user, action, exam) for action in ExamAction}
 
 
 def _qr_svg(url: str, *, scale: int = 4, omit_size: bool = True) -> str:
@@ -687,7 +713,7 @@ def exam_settings(
         effective_end=effective_end,
         url=url,
         qr_svg=_qr_svg(url, scale=3),
-        perms=_perms(ctx.user, exam),
+        perms=_perms(db, ctx.user, exam),
         locked=services.exams.has_submissions(db, exam),
         roster=services.exams.roster(db, exam),
         class_lists=services.classlists.usable(db, ctx.user),
@@ -708,11 +734,17 @@ def exam_advanced(
     """Rarely used and far-reaching actions: duplicate, back to concept, delete, save as
     template, transfer ownership, and the retention period with the retention hold."""
     exam = _load(db, services, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
+    teachers = services.users.teachers(db)
+    if not ctx.user.is_admin:  # PLAN B68: a team contact transfers within the team only
+        team = services.exams.transfer_candidate_ids(db, exam)
+        teachers = [t for t in teachers if t.id in team]
     return render(
         request, "teacher/exam_advanced.html.j2", exam=exam,
         status=services.exams.status(db, exam), status_labels=status_labels(),
-        perms=_perms(ctx.user, exam), submissions=services.exams.submission_count(db, exam),
-        teachers=services.users.teachers(db) if ctx.user.is_admin else [],
+        perms=_perms(db, ctx.user, exam), submissions=services.exams.submission_count(db, exam),
+        teachers=teachers,
+        teams=services.exams.exam_teams(db, ctx.user) if ctx.user.is_admin else [],
+        team_names=services.teams.names(db),
         retention=services.lifecycle.retention(db, exam), now=services.clock.now(),
         ok=ok, errors=[describe(DomainError(error))[0]] if error else [],
     )  # fmt: skip
@@ -857,6 +889,24 @@ def revoke_extension(
     exam = _load(db, services, ctx.user, exam_id, ExamAction.MANAGE_SUBMISSIONS)
     services.exams.revoke_extension(db, ctx.user, exam, grant_id, ip=client_ip(request))
     return _redirect(f"/examens/{exam.id}/instellingen?ok=extension_removed#verlengingen")
+
+
+@router.post("/{exam_id:uuid}/team")
+def change_team(
+    request: Request, exam_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
+    team_id: Annotated[str, Form(max_length=36)] = "",
+) -> Response:  # fmt: skip
+    if not ctx.user.is_admin:
+        raise PermissionDeniedError()
+    exam = _load(db, services, ctx.user, exam_id, ExamAction.VIEW_SUBMISSIONS)
+    try:
+        target = uuid.UUID(team_id) if team_id else None
+        services.exams.set_team(db, ctx.user, exam, target, ip=client_ip(request))
+    except (DomainError, ValueError) as exc:
+        db.rollback()
+        code = exc.code if isinstance(exc, DomainError) else "team_not_found"
+        return _redirect(f"/examens/{exam.id}/geavanceerd?error={code}")
+    return _redirect(f"/examens/{exam.id}/geavanceerd?ok=team_changed")
 
 
 @router.post("/{exam_id:uuid}/eigenaar")

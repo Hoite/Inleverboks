@@ -275,3 +275,36 @@ def test_personal_and_shared_template_rights(people: dict[str, User]) -> None:
     assert _template_rights(people[ADMIN], none, shared) == _ALL
     assert not can_template(_user(active=False), none, P.VIEW, shared)
     assert not can_template(None, none, P.VIEW, shared)
+
+
+# Exams of a team (PLAN B68) ---------------------------------------------------------
+
+# A team contact has the admin rights of B4 on the exams of his teams, plus transfer.
+CONTACT_EXPECTED: dict[ExamAction, bool] = {
+    A.EDIT_SETTINGS: False,
+    A.VIEW_SUBMISSIONS: True,
+    A.DOWNLOAD_FILES: True,
+    A.EXPORT: True,
+    A.VIEW_AUDIT: True,
+    A.MANAGE_SUBMISSIONS: False,
+    A.SET_HOLD: True,
+    A.TRANSFER_OWNERSHIP: True,
+    A.DELETE_FINALIZED: False,
+    A.DELETE_CONCEPT: False,
+    A.DUPLICATE: False,
+}
+
+
+@pytest.mark.parametrize("action", list(ExamAction))
+def test_team_contact_on_team_exams(action: ExamAction, people: dict[str, User]) -> None:
+    team = uuid.uuid4()
+    exam = ExamRef(owner_id=people[OWNER].id, second_reviewer_id=None, team_id=team)
+    contact = TeamContext(member_of=frozenset({team}), contact_of=frozenset({team}))
+    member = TeamContext(member_of=frozenset({team}))
+    assert can_exam(people[OTHER], action, exam, contact) is CONTACT_EXPECTED[action]
+    assert not can_exam(people[OTHER], action, exam, member)  # members see nothing extra
+    # the team contact of another team, or without a team context: no rights
+    other_team = TeamContext(member_of=frozenset({uuid.uuid4()}), contact_of=frozenset())
+    assert not can_exam(people[OTHER], action, exam, other_team)
+    assert not can_exam(people[OTHER], action, exam)
+    assert set(CONTACT_EXPECTED) == set(ExamAction)

@@ -30,6 +30,7 @@ from inleverboks.db.models import (
     SubmissionFile,
     Team,
     TeamCrebo,
+    TeamMember,
     TemplateFile,
     User,
 )
@@ -110,6 +111,11 @@ class ExamInput:
     # The link name the form suggested (with the planned date). When the teacher kept it,
     # the server dates it to the chosen start (see ``redate_slug``).
     suggested_slug: str = ""
+    # The education team (PLAN B67): the teacher's choice on a new exam. The server decides
+    # in ``_resolve_team``; the form value only counts for a team of the owner.
+    team_id: uuid.UUID | None = None
+    # Set by the server only (duplicate): keep ``team_id`` as it is.
+    team_fixed: bool = False
 
 
 @dataclass(frozen=True)
@@ -141,7 +147,14 @@ def pattern_extension(pattern: str | None) -> str | None:
 
 
 def _ref(exam: Exam) -> ExamRef:
-    return ExamRef(owner_id=exam.owner_id, second_reviewer_id=exam.second_reviewer_id)
+    return ExamRef(
+        owner_id=exam.owner_id, second_reviewer_id=exam.second_reviewer_id, team_id=exam.team_id
+    )
+
+
+def may(db: Session, user: User, action: ExamAction, exam: Exam) -> bool:
+    """``policy.can_exam`` with the user's team context (PLAN B68). Use this everywhere."""
+    return can_exam(user, action, _ref(exam), team_context(db, user.id))
 
 
 def _snapshot(exam: Exam) -> dict[str, Any]:
@@ -152,6 +165,7 @@ def _snapshot(exam: Exam) -> dict[str, Any]:
         "starts_at": exam.starts_at.isoformat(),
         "ends_at": exam.ends_at.isoformat(),
         "second_reviewer_id": str(exam.second_reviewer_id) if exam.second_reviewer_id else None,
+        "team_id": str(exam.team_id) if exam.team_id else None,
         "slug": exam.slug,
         "access_code_enabled": exam.access_code_enabled,
         "ip_restriction_enabled": exam.ip_restriction_enabled,
@@ -310,9 +324,9 @@ class ExamService:
         """Load an exam and check the policy. Users without any view right get a 404 so
         the existence of other teachers' exams is not revealed."""
         exam = self.get(db, exam_id)
-        if not can_exam(user, ExamAction.VIEW_SUBMISSIONS, _ref(exam)):
+        if not may(db, user, ExamAction.VIEW_SUBMISSIONS, exam):
             raise NotFoundError("exam_not_found")
-        if not can_exam(user, action, _ref(exam)):
+        if not may(db, user, action, exam):
             raise PermissionDeniedError()
         return exam
 
@@ -419,6 +433,21 @@ class ExamService:
             query = query.where(Exam.owner_id == owner_id)
         return list(db.scalars(query.order_by(Exam.starts_at.desc())))
 
+    def contact_teams(self, db: Session, user: User) -> list[Team]:
+        """The teams where the user is team contact (PLAN B68)."""
+        contact_of = team_context(db, user.id).contact_of
+        teams = db.scalars(select(Team).where(Team.id.in_(contact_of)))
+        return sorted(teams, key=lambda t: t.name.lower())
+
+    def team_exams(
+        self, db: Session, user: User, *, team_id: uuid.UUID | None = None
+    ) -> list[Exam]:
+        """Every exam (also finalized) of the teams where the user is team contact."""
+        contact_of = team_context(db, user.id).contact_of
+        ids = {team_id} & contact_of if team_id is not None else contact_of
+        query = select(Exam).where(Exam.team_id.in_(ids)).order_by(Exam.starts_at.desc())
+        return list(db.scalars(query))
+
     def exam_owner_ids(self, db: Session) -> set[uuid.UUID]:
         return set(db.scalars(select(Exam.owner_id).distinct()))
 
@@ -466,6 +495,7 @@ class ExamService:
             ],
             qualification=dict(exam.qualification) if exam.qualification else None,
             source_template_id=exam.source_template_id,
+            team_id=exam.team_id,
         )
 
     def input_from_template(
@@ -570,7 +600,7 @@ class ExamService:
                 )
         if data.source_exam_id is not None:
             source = db.get(Exam, data.source_exam_id)
-            if source is None or not can_exam(owner, ExamAction.DUPLICATE, _ref(source)):
+            if source is None or not may(db, owner, ExamAction.DUPLICATE, source):
                 data.source_exam_id = None
                 return
             data.qualification = dict(source.qualification) if source.qualification else None
@@ -609,17 +639,65 @@ class ExamService:
         self._validate_access(db, data, problems)
         self._validate_limits(data, problems)
         self._validate_slots(db, data, problems)
+        self._resolve_team(db, owner_id, data, exam, problems)
         if data.class_list_id is not None:
-            # The owner must be allowed to use the list (PLAN B65); the policy decides.
+            # The owner must be allowed to use the list (PLAN B65); the policy decides. A
+            # team list only fits an exam of the same team.
             class_list = db.get(ClassList, data.class_list_id)
             if class_list is None or not can_class_list(
                 db.get(User, owner_id), team_context(db, owner_id), ClassListAction.USE,
                 class_list_ref(class_list),
             ):  # fmt: skip
                 problems["class_list_id"] = "invalid"
+            elif class_list.team_id is not None and class_list.team_id != data.team_id:
+                problems["class_list_id"] = "other_team"
         if problems:
             raise ExamValidationError(problems)
         return data
+
+    def exam_teams(self, db: Session, user: User) -> list[Team]:
+        """The teams a teacher can put a new exam in: his own (an admin: every team)."""
+        query = select(Team)
+        if not user.is_admin:
+            query = query.where(Team.id.in_(team_context(db, user.id).member_of))
+        return sorted(db.scalars(query), key=lambda t: t.name.lower())
+
+    def _resolve_team(
+        self, db: Session, owner_id: uuid.UUID, data: ExamInput, exam: Exam | None,
+        problems: dict[str, str],
+    ) -> None:  # fmt: skip
+        """PLAN B67: an existing exam keeps its team (only an admin changes it, elsewhere);
+        a new one takes the team of its team template or resit source, otherwise one of
+        the owner's teams. Without a team of his own the exam has none."""
+        if exam is not None:
+            data.team_id = exam.team_id
+            return
+        if data.team_fixed:
+            return
+        template = (
+            db.get(ExamTemplate, data.source_template_id) if data.source_template_id else None
+        )
+        if template is not None and template.team_id is not None:
+            data.team_id = template.team_id
+            return
+        source = db.get(Exam, data.source_exam_id) if data.source_exam_id else None
+        owner = db.get(User, owner_id)
+        if (
+            source is not None
+            and owner is not None
+            and may(db, owner, ExamAction.DUPLICATE, source)
+        ):
+            data.team_id = source.team_id
+            return
+        allowed = {t.id for t in self.exam_teams(db, owner)} if owner else set()
+        if data.team_id is not None:
+            if data.team_id not in allowed:
+                problems["team_id"] = "invalid"
+            return
+        if len(allowed) == 1:
+            data.team_id = next(iter(allowed))
+        elif allowed and not (owner and owner.is_admin):
+            problems["team_id"] = "required"
 
     def _validate_basics(
         self,
@@ -777,6 +855,7 @@ class ExamService:
         exam = Exam(
             owner_id=owner.id, created_at=now, updated_at=now, qualification=data.qualification,
             source_template_id=template_source.id if template_source else None,
+            team_id=data.team_id,
         )  # fmt: skip
         self._apply(exam, data)
         db.add(exam)
@@ -793,7 +872,7 @@ class ExamService:
                 self._copy_template_files(db, exam, source)
         if data.source_exam_id is not None:
             source_exam = db.get(Exam, data.source_exam_id)
-            if source_exam is not None and can_exam(owner, ExamAction.DUPLICATE, _ref(source_exam)):
+            if source_exam is not None and may(db, owner, ExamAction.DUPLICATE, source_exam):
                 files = {s.id: s.template_file for s in source_exam.expected_files}
                 self._copy_template_files(
                     db, exam, [files.get(slot.id) if slot.id else None for slot in data.slots]
@@ -826,7 +905,7 @@ class ExamService:
     def update(
         self, db: Session, user: User, exam: Exam, data: ExamInput, *, ip: str | None
     ) -> dict[str, dict[str, Any]]:
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         if exam.finalized_at is not None:
             raise DomainError("exam_finalized")
@@ -873,7 +952,7 @@ class ExamService:
         return changes
 
     def publish(self, db: Session, user: User, exam: Exam, *, ip: str | None) -> None:
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         if exam.published_at is not None:
             return
@@ -883,7 +962,7 @@ class ExamService:
 
     def unpublish(self, db: Session, user: User, exam: Exam, *, ip: str | None) -> None:
         """Back to concept; only while nobody has handed in."""
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         if self.has_submissions(db, exam):
             raise DomainError("has_submissions")
@@ -901,7 +980,7 @@ class ExamService:
         Without submissions it records no hand-ins, so it goes with the exam; the audit
         event keeps its document ids.
         """
-        if not can_exam(user, ExamAction.DELETE_CONCEPT, _ref(exam)):
+        if not may(db, user, ExamAction.DELETE_CONCEPT, exam):
             raise PermissionDeniedError()
         if exam.published_at is not None:
             raise DomainError("not_concept")
@@ -930,7 +1009,7 @@ class ExamService:
         return keys
 
     def regenerate_code(self, db: Session, user: User, exam: Exam, *, ip: str | None) -> str:
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         new = human_code(ACCESS_CODE_LENGTH)
         while new == exam.access_code:
@@ -944,7 +1023,7 @@ class ExamService:
 
     def duplicate(self, db: Session, user: User, exam: Exam, *, ip: str | None) -> Exam:
         """Copy configuration, slots, template files and roster; new times, slug and code."""
-        if not can_exam(user, ExamAction.DUPLICATE, _ref(exam)):
+        if not may(db, user, ExamAction.DUPLICATE, exam):
             raise PermissionDeniedError()
         data = self.input_from_exam(db, exam)
         # The copy keeps the slots of this exam (not the template's current ones), but stays
@@ -954,6 +1033,7 @@ class ExamService:
             slot.id = None
         data.name = f"{exam.name} (kopie)"[:200]
         data.slug = ""
+        data.team_fixed = True  # PLAN B67: a copy stays in the team of the exam
         data.ip_preset_id = None
         now = self.clock.now()
         duration = exam.ends_at - exam.starts_at
@@ -989,7 +1069,7 @@ class ExamService:
     ) -> str | None:
         """Attach an uploaded template to a slot. Returns the storage key of a replaced
         template that may now be unreferenced."""
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         if self.has_submissions(db, exam):
             raise DomainError("requirements_locked")
@@ -1026,7 +1106,7 @@ class ExamService:
     def remove_template_file(
         self, db: Session, user: User, exam: Exam, slot_id: uuid.UUID, *, ip: str | None
     ) -> str | None:
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         if self.has_submissions(db, exam):
             raise DomainError("requirements_locked")
@@ -1051,7 +1131,7 @@ class ExamService:
     def save_as_template(
         self, db: Session, user: User, exam: Exam, name: str, *, ip: str | None
     ) -> ExamTemplate:
-        if not can_exam(user, ExamAction.DUPLICATE, _ref(exam)):
+        if not may(db, user, ExamAction.DUPLICATE, exam):
             raise PermissionDeniedError()
         name = name.strip() or exam.name
         template = ExamTemplate(
@@ -1446,7 +1526,7 @@ class ExamService:
         *,
         ip: str | None,
     ) -> int:
-        if not can_exam(user, ExamAction.EDIT_SETTINGS, _ref(exam)):
+        if not may(db, user, ExamAction.EDIT_SETTINGS, exam):
             raise PermissionDeniedError()
         class_list = None
         if class_list_id is not None:
@@ -1515,7 +1595,7 @@ class ExamService:
     ) -> ExamInput:
         """A new exam for the selected students, with only the slots (work processes) that
         are still open for at least one of them. One configuration for the whole group."""
-        if not can_exam(user, ExamAction.DUPLICATE, _ref(exam)):
+        if not may(db, user, ExamAction.DUPLICATE, exam):
             raise PermissionDeniedError()
         roster = self.resit_roster(db, exam, numbers)
         if not roster:
@@ -1572,7 +1652,7 @@ class ExamService:
         *,
         ip: str | None,
     ) -> ExtensionGrant:
-        if not can_exam(user, ExamAction.MANAGE_SUBMISSIONS, _ref(exam)):
+        if not may(db, user, ExamAction.MANAGE_SUBMISSIONS, exam):
             raise PermissionDeniedError()
         student_number = student_number.strip()
         if not re.fullmatch(self.settings.load(db).student_number_regex, student_number):
@@ -1610,7 +1690,7 @@ class ExamService:
     def revoke_extension(
         self, db: Session, user: User, exam: Exam, grant_id: uuid.UUID, *, ip: str | None
     ) -> None:
-        if not can_exam(user, ExamAction.MANAGE_SUBMISSIONS, _ref(exam)):
+        if not may(db, user, ExamAction.MANAGE_SUBMISSIONS, exam):
             raise PermissionDeniedError()
         grant = db.get(ExtensionGrant, grant_id)
         if grant is None or grant.exam_id != exam.id:
@@ -1628,14 +1708,44 @@ class ExamService:
 
     # Ownership -----------------------------------------------------------------------
 
+    def transfer_candidate_ids(self, db: Session, exam: Exam) -> set[uuid.UUID]:
+        """The members of the exam's team: those a team contact may transfer it to."""
+        if exam.team_id is None:
+            return set()
+        query = select(TeamMember.user_id).where(TeamMember.team_id == exam.team_id)
+        return set(db.scalars(query))
+
+    def set_team(
+        self, db: Session, admin: User, exam: Exam, team_id: uuid.UUID | None, *, ip: str | None
+    ) -> None:
+        """Only an admin moves an exam to another team (PLAN B67), in its audit log."""
+        if not admin.is_admin:
+            raise PermissionDeniedError()
+        if team_id is not None and db.get(Team, team_id) is None:
+            raise DomainError("team_not_found")
+        if team_id == exam.team_id:
+            return
+        details = {
+            "old_team_id": str(exam.team_id) if exam.team_id else None,
+            "new_team_id": str(team_id) if team_id else None,
+        }
+        exam.team_id = team_id
+        self.audit.append(
+            db, "exam.team_changed", actor=Actor.for_user(admin), chain=exam.id, ip=ip,
+            details=details,
+        )  # fmt: skip
+        db.commit()
+
     def transfer_ownership(
         self, db: Session, admin: User, exam: Exam, new_owner_id: uuid.UUID, *, ip: str | None
     ) -> None:
-        if not can_exam(admin, ExamAction.TRANSFER_OWNERSHIP, _ref(exam)):
+        if not may(db, admin, ExamAction.TRANSFER_OWNERSHIP, exam):
             raise PermissionDeniedError()
         new_owner = db.get(User, new_owner_id)
         if new_owner is None or not new_owner.is_active:
             raise DomainError("owner_invalid")
+        if not admin.is_admin and new_owner.id not in self.transfer_candidate_ids(db, exam):
+            raise DomainError("owner_not_in_team")  # PLAN B68: a TCP stays within the team
         if new_owner.id == exam.owner_id:
             return
         old_owner_id = exam.owner_id

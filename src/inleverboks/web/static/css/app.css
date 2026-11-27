@@ -188,6 +188,8 @@ a:hover { color: var(--color-primary-strong); }
 .button.button-tcp { background: var(--color-tcp); border-color: var(--color-tcp); color: #fff; }
 .button.button-tcp:hover { background: var(--color-tcp-strong); border-color: var(--color-tcp-strong); color: #fff; }
 .badge-tcp { color: var(--color-tcp-text); background: var(--color-tcp-bg); }
+.tabs a.tcp-tab { color: var(--color-tcp); }
+.tabs a.tcp-tab[aria-current="page"] { border-bottom-color: var(--color-tcp); }
 
 /* My/all switch above a list (server-side filter, no JS); same colours as .tabs. */
 .view-switch { display: flex; flex-wrap: wrap; gap: .25rem; margin: 0 0 1rem; }
