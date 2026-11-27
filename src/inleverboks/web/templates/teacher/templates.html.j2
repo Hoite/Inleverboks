@@ -4,9 +4,9 @@
 {% from "teacher/_view_switch.html.j2" import view_switch %}
 {% block title %}{{ _("Exam templates") }} · {{ app_name }}{% endblock %}
 {% macro card(t) %}
-  <li class="template-card{% if t.shared %} template-card-shared{% endif %}">
+  <li class="template-card{% if t.shared or t.team_id %} template-card-shared{% endif %}">
     <div class="template-card-head">
-      <span class="badge-row">{{ template_badge(_("Template")) }}{% if t.shared %} <span class="badge badge-neutral">{{ _("Shared") }}</span>{% endif %}{% if t.id in outdated %} <span class="badge badge-warning"><span aria-hidden="true">!</span> {{ _("Dossier replaced") }}</span>{% endif %}</span>
+      <span class="badge-row">{{ template_badge(_("Template")) }}{% if t.shared %} <span class="badge badge-neutral">{{ _("Shared") }}</span>{% endif %}{% if t.team_id %} <span class="badge badge-neutral">{{ team_names.get(t.team_id, "") }}</span>{% endif %}{% if t.id in outdated %} <span class="badge badge-warning"><span aria-hidden="true">!</span> {{ _("Dossier replaced") }}</span>{% endif %}</span>
       <h3><a href="/examens/sjablonen/{{ t.id }}">{{ t.name }}</a></h3>
     </div>
     <p class="muted small">
@@ -37,7 +37,7 @@
 {% if everyone %}
 <section aria-labelledby="all-title">
   <h2 id="all-title">{{ _("All templates") }}</h2>
-  <p class="hint">{{ _("Shared templates and the personal templates of every teacher. You can view another teacher's personal template and copy it to your own or to the shared templates; only its owner changes it.") }}</p>
+  <p class="hint">{{ _("Team templates, shared templates and the personal templates of every teacher. You can view another teacher's personal template and copy it to your own templates or to a team; only its owner changes it.") }}</p>
   {% if all_templates %}
   <div class="table-wrap">
   <table>
@@ -47,7 +47,7 @@
       <tr>
         <td><a href="/examens/sjablonen/{{ t.id }}">{{ t.name }}</a>{% if t.id in outdated %} <span class="badge badge-warning"><span aria-hidden="true">!</span> {{ _("Dossier replaced") }}</span>{% endif %}</td>
         <td>{% if t.owner_id == current_user.id %}{{ _("You") }}{% else %}{{ owner_names.get(t.owner_id, "") }}{% endif %}</td>
-        <td>{% if t.shared %}<span class="badge badge-neutral">{{ _("Shared") }}</span>{% else %}{{ _("Personal") }}{% endif %}</td>
+        <td>{% if t.team_id %}{{ _("Team: %(team)s", team=team_names.get(t.team_id, "")) }}{% elif t.shared %}<span class="badge badge-neutral">{{ _("Shared") }}</span>{% else %}{{ _("Personal") }}{% endif %}</td>
         <td>{{ t.slots|length }}</td>
       </tr>
     {% endfor %}
@@ -60,10 +60,24 @@
 </section>
 {% else %}
 
+{% for team_id, team_name, team_templates, may_manage in team_sections %}
+<section aria-labelledby="team-{{ team_id }}">
+  <div class="page-head">
+    <h2 id="team-{{ team_id }}">{{ _("Team templates: %(team)s", team=team_name) }}</h2>
+    {% if may_manage %}<a class="button button-small button-tcp" href="/examens/sjablonen/crebo?team={{ team_id }}">{% include "_tcp_mark.html.j2" %}{{ _("Template from crebo") }}<span class="visually-hidden"> {{ _("for %(team)s", team=team_name) }}</span></a>{% endif %}
+  </div>
+  {% if team_templates %}
+  <ul class="template-list">{% for t in team_templates %}{{ card(t) }}{% endfor %}</ul>
+  {% else %}
+  <p class="muted">{{ _("This team has no templates yet.") }}{% if may_manage %} {{ _("Create one from a crebo, or copy one of your own templates to the team on its page.") }}{% endif %}</p>
+  {% endif %}
+</section>
+{% endfor %}
+
 {% if shared_templates %}
 <section aria-labelledby="shared-title">
   <h2 id="shared-title">{{ _("Shared templates") }}</h2>
-  <p class="hint">{{ _("Managed by the admin and available to every teacher. Make a copy to change one for yourself.") }}</p>
+  <p class="hint">{{ _("From before the education teams: available to every teacher until an admin assigns them to a team. Make a copy to change one for yourself.") }}</p>
   <ul class="template-list">{% for t in shared_templates %}{{ card(t) }}{% endfor %}</ul>
 </section>
 {% endif %}

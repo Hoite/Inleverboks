@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  inleverboks\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-26 16:33+0100\n"
+"POT-Creation-Date: 2026-11-27 10:54+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -196,6 +196,9 @@ msgstr "Alleen een admin kan een teamcontactpersoon uit het team halen."
 
 msgid "Choose a crebo from the imported qualifications."
 msgstr "Kies een crebo uit de geïmporteerde kwalificaties."
+
+msgid "This crebo is not linked to the chosen education team."
+msgstr "Deze crebo is niet aan het gekozen onderwijsteam gekoppeld."
 
 msgid "Exam template not found."
 msgstr "Examensjabloon niet gevonden."
@@ -1656,6 +1659,9 @@ msgstr "vervangen"
 msgid "expired"
 msgstr "verlopen"
 
+msgid "No crebos are linked to this team yet. Ask an admin."
+msgstr "Er zijn nog geen crebo's aan dit team gekoppeld. Vraag het aan een admin."
+
 msgid "No qualifications found."
 msgstr "Geen kwalificaties gevonden."
 
@@ -2274,14 +2280,27 @@ msgstr ""
 "Elke gekozen kerntaak wordt een sjabloon met een verwacht bestand per werkproces. De "
 "sjabloonbestanden upload je daarna zelf."
 
-msgid "Shared template (available to all teachers)"
-msgstr "Gedeeld sjabloon (beschikbaar voor alle docenten)"
+msgid "For whom"
+msgstr "Voor wie"
+
+msgid "My own templates"
+msgstr "Mijn eigen sjablonen"
+
+#, python-format
+msgid "Team template for %(team)s"
+msgstr "Teamsjabloon voor %(team)s"
+
+msgid "A team template is available to every member of the team; its team contacts manage it."
+msgstr "Een teamsjabloon is beschikbaar voor alle leden van het team; de teamcontactpersonen beheren het."
 
 msgid "Create templates"
 msgstr "Sjablonen maken"
 
 msgid "Back"
 msgstr "Terug"
+
+msgid "Only the crebos of this team are shown."
+msgstr "Alleen de crebo's van dit team worden getoond."
 
 msgid ""
 "Search the qualification (outflow) by crebo number or name, then choose the core tasks. Every "
@@ -2365,6 +2384,13 @@ msgstr ""
 "Dit is een sjabloon, geen examen. Studenten kunnen hier niet inleveren; maak daarvoor een examen "
 "van het sjabloon."
 
+msgid "Team template"
+msgstr "Teamsjabloon"
+
+#, python-format
+msgid "Education team %(team)s: available to its members, managed by its team contacts."
+msgstr "Onderwijsteam %(team)s: beschikbaar voor de leden, beheerd door de teamcontactpersonen."
+
 msgid "Shared"
 msgstr "Gedeeld"
 
@@ -2395,17 +2421,11 @@ msgstr "Het sjabloon is opgeslagen."
 msgid "The exam has been saved as a template. You can adjust it here; the exam itself does not change."
 msgstr "Het examen is opgeslagen als sjabloon. Je kunt het hier aanpassen; het examen zelf verandert niet."
 
-msgid "The template is now shared with every teacher."
-msgstr "Het sjabloon is nu gedeeld met alle docenten."
-
-msgid "The template is no longer shared."
-msgstr "Het sjabloon wordt niet meer gedeeld."
-
 msgid "This is your own copy of the template. You can change it."
 msgstr "Dit is je eigen kopie van het sjabloon. Die kun je aanpassen."
 
-msgid "This is a shared copy of the template. Every teacher can use it now."
-msgstr "Dit is een gedeelde kopie van het sjabloon. Elke docent kan het nu gebruiken."
+msgid "This is a copy of the template for the team. Every member of the team can use it now."
+msgstr "Dit is een kopie van het sjabloon voor het team. Alle leden van het team kunnen het nu gebruiken."
 
 msgid "Dossier replaced"
 msgstr "Dossier vervangen"
@@ -2442,30 +2462,20 @@ msgstr "Aangemaakt"
 msgid "No expected files: students hand in extra files only."
 msgstr "Geen verwachte bestanden: studenten leveren alleen extra bestanden in."
 
-msgid "Sharing"
-msgstr "Delen"
+msgid "Copy to a team"
+msgstr "Kopiëren naar een team"
 
-msgid ""
-"This is another teacher's personal template. You can share a copy of it with every teacher; the "
-"original stays with its owner."
+msgid "A copy in a team is available to every member of that team. This template stays as it is."
 msgstr ""
-"Dit is een persoonlijk sjabloon van een andere docent. Je kunt een kopie delen met alle docenten;"
-" het origineel blijft van de eigenaar."
+"Een kopie in een team is beschikbaar voor alle leden van dat team. Dit sjabloon blijft zoals het "
+"is."
 
-msgid "Copy to shared templates"
-msgstr "Kopiëren naar gedeelde sjablonen"
+#, python-format
+msgid "Copy to %(team)s"
+msgstr "Kopiëren naar %(team)s"
 
-msgid "Every teacher can use this template."
-msgstr "Elke docent kan dit sjabloon gebruiken."
-
-msgid "Stop sharing"
-msgstr "Niet meer delen"
-
-msgid "Share this template with every teacher. Only admins can change shared templates."
-msgstr "Deel dit sjabloon met alle docenten. Alleen admins kunnen gedeelde sjablonen wijzigen."
-
-msgid "Share with all teachers"
-msgstr "Delen met alle docenten"
+msgid "Copy to team"
+msgstr "Kopiëren naar team"
 
 msgid "Delete template"
 msgstr "Sjabloon verwijderen"
@@ -2516,26 +2526,45 @@ msgid "All templates"
 msgstr "Alle sjablonen"
 
 msgid ""
-"Shared templates and the personal templates of every teacher. You can view another teacher's "
-"personal template and copy it to your own or to the shared templates; only its owner changes it."
+"Team templates, shared templates and the personal templates of every teacher. You can view "
+"another teacher's personal template and copy it to your own templates or to a team; only its "
+"owner changes it."
 msgstr ""
-"Gedeelde sjablonen en de persoonlijke sjablonen van alle docenten. Een persoonlijk sjabloon van "
-"een andere docent kun je bekijken en kopiëren naar je eigen of naar de gedeelde sjablonen; alleen"
-" de eigenaar wijzigt het."
+"Teamsjablonen, gedeelde sjablonen en de persoonlijke sjablonen van alle docenten. Je kunt een "
+"persoonlijk sjabloon van een ander bekijken en kopiëren naar je eigen sjablonen of naar een team;"
+" alleen de eigenaar wijzigt het."
 
 msgid "Kind"
 msgstr "Soort"
 
+#, python-format
+msgid "Team: %(team)s"
+msgstr "Team: %(team)s"
+
 msgid "No exam templates yet."
 msgstr "Nog geen examensjablonen."
+
+#, python-format
+msgid "Team templates: %(team)s"
+msgstr "Teamsjablonen: %(team)s"
+
+msgid "This team has no templates yet."
+msgstr "Dit team heeft nog geen sjablonen."
+
+msgid "Create one from a crebo, or copy one of your own templates to the team on its page."
+msgstr ""
+"Maak er een uit een crebo, of kopieer een van je eigen sjablonen naar het team via de pagina van "
+"dat sjabloon."
 
 msgid "Shared templates"
 msgstr "Gedeelde sjablonen"
 
-msgid "Managed by the admin and available to every teacher. Make a copy to change one for yourself."
+msgid ""
+"From before the education teams: available to every teacher until an admin assigns them to a "
+"team. Make a copy to change one for yourself."
 msgstr ""
-"Beheerd door de admin en beschikbaar voor elke docent. Maak een kopie om er zelf een aan te "
-"passen."
+"Van vóór de onderwijsteams: beschikbaar voor alle docenten totdat een admin ze aan een team "
+"toewijst. Maak een kopie om er zelf een aan te passen."
 
 msgid "My templates"
 msgstr "Mijn sjablonen"

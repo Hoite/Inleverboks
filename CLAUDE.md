@@ -129,8 +129,10 @@ migrations/ Alembic (script_location in de code, er is geen alembic.ini)
   (streaming, geen DOCTYPE) en maakt er records van; testdata met dezelfde structuur staat in
   `tests/sbb_sample.py`. Vakjes dragen een `work_process_code`; een
   examen een momentopname in `Exam.qualification`. Die bepaalt de server altijd zelf
-  (`ExamService._resolve_sources`), nooit uit verborgen velden. Gedeelde sjablonen: alleen admins
-  beheren ze (`can_manage_template`).
+  (`ExamService._resolve_sources`), nooit uit verborgen velden. Sjablonen zijn persoonlijk of van een
+  team (PLAN B66); rechten via `policy.TEMPLATE_MATRIX` (`can_use_template` en
+  `can_manage_template(db, user, t)`). Oude gedeelde sjablonen (B53) blijven tot ze zijn
+  toegewezen; nieuwe gedeelde sjablonen bestaan niet meer.
 - **Docentpaden:** alles onder `/examens` (`/examens/{id:uuid}/…`, `/examens/sjablonen`,
   `/examens/klassenlijsten`). Gebruik `{exam_id:uuid}` in routes, zodat een examen-id nooit
   een vaste subpagina overschaduwt. Oude `/docent/…`-URL's sturen door via

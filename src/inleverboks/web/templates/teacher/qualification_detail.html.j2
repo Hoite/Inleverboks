@@ -25,8 +25,15 @@
     </div>
     {% endfor %}
   </fieldset>
-  {% if current_user.is_admin %}
-  <label class="checkbox"><input type="checkbox" name="shared" value="true" checked> {{ _("Shared template (available to all teachers)") }}</label>
+  {% if teams %}
+  <fieldset>
+    <legend>{{ _("For whom") }}</legend>
+    <label class="checkbox"><input type="radio" name="team_id" value=""{% if not selected_team %} checked{% endif %}> {{ _("My own templates") }}</label>
+    {% for t in teams %}
+    <label class="checkbox"><input type="radio" name="team_id" value="{{ t.id }}"{% if selected_team == t.id %} checked{% endif %}> {% include "_tcp_mark.html.j2" %}{{ _("Team template for %(team)s", team=t.name) }}</label>
+    {% endfor %}
+    <p class="hint">{{ _("A team template is available to every member of the team; its team contacts manage it.") }}</p>
+  </fieldset>
   {% endif %}
   <div class="form-actions">
     <button type="submit" class="button button-template">{{ _("Create templates") }}</button>

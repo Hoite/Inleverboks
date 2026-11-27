@@ -11,7 +11,7 @@ import re
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from inleverboks.adapters.clock import Clock
@@ -126,6 +126,28 @@ class TeamService:
             return db.scalar(query) or 0
 
         return TeamContents(count(ClassList), count(ExamTemplate), count(Exam))
+
+    def qualifications(
+        self, db: Session, team_id: uuid.UUID, query: str = ""
+    ) -> list[Qualification]:
+        """The newest version of each qualification of the team's crebos, including the
+        crebos that replaced them (``previous_crebo``), filtered on crebo or name."""
+        linked = select(TeamCrebo.crebo).where(TeamCrebo.team_id == team_id)
+        rows = db.scalars(
+            select(Qualification).where(
+                or_(Qualification.crebo.in_(linked), Qualification.previous_crebo.in_(linked))
+            )
+        )
+        newest: dict[str, Qualification] = {}
+        for row in rows:
+            if row.crebo not in newest or row.revision > newest[row.crebo].revision:
+                newest[row.crebo] = row
+        query = query.strip().lower()
+        found = [
+            q for q in newest.values()
+            if not query or q.crebo.startswith(query) or query in q.name.lower()
+        ]  # fmt: skip
+        return sorted(found, key=lambda q: (q.name.lower(), q.crebo))
 
     def crebo_names(self, db: Session) -> dict[str, str]:
         """The name of the newest imported version of every crebo."""

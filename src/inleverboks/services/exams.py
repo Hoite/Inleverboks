@@ -28,10 +28,23 @@ from inleverboks.db.models import (
     RetiredSlug,
     Submission,
     SubmissionFile,
+    Team,
+    TeamCrebo,
     TemplateFile,
     User,
 )
-from inleverboks.policy import ClassListAction, ExamAction, ExamRef, can_class_list, can_exam
+from inleverboks.policy import (
+    ClassListAction,
+    ExamAction,
+    ExamRef,
+    TeamAction,
+    TemplateAction,
+    TemplateRef,
+    can_class_list,
+    can_exam,
+    can_team,
+    can_template,
+)
 from inleverboks.services import slugs
 from inleverboks.services.audit import Actor, AuditService
 from inleverboks.services.classlists import ref as class_list_ref
@@ -206,15 +219,29 @@ def _qualification_snapshot(q: Qualification, core_task_code: str | None) -> dic
     }  # fmt: skip
 
 
-def can_use_template(user: User, template: ExamTemplate) -> bool:
-    """Own templates, and shared templates for every teacher. Admins also see (and use
-    and copy) other teachers' personal templates, but do not change them (PLAN B61)."""
-    return template.shared or template.owner_id == user.id or user.is_admin
+def template_ref(template: ExamTemplate) -> TemplateRef:
+    return TemplateRef(owner_id=template.owner_id, team_id=template.team_id, shared=template.shared)
 
 
-def can_manage_template(user: User, template: ExamTemplate) -> bool:
-    """Shared templates are managed by admins only (PLAN B53); own ones by their owner."""
-    return user.is_admin if template.shared else template.owner_id == user.id
+def can_use_template(db: Session, user: User, template: ExamTemplate) -> bool:
+    """Own templates, the team templates of one's teams and the shared templates not yet
+    assigned to a team. Admins also see, use and copy the others (PLAN B61, B66)."""
+    return can_template(user, team_context(db, user.id), TemplateAction.USE, template_ref(template))
+
+
+def can_manage_template(db: Session, user: User, template: ExamTemplate) -> bool:
+    """Own personal templates; team templates for the team contacts of the team and for
+    admins; shared templates for admins (``policy.TEMPLATE_MATRIX``)."""
+    return can_template(
+        user, team_context(db, user.id), TemplateAction.EDIT, template_ref(template)
+    )
+
+
+def _qualification_in_team(db: Session, team_id: uuid.UUID, qualification: Qualification) -> bool:
+    """The crebo (or the crebo it replaced) is linked to the team (PLAN B66)."""
+    crebos = {qualification.crebo} | ({qualification.previous_crebo} - {None})
+    query = select(TeamCrebo.crebo).where(TeamCrebo.team_id == team_id, TeamCrebo.crebo.in_(crebos))
+    return db.scalar(query.limit(1)) is not None
 
 
 def _template_config(data: ExamInput) -> dict[str, Any]:
@@ -236,6 +263,7 @@ def _template_snapshot(template: ExamTemplate) -> dict[str, Any]:
         "name": template.name,
         **template.config,
         "shared": template.shared,
+        "team_id": str(template.team_id) if template.team_id else None,
         "slots": [
             {
                 "label": s.label,
@@ -495,7 +523,7 @@ class ExamService:
             return None
         template = db.get(ExamTemplate, data.source_template_id)
         owner = db.get(User, owner_id)
-        if template is None or owner is None or not can_use_template(owner, template):
+        if template is None or owner is None or not can_use_template(db, owner, template):
             return None
         return template
 
@@ -535,7 +563,7 @@ class ExamService:
         hidden form fields."""
         if data.source_template_id is not None:
             template = db.get(ExamTemplate, data.source_template_id)
-            usable = template is not None and can_use_template(owner, template)
+            usable = template is not None and can_use_template(db, owner, template)
             if usable and template is not None and template.qualification is not None:
                 data.qualification = _qualification_snapshot(
                     template.qualification, template.core_task_code
@@ -756,7 +784,7 @@ class ExamService:
         self._apply_slots(db, exam, data.slots)
         if data.source_template_id is not None:
             template = db.get(ExamTemplate, data.source_template_id)
-            if template is not None and can_use_template(owner, template):
+            if template is not None and can_use_template(db, owner, template):
                 files = {s.id: s.template_file for s in template.slots}
                 if any(slot.id in files for slot in data.slots):
                     source = [files.get(slot.id) if slot.id else None for slot in data.slots]
@@ -1131,7 +1159,7 @@ class ExamService:
         self, db: Session, user: User, template: ExamTemplate, data: ExamInput, *, ip: str | None
     ) -> list[str]:
         """Save the editor; returns storage keys of template files of removed slots."""
-        self._check_manage(user, template)
+        self._check_manage(db, user, template)
         data = self.validate_template(db, data)
         before = _template_snapshot(template)
         template.name = data.name
@@ -1173,7 +1201,7 @@ class ExamService:
         stored: StoredTemplate, original_name: str, *, ip: str | None,
     ) -> str | None:  # fmt: skip
         """Returns the storage key of a replaced file that may now be unreferenced."""
-        self._check_manage(user, template)
+        self._check_manage(db, user, template)
         slot = next((s for s in template.slots if s.id == slot_id), None)
         if slot is None:
             raise NotFoundError()
@@ -1196,7 +1224,7 @@ class ExamService:
         self, db: Session, user: User, template: ExamTemplate, slot_id: uuid.UUID,
         *, ip: str | None,
     ) -> str | None:  # fmt: skip
-        self._check_manage(user, template)
+        self._check_manage(db, user, template)
         slot = next((s for s in template.slots if s.id == slot_id), None)
         if slot is None or slot.template_file is None:
             return None
@@ -1210,69 +1238,89 @@ class ExamService:
         return key
 
     def templates(self, db: Session, user: User) -> list[ExamTemplate]:
-        """Shared templates and the user's own ones, by name."""
+        """The user's own personal templates, the team templates of his teams (an admin:
+        of every team) and the shared templates not yet assigned to a team, by name."""
+        teams = team_context(db, user.id)
+        own = (ExamTemplate.owner_id == user.id) & ExamTemplate.team_id.is_(None)
+        # Admins see the templates of every team, as with the class lists.
+        team = (
+            ExamTemplate.team_id.is_not(None)
+            if user.is_admin
+            else ExamTemplate.team_id.in_(teams.member_of)
+        )
         return list(
             db.scalars(
                 select(ExamTemplate)
-                .where(or_(ExamTemplate.shared.is_(True), ExamTemplate.owner_id == user.id))
+                .where(or_(ExamTemplate.shared.is_(True), own, team))
                 .order_by(ExamTemplate.name)
             )
         )
+
+    def template_teams(self, db: Session, user: User) -> list[Team]:
+        """The teams the user may create templates for or copy templates into."""
+        teams = team_context(db, user.id)
+        return [
+            team
+            for team in sorted(db.scalars(select(Team)), key=lambda t: t.name.lower())
+            if can_team(user, teams, TeamAction.MANAGE_TEMPLATES, team.id)
+        ]
+
+    def qualification_teams(
+        self, db: Session, user: User, qualification: Qualification
+    ) -> list[Team]:
+        """The teams the user may make templates for from this qualification."""
+        return [
+            team
+            for team in self.template_teams(db, user)
+            if _qualification_in_team(db, team.id, qualification)
+        ]
+
+    def _check_template_team(self, db: Session, user: User, team_id: uuid.UUID) -> Team:
+        team = db.get(Team, team_id)
+        if team is None or not can_team(
+            user, team_context(db, user.id), TeamAction.MANAGE_TEMPLATES, team.id
+        ):
+            raise PermissionDeniedError()
+        return team
 
     def all_templates(self, db: Session) -> list[ExamTemplate]:
         """Every template, shared and personal; for the admin view (PLAN B61)."""
         return list(db.scalars(select(ExamTemplate).order_by(ExamTemplate.name)))
 
     def get_template(self, db: Session, user: User, template_id: uuid.UUID) -> ExamTemplate:
-        """A template the user may use (own or shared); 404 otherwise."""
+        """A template the user may see and use; 404 otherwise."""
         template = db.get(ExamTemplate, template_id)
-        if template is None or not can_use_template(user, template):
+        if template is None or not can_use_template(db, user, template):
             raise NotFoundError("template_not_found")
         return template
 
     def get_managed_template(self, db: Session, user: User, template_id: uuid.UUID) -> ExamTemplate:
         template = self.get_template(db, user, template_id)
-        self._check_manage(user, template)
+        self._check_manage(db, user, template)
         return template
 
     @staticmethod
-    def _check_manage(user: User, template: ExamTemplate) -> None:
-        if not can_use_template(user, template):
+    def _check_manage(db: Session, user: User, template: ExamTemplate) -> None:
+        if not can_use_template(db, user, template):
             raise NotFoundError("template_not_found")
-        if not can_manage_template(user, template):
+        if not can_manage_template(db, user, template):
             raise PermissionDeniedError()
-
-    def set_template_shared(
-        self, db: Session, user: User, template: ExamTemplate, shared: bool, *, ip: str | None
-    ) -> None:
-        """Admins share a template with every teacher, or take it back. Another teacher's
-        personal template is never shared as such: the admin shares a copy (PLAN B61)."""
-        if not user.is_admin or not can_use_template(user, template):
-            raise PermissionDeniedError()
-        if not template.shared and template.owner_id != user.id:
-            raise PermissionDeniedError()
-        if template.shared == shared:
-            return
-        template.shared = shared
-        self.audit.append(
-            db, "exam_template.shared" if shared else "exam_template.unshared",
-            actor=Actor.for_user(user), ip=ip,
-            details={"template_id": str(template.id), "name": template.name},
-        )  # fmt: skip
-        db.commit()
 
     def copy_template(
         self, db: Session, user: User, template: ExamTemplate, *, ip: str | None,
-        shared: bool = False,
+        team_id: uuid.UUID | None = None,
     ) -> ExamTemplate:  # fmt: skip
-        """A personal copy that the user can change, or (admins) a shared copy."""
-        if not can_use_template(user, template):
+        """A personal copy that the user can change, or a copy in a team the user manages
+        templates for (team contacts and admins, PLAN B66)."""
+        if not can_template(
+            user, team_context(db, user.id), TemplateAction.COPY, template_ref(template)
+        ):
             raise NotFoundError("template_not_found")
-        if shared and not user.is_admin:
-            raise PermissionDeniedError()
+        if team_id is not None:
+            self._check_template_team(db, user, team_id)
         now = self.clock.now()
         copy = ExamTemplate(
-            owner_id=user.id, shared=shared, name=f"{template.name} (kopie)"[:200],
+            owner_id=user.id, team_id=team_id, name=f"{template.name} (kopie)"[:200],
             config=dict(template.config),
             created_at=now, qualification_id=template.qualification_id,
             core_task_code=template.core_task_code,
@@ -1292,7 +1340,8 @@ class ExamService:
             db, "exam_template.copied", actor=Actor.for_user(user), ip=ip,
             details={
                 "template_id": str(copy.id), "source_template_id": str(template.id),
-                "source_owner_id": str(template.owner_id), "shared": shared,
+                "source_owner_id": str(template.owner_id),
+                "team_id": str(team_id) if team_id else None,
             },
         )  # fmt: skip
         db.commit()
@@ -1300,12 +1349,15 @@ class ExamService:
 
     def templates_from_qualification(
         self, db: Session, user: User, qualification: Qualification, core_task_codes: list[str],
-        *, shared: bool, ip: str | None,
+        *, team_id: uuid.UUID | None, ip: str | None,
     ) -> list[ExamTemplate]:  # fmt: skip
-        """One template per chosen core task, with a slot per work process. The teacher
-        uploads the template files afterwards (they are protected material)."""
-        if shared and not user.is_admin:
-            raise PermissionDeniedError()
+        """One template per chosen core task, with a slot per work process: personal, or
+        for a team whose crebos include this qualification (PLAN B66). The teacher uploads
+        the template files afterwards (they are protected material)."""
+        if team_id is not None:
+            self._check_template_team(db, user, team_id)
+            if not _qualification_in_team(db, team_id, qualification):
+                raise DomainError("crebo_not_in_team")
         tasks = [t for t in qualification.core_tasks if t.code in set(core_task_codes)]
         if not tasks:
             raise DomainError("no_core_task_selected")
@@ -1316,7 +1368,8 @@ class ExamService:
         for task in tasks:
             name = f"{qualification.crebo} {qualification.name} {DASH} {task.code} {task.title}"
             template = ExamTemplate(
-                owner_id=user.id, shared=shared, created_at=now, config=_template_config(defaults),
+                owner_id=user.id, team_id=team_id, created_at=now,
+                config=_template_config(defaults),
                 name=name[:200],
                 qualification_id=qualification.id, core_task_code=task.code,
             )  # fmt: skip
@@ -1334,7 +1387,8 @@ class ExamService:
             db, "exam_template.created_from_qualification", actor=Actor.for_user(user), ip=ip,
             details={
                 "crebo": qualification.crebo, "dossier_version": qualification.dossier_version,
-                "core_tasks": [t.code for t in tasks], "shared": shared,
+                "core_tasks": [t.code for t in tasks],
+                "team_id": str(team_id) if team_id else None,
                 "template_ids": [str(t.id) for t in created],
             },
         )  # fmt: skip

@@ -4,19 +4,20 @@
 {% block body_class %}mode-template{% endblock %}
 {% block title %}{{ exam_template.name }} · {{ app_name }}{% endblock %}
 {% block content %}
-<p class="breadcrumb"><a href="/examens/sjablonen{% if not exam_template.shared and exam_template.owner_id != current_user.id %}?toon=alle{% endif %}">{{ _("Exam templates") }}</a></p>
+<p class="breadcrumb"><a href="/examens/sjablonen{% if not exam_template.shared and not exam_template.team_id and exam_template.owner_id != current_user.id %}?toon=alle{% endif %}">{{ _("Exam templates") }}</a></p>
 <div class="template-banner" role="note">{{ template_badge(_("Exam template")) }}
   <span>{{ _("This is a template, not an exam. Students cannot hand in here; create an exam from the template for that.") }}</span></div>
 <div class="page-head">
   <div>
     <h1>{{ exam_template.name }}</h1>
-    {% if exam_template.shared %}<p><span class="badge badge-neutral">{{ _("Shared") }}</span> <span class="muted small">{{ _("Available to every teacher; managed by the admin.") }}</span></p>
+    {% if exam_template.team_id %}<p><span class="badge badge-neutral">{{ _("Team template") }}</span> <span class="muted small">{{ _("Education team %(team)s: available to its members, managed by its team contacts.", team=team_name) }}</span></p>
+    {% elif exam_template.shared %}<p><span class="badge badge-neutral">{{ _("Shared") }}</span> <span class="muted small">{{ _("Available to every teacher; managed by the admin.") }}</span></p>
     {% elif exam_template.owner_id != current_user.id %}<p><span class="badge badge-neutral">{{ _("Personal") }}</span> <span class="muted small">{{ _("Owner") }}: {{ owner_name }}. {{ _("Only the owner can change this template.") }}</span></p>{% endif %}
   </div>
   <div class="button-row">
     <a class="button" href="/examens/nieuw?sjabloon={{ exam_template.id }}">{{ _("New exam from this template") }}</a>
     {% if can_manage %}
-    <a class="button button-secondary" href="/examens/sjablonen/{{ exam_template.id }}/bewerken">{{ _("Edit template") }}</a>
+    <a class="button {{ 'button-tcp' if exam_template.team_id else 'button-secondary' }}" href="/examens/sjablonen/{{ exam_template.id }}/bewerken">{% if exam_template.team_id %}{% include "_tcp_mark.html.j2" %}{% endif %}{{ _("Edit template") }}</a>
     {% endif %}
     <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/kopie" class="inline-form">{{ csrf() }}<button type="submit" class="button button-secondary">{{ _("Make a copy") }}</button></form>
   </div>
@@ -26,10 +27,8 @@
   "saved": _("The template has been saved."),
   "saved_from_exam": _("The exam has been saved as a template. You can adjust it here; the exam itself does not change."),
   "template_uploaded": _("Template file uploaded."), "template_removed": _("Template file removed."),
-  "shared": _("The template is now shared with every teacher."),
-  "unshared": _("The template is no longer shared."),
   "copied": _("This is your own copy of the template. You can change it."),
-  "copied_shared": _("This is a shared copy of the template. Every teacher can use it now."),
+  "copied_team": _("This is a copy of the template for the team. Every member of the team can use it now."),
 } %}
 {% if ok and ok in ok_messages %}{{ ok_box(ok_messages[ok]) }}{% endif %}
 {{ errors_box(errors) }}
@@ -118,34 +117,28 @@
   {% endif %}
 </section>
 
-{% if current_user.is_admin and not exam_template.shared and exam_template.owner_id != current_user.id %}
+{% if copy_teams %}
 <section class="card">
-  <h2>{{ _("Sharing") }}</h2>
-  <p>{{ _("This is another teacher's personal template. You can share a copy of it with every teacher; the original stays with its owner.") }}</p>
-  <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/kopie">
-    {{ csrf() }}<input type="hidden" name="shared" value="true">
-    <button type="submit" class="button button-template">{{ _("Copy to shared templates") }}</button>
-  </form>
-</section>
-{% elif current_user.is_admin %}
-<section class="card">
-  <h2>{{ _("Sharing") }}</h2>
-  <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/delen">
+  <h2>{% include "_tcp_mark.html.j2" %}{{ _("Copy to a team") }}</h2>
+  <p>{{ _("A copy in a team is available to every member of that team. This template stays as it is.") }}</p>
+  <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/kopie" class="row-form">
     {{ csrf() }}
-    {% if exam_template.shared %}
-    <p>{{ _("Every teacher can use this template.") }}</p>
-    <button type="submit" class="button button-secondary">{{ _("Stop sharing") }}</button>
+    {% if copy_teams|length == 1 %}
+    <input type="hidden" name="team_id" value="{{ copy_teams[0].id }}">
+    <button type="submit" class="button button-tcp">{% include "_tcp_mark.html.j2" %}{{ _("Copy to %(team)s", team=copy_teams[0].name) }}</button>
     {% else %}
-    <input type="hidden" name="shared" value="true">
-    <p>{{ _("Share this template with every teacher. Only admins can change shared templates.") }}</p>
-    <button type="submit" class="button button-template">{{ _("Share with all teachers") }}</button>
+    <div class="field">
+      <label for="copy-team">{{ _("Education team") }}</label>
+      <select id="copy-team" name="team_id">{% for t in copy_teams %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select>
+    </div>
+    <button type="submit" class="button button-tcp">{% include "_tcp_mark.html.j2" %}{{ _("Copy to team") }}</button>
     {% endif %}
   </form>
 </section>
 {% endif %}
 {% if can_manage %}
 <section class="card danger-zone">
-  <h2>{{ _("Delete template") }}</h2>
+  <h2>{% if exam_template.team_id %}{% include "_tcp_mark.html.j2" %}{% endif %}{{ _("Delete template") }}</h2>
   <p>{{ _("Exams made from this template keep their settings and template files.") }}</p>
   <form method="post" action="/examens/sjablonen/{{ exam_template.id }}/verwijderen">
     {{ csrf() }}<button type="submit" class="button button-danger">{{ _("Delete template") }}</button>

@@ -91,11 +91,19 @@ def admin(client: TestClient, db: Session, clock: FrozenClock, services: Service
     return other
 
 
-def make_templates(client: TestClient, q: Qualification, *codes: str, shared: bool = False) -> Any:
+def make_templates(
+    client: TestClient, q: Qualification, *codes: str, team_id: str | None = None
+) -> Any:
     data: dict[str, Any] = {"core_task": list(codes)}
-    if shared:
-        data["shared"] = "true"
+    if team_id:
+        data["team_id"] = team_id
     return post(client, f"/examens/sjablonen/crebo/{q.id}", data)
+
+
+def make_shared(db: Session, template: ExamTemplate) -> None:
+    """A shared template from before the education teams (PLAN B53, B69)."""
+    template.shared = True
+    db.commit()
 
 
 def template_named(db: Session, code: str) -> ExamTemplate:
@@ -169,7 +177,7 @@ def test_templates_from_core_tasks(
 ) -> None:
     page = teacher.get(f"/examens/sjablonen/crebo/{qualification.id}").text
     assert "B1-K1 - Richt systemen in" in page and "B1-K1-W3" in page
-    assert 'name="shared"' not in page  # only admins share
+    assert 'name="team_id"' not in page  # not a team contact: personal templates only
     response = make_templates(teacher, qualification, "B1-K1", "P1-K1")
     assert response.headers["location"] == "/examens/sjablonen?ok=created_from_crebo&n=2"
     template = template_named(db, "B1-K1")
@@ -186,8 +194,9 @@ def test_templates_from_core_tasks(
         "Kies ten minste één kerntaak."
         in teacher.get(make_templates(teacher, qualification).headers["location"]).text
     )
-    # A teacher cannot make a shared template.
-    assert make_templates(teacher, qualification, "B1-K2", shared=True).status_code == 403
+    # A teacher cannot make a team template (B66), not even with a forged team id.
+    forged = make_templates(teacher, qualification, "B1-K2", team_id=str(uuid.uuid4()))
+    assert forged.status_code == 403
 
 
 # Shared templates (managed by admins) ----------------------------------------------
@@ -196,16 +205,15 @@ def test_templates_from_core_tasks(
 def test_shared_templates_are_managed_by_admins(
     teacher: TestClient, admin: TestClient, db: Session, qualification: Qualification
 ) -> None:
-    make_templates(admin, qualification, "B1-K1", shared=True)
+    make_templates(admin, qualification, "B1-K1")
     template = template_named(db, "B1-K1")
-    assert template.shared
+    make_shared(db, template)
     listing = teacher.get("/examens/sjablonen").text
     assert "Gedeelde sjablonen" in listing and template.name in listing
     detail = teacher.get(f"/examens/sjablonen/{template.id}").text
     assert "Sjabloon bewerken" not in detail and "Kopie maken" in detail
     assert teacher.get(f"/examens/sjablonen/{template.id}/bewerken").status_code == 403
     assert post(teacher, f"/examens/sjablonen/{template.id}/verwijderen").status_code == 403
-    assert post(teacher, f"/examens/sjablonen/{template.id}/delen").status_code == 403
     upload_url = f"/examens/sjablonen/{template.id}/vakjes/{template.slots[0].id}/sjabloon"
     response = teacher.post(upload_url, data={"csrf_token": csrf_token(teacher)},
                             files={"file": ("a.docx", b"x", "application/octet-stream")})  # fmt: skip
@@ -215,25 +223,21 @@ def test_shared_templates_are_managed_by_admins(
     copy = post(teacher, f"/examens/sjablonen/{template.id}/kopie")
     copy_id = uuid.UUID(copy.headers["location"].split("/")[3].split("?")[0])
     assert teacher.get(f"/examens/sjablonen/{copy_id}/bewerken").status_code == 200
-    # The admin can take the sharing back.
-    assert (
-        post(admin, f"/examens/sjablonen/{template.id}/delen")
-        .headers["location"]
-        .endswith("unshared")
-    )
-    assert teacher.get(f"/examens/sjablonen/{template.id}").status_code == 404
+    # The admin still manages it.
+    assert admin.get(f"/examens/sjablonen/{template.id}/bewerken").status_code == 200
 
 
-def test_admin_shares_a_personal_template(
+def test_no_new_shared_templates(
     teacher: TestClient, admin: TestClient, db: Session, qualification: Qualification
 ) -> None:
+    """B66: team templates replace sharing with every teacher."""
     make_templates(admin, qualification, "B1-K2")
     template = template_named(db, "B1-K2")
+    assert post(
+        admin, f"/examens/sjablonen/{template.id}/delen", {"shared": "true"}
+    ).status_code in {404, 405}
+    assert "Delen met alle docenten" not in admin.get(f"/examens/sjablonen/{template.id}").text
     assert teacher.get(f"/examens/sjablonen/{template.id}").status_code == 404
-    post(admin, f"/examens/sjablonen/{template.id}/delen", {"shared": "true"})
-    assert teacher.get(f"/examens/sjablonen/{template.id}").status_code == 200
-    db.expire_all()
-    assert db.scalar(select(AuditEvent).where(AuditEvent.event == "exam_template.shared"))
 
 
 # Exams in parts --------------------------------------------------------------------

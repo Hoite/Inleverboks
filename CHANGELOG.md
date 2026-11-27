@@ -24,6 +24,12 @@ Alle noemenswaardige wijzigingen staan in dit bestand. Het formaat volgt
   ze niet. *Kopiëren naar mijn lijsten* is vervallen. Bestaande lijsten zonder team blijven
   voor iedereen bruikbaar tot een admin ze aan een team toewijst. Functies voor
   teamcontactpersonen hebben een eigen icoon en een vaste kleur.
+- **Teamsjablonen** (PLAN B66, vervangt de gedeelde sjablonen van B53): een
+  teamcontactpersoon maakt sjablonen uit de crebo's van zijn team (de zoeklijst toont dan
+  alleen die crebo's en hun opvolgers) of kopieert een eigen sjabloon naar het team. De leden
+  gebruiken teamsjablonen en kunnen er een eigen kopie van maken; alleen de
+  teamcontactpersonen en admins wijzigen ze. *Delen met alle docenten* is vervallen;
+  bestaande gedeelde sjablonen blijven bruikbaar tot een admin ze aan een team toewijst.
 
 ### Opgelost
 

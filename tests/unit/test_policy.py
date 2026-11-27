@@ -13,6 +13,7 @@ from inleverboks.policy import (
     CLASS_LIST_MATRIX,
     EXAM_MATRIX,
     TEAM_MATRIX,
+    TEMPLATE_MATRIX,
     ClassListAction,
     ClassListRef,
     ExamAction,
@@ -21,10 +22,13 @@ from inleverboks.policy import (
     TeamAction,
     TeamContext,
     TeamRole,
+    TemplateAction,
+    TemplateRef,
     can,
     can_class_list,
     can_exam,
     can_team,
+    can_template,
     exam_roles,
     team_roles,
 )
@@ -189,6 +193,7 @@ TEAM_EXPECTED: dict[TeamAction, tuple[bool, bool, bool, bool]] = {
     T.MANAGE_CREBOS: (True, False, False, False),
     T.DELETE: (True, False, False, False),
     T.MANAGE_CLASS_LISTS: (True, True, False, False),
+    T.MANAGE_TEMPLATES: (True, True, False, False),
 }
 
 
@@ -226,3 +231,47 @@ def test_team_rights_need_an_active_account() -> None:
 def test_managing_teams_is_for_admins() -> None:
     assert can(_user(admin=True), SystemAction.MANAGE_TEAMS)
     assert not can(_user(), SystemAction.MANAGE_TEAMS)
+
+
+# Exam templates (PLAN B53, B61, B66) -----------------------------------------------
+
+P = TemplateAction
+
+# action: (view, use, copy, edit, delete) per situation
+_SEE_ONLY = (True, True, True, False, False)
+_ALL = (True, True, True, True, True)
+_NONE = (False, False, False, False, False)
+
+
+def _template_rights(user: User, teams: TeamContext, ref: TemplateRef) -> tuple[bool, ...]:
+    return tuple(can_template(user, teams, a, ref) for a in TemplateAction)
+
+
+def test_template_matrix_covers_every_action() -> None:
+    assert set(TEMPLATE_MATRIX) == set(TemplateAction)
+    assert list(TemplateAction) == [P.VIEW, P.USE, P.COPY, P.EDIT, P.DELETE]
+
+
+def test_team_template_rights(people: dict[str, User]) -> None:
+    team = uuid.uuid4()
+    ref = TemplateRef(owner_id=people[OWNER].id, team_id=team, shared=False)
+    contact = TeamContext(member_of=frozenset({team}), contact_of=frozenset({team}))
+    member = TeamContext(member_of=frozenset({team}))
+    assert _template_rights(people[REVIEWER], contact, ref) == _ALL
+    assert _template_rights(people[OTHER], member, ref) == _SEE_ONLY
+    # the creator outside the team has no rights of his own on a team template
+    assert _template_rights(people[OWNER], TeamContext(), ref) == _NONE
+    assert _template_rights(people[ADMIN], TeamContext(), ref) == _ALL
+
+
+def test_personal_and_shared_template_rights(people: dict[str, User]) -> None:
+    personal = TemplateRef(owner_id=people[OWNER].id, team_id=None, shared=False)
+    shared = TemplateRef(owner_id=people[ADMIN].id, team_id=None, shared=True)
+    none = TeamContext()
+    assert _template_rights(people[OWNER], none, personal) == _ALL
+    assert _template_rights(people[OTHER], none, personal) == _NONE
+    assert _template_rights(people[ADMIN], none, personal) == _SEE_ONLY  # B61
+    assert _template_rights(people[OTHER], none, shared) == _SEE_ONLY  # B53
+    assert _template_rights(people[ADMIN], none, shared) == _ALL
+    assert not can_template(_user(active=False), none, P.VIEW, shared)
+    assert not can_template(None, none, P.VIEW, shared)

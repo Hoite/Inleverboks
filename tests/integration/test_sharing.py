@@ -403,8 +403,9 @@ def test_admin_sees_all_templates(
 
 
 def test_admin_views_and_copies_personal_template_but_does_not_change_it(
-    db: Session, clients: dict[str, TestClient], personal_template: ExamTemplate, admin: User
-) -> None:
+    db: Session, services: Services, clients: dict[str, TestClient],
+    personal_template: ExamTemplate, admin: User,
+) -> None:  # fmt: skip
     c = clients["admin"]
     base = f"/examens/sjablonen/{personal_template.id}"
     page = c.get(base).text
@@ -414,22 +415,23 @@ def test_admin_views_and_copies_personal_template_but_does_not_change_it(
     assert f"{base}/delen" not in page
     assert c.get(f"{base}/bewerken").status_code == 403
     assert post(c, f"{base}/verwijderen").status_code == 403
-    assert post(c, f"{base}/delen", {"shared": "true"}).status_code == 403
+    assert post(c, f"{base}/delen", {"shared": "true"}).status_code in {404, 405}
 
     own = post(c, f"{base}/kopie")
     assert own.headers["location"].endswith("?ok=copied")
-    shared = post(c, f"{base}/kopie", {"shared": "true"})
-    assert shared.headers["location"].endswith("?ok=copied_shared")
+    team = services.teams.create(db, admin, "ICT", "", ip=None)
+    to_team = post(c, f"{base}/kopie", {"team_id": str(team.id)})
+    assert to_team.headers["location"].endswith("?ok=copied_team")
     db.expire_all()
     copies = {
-        t.shared: t
+        t.team_id: t
         for t in db.scalars(select(ExamTemplate).where(ExamTemplate.owner_id == admin.id))
     }
-    assert set(copies) == {False, True}
+    assert set(copies) == {None, team.id}
     original = db.get(ExamTemplate, personal_template.id)
-    assert original is not None and not original.shared
-    shared_event = next(e for e in events(db, "exam_template.copied") if e.details["shared"])
-    assert shared_event.details["source_template_id"] == str(personal_template.id)
-    assert shared_event.details["source_owner_id"] == str(personal_template.owner_id)
-    # A teacher may not make shared copies.
-    assert post(clients["owner"], f"{base}/kopie", {"shared": "true"}).status_code == 403
+    assert original is not None and original.team_id is None and not original.shared
+    team_event = next(e for e in events(db, "exam_template.copied") if e.details["team_id"])
+    assert team_event.details["source_template_id"] == str(personal_template.id)
+    assert team_event.details["source_owner_id"] == str(personal_template.owner_id)
+    # A teacher who is no team contact may not copy into the team.
+    assert post(clients["owner"], f"{base}/kopie", {"team_id": str(team.id)}).status_code == 403

@@ -14,7 +14,7 @@ from fastapi import APIRouter, File, Form, Query, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from inleverboks.db.models import Exam, ExamTemplate, IpPreset, Qualification, User
+from inleverboks.db.models import Exam, ExamTemplate, IpPreset, Qualification, Team, User
 from inleverboks.i18n import gettext as _
 from inleverboks.policy import ExamAction, ExamRef, SystemAction, can, can_exam
 from inleverboks.services.container import Services
@@ -169,13 +169,28 @@ def exam_templates(
         if t.qualification is not None
         and services.qualifications.status(db, t.qualification).outdated
     }  # fmt: skip
+    team_names = services.teams.names(db)
+    member_of = (
+        set(team_names) if ctx.user.is_admin else services.teams.context(db, ctx.user).member_of
+    )
+    manageable = {t.id for t in services.exams.template_teams(db, ctx.user)}
+    # PLAN B66: a section per team of the user (also when it has no templates yet).
+    team_sections = sorted(
+        (
+            (team_id, team_names[team_id], [t for t in templates if t.team_id == team_id],
+             team_id in manageable)
+            for team_id in member_of
+        ),
+        key=lambda section: section[1].lower(),
+    )  # fmt: skip
     return render(
         request, "teacher/templates.html.j2", tab="templates", ok=ok, created=n,
+        team_sections=team_sections,
         shared_templates=[t for t in templates if t.shared],
-        own_templates=[t for t in templates if not t.shared],
+        own_templates=[t for t in templates if not t.shared and t.team_id is None],
         all_templates=templates if everyone else [], everyone=everyone,
         owner_names=services.users.names(db) if everyone else {},
-        outdated=outdated,
+        team_names=team_names, outdated=outdated,
     )  # fmt: skip
 
 
@@ -207,9 +222,14 @@ def create_exam_template(request: Request, ctx: Teacher, db: Db, services: Svc) 
 
 @router.get("/sjablonen/crebo")
 def qualification_search(
-    request: Request, ctx: Teacher, db: Db, services: Svc, q: str = ""
+    request: Request, ctx: Teacher, db: Db, services: Svc, q: str = "", team: str = ""
 ) -> Response:
-    found = services.qualifications.search(db, q[:100])
+    target = _template_team(db, services, ctx.user, team)
+    if target is not None:
+        # PLAN B66: for a team, only its crebos (and the crebos that replaced them).
+        found = services.teams.qualifications(db, target.id, q[:100])
+    else:
+        found = services.qualifications.search(db, q[:100])
     statuses = {row.id: services.qualifications.status(db, row) for row in found}
     # Current qualifications first; replaced or expired ones stay findable for old cohorts.
     results = sorted(found, key=lambda row: statuses[row.id].outdated)
@@ -220,8 +240,19 @@ def qualification_search(
     )
     return render(
         request, template, tab="templates", query=q, results=results, statuses=statuses,
-        imported=services.qualifications.count(db),
+        imported=services.qualifications.count(db), target_team=target,
     )  # fmt: skip
+
+
+def _template_team(db: Session, services: Services, user: User, raw: str) -> Team | None:
+    """The team from a ``?team=`` parameter, if the user makes templates for it."""
+    if not raw:
+        return None
+    try:
+        team_id = uuid.UUID(raw)
+    except ValueError:
+        return None
+    return next((t for t in services.exams.template_teams(db, user) if t.id == team_id), None)
 
 
 def _qualification(db: Session, services: Services, qualification_id: uuid.UUID) -> Qualification:
@@ -234,13 +265,18 @@ def _qualification(db: Session, services: Services, qualification_id: uuid.UUID)
 @router.get("/sjablonen/crebo/{qualification_id}")
 def qualification_detail(
     request: Request, qualification_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
-    error: str | None = None,
+    error: str | None = None, team: str = "",
 ) -> Response:  # fmt: skip
     qualification = _qualification(db, services, qualification_id)
+    teams = services.exams.qualification_teams(db, ctx.user, qualification)
+    chosen = _template_team(db, services, ctx.user, team)
+    # One team of his own with this crebo: chosen for him (PLAN B66).
+    selected = chosen.id if chosen in teams else (teams[0].id if len(teams) == 1 else None)
     return render(
         request, "teacher/qualification_detail.html.j2", tab="templates",
         qualification=qualification, status=services.qualifications.status(db, qualification),
         errors=[describe(DomainError(error))[0]] if error else [],
+        teams=teams, selected_team=selected,
     )  # fmt: skip
 
 
@@ -248,15 +284,19 @@ def qualification_detail(
 def templates_from_qualification(
     request: Request, qualification_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
     core_task: Annotated[list[str] | None, Form()] = None,
-    shared: Annotated[bool, Form()] = False,
+    team_id: Annotated[str, Form(max_length=36)] = "",
 ) -> Response:  # fmt: skip
     qualification = _qualification(db, services, qualification_id)
-    if shared and not ctx.user.is_admin:
-        raise PermissionDeniedError()  # shared templates are managed by admins (PLAN B53)
+    try:
+        target = uuid.UUID(team_id) if team_id else None
+    except ValueError:
+        raise PermissionDeniedError() from None
     try:
         created = services.exams.templates_from_qualification(
-            db, ctx.user, qualification, core_task or [], shared=shared, ip=client_ip(request)
+            db, ctx.user, qualification, core_task or [], team_id=target, ip=client_ip(request)
         )
+    except PermissionDeniedError:
+        raise
     except DomainError as exc:
         db.rollback()
         return _redirect(f"/examens/sjablonen/crebo/{qualification.id}?error={exc.code}")
@@ -274,9 +314,11 @@ def exam_template_detail(
     return render(
         request, "teacher/template_detail.html.j2", exam_template=template, config=template.config,
         preset=preset, ok=ok, errors=[describe(DomainError(error))[0]] if error else [],
-        can_manage=can_manage_template(ctx.user, template),
+        can_manage=can_manage_template(db, ctx.user, template),
         dossier=_dossier_info(db, services, template),
         owner_name=services.users.names(db).get(template.owner_id, ""),
+        team_name=services.teams.names(db).get(template.team_id) if template.team_id else None,
+        copy_teams=services.exams.template_teams(db, ctx.user),
     )  # fmt: skip
 
 
@@ -294,26 +336,19 @@ def _dossier_info(db: Session, services: Services, template: ExamTemplate) -> di
     return {"qualification": qualification, "status": status, "changes": changes}
 
 
-@router.post("/sjablonen/{template_id}/delen")
-def share_exam_template(
-    request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
-    shared: Annotated[bool, Form()] = False,
-) -> Response:  # fmt: skip
-    template = services.exams.get_template(db, ctx.user, template_id)
-    services.exams.set_template_shared(db, ctx.user, template, shared, ip=client_ip(request))
-    return _redirect(f"/examens/sjablonen/{template.id}?ok={'shared' if shared else 'unshared'}")
-
-
 @router.post("/sjablonen/{template_id}/kopie")
 def copy_exam_template(
     request: Request, template_id: uuid.UUID, ctx: Teacher, db: Db, services: Svc,
-    shared: Annotated[bool, Form()] = False,
+    team_id: Annotated[str, Form(max_length=36)] = "",
 ) -> Response:  # fmt: skip
     template = services.exams.get_template(db, ctx.user, template_id)
-    copy = services.exams.copy_template(
-        db, ctx.user, template, ip=client_ip(request), shared=shared
-    )
-    return _redirect(f"/examens/sjablonen/{copy.id}?ok={'copied_shared' if shared else 'copied'}")
+    try:
+        target = uuid.UUID(team_id) if team_id else None
+    except ValueError:
+        raise PermissionDeniedError() from None
+    copy = services.exams.copy_template(db, ctx.user, template, ip=client_ip(request),
+                                        team_id=target)  # fmt: skip
+    return _redirect(f"/examens/sjablonen/{copy.id}?ok={'copied_team' if target else 'copied'}")
 
 
 @router.get("/sjablonen/{template_id}/bewerken")
@@ -482,7 +517,7 @@ def _render_form(
         source_template=source,
         picker_processes=picker_processes,
         slot_template=slot_template,
-        slot_template_link=slot_template is not None and can_use_template(user, slot_template),
+        slot_template_link=slot_template is not None and can_use_template(db, user, slot_template),
         resit_from=resit_from,
         values=form_values(data, tz, raw),
         problems=problems or {},

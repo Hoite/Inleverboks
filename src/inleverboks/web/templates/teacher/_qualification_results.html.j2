@@ -1,8 +1,8 @@
-{% if query|length >= 2 %}
+{% if query|length >= 2 or target_team %}
 {% if results %}
 <ul class="result-list">
   {% for q in results %}
-  <li><a href="/examens/sjablonen/crebo/{{ q.id }}"><span class="mono">{{ q.crebo }}</span> {{ q.name }}</a>
+  <li><a href="/examens/sjablonen/crebo/{{ q.id }}{% if target_team %}?team={{ target_team.id }}{% endif %}"><span class="mono">{{ q.crebo }}</span> {{ q.name }}</a>
     <span class="muted small">{% if q.level %}{{ _("level %(n)s", n=q.level) }} · {% endif %}{{ _("dossier %(v)s", v=q.dossier_version) }}</span>
     {% set st = statuses[q.id] %}
     {% if st.replaced_by %}<span class="badge badge-warning">{{ _("replaced by %(c)s", c=st.replaced_by.crebo) if st.replaced_by.crebo != q.crebo else _("replaced") }}</span>
@@ -10,6 +10,6 @@
   {% endfor %}
 </ul>
 {% else %}
-<p class="muted">{{ _("No qualifications found.") }}</p>
+<p class="muted">{% if target_team and not query %}{{ _("No crebos are linked to this team yet. Ask an admin.") }}{% else %}{{ _("No qualifications found.") }}{% endif %}</p>
 {% endif %}
 {% endif %}

@@ -177,6 +177,82 @@ def can_class_list(
     return bool(class_list_roles(user, teams, class_list) & CLASS_LIST_MATRIX[action])
 
 
+# Exam templates (PLAN B53, B61, B66, B69) ------------------------------------------
+
+
+class TemplateRole(StrEnum):
+    OWNER = "owner"  # own personal template
+    PERSONAL_ADMIN = "personal_admin"  # admin, someone else's personal template (B61)
+    TEAM_CONTACT = "team_contact"  # team contact of the template's team
+    TEAM_MEMBER = "team_member"
+    TEAM_ADMIN = "team_admin"  # admin, a team template
+    SHARED_ADMIN = "shared_admin"  # admin, a shared template not yet assigned (B53)
+    SHARED_USER = "shared_user"  # any teacher, a shared template not yet assigned
+    OUTSIDER = "outsider"
+
+
+class TemplateAction(StrEnum):
+    VIEW = "view"
+    USE = "use"  # create an exam from it
+    COPY = "copy"  # copy to one's own personal templates
+    EDIT = "edit"  # settings, expected files, template files
+    DELETE = "delete"
+
+
+_PO, _PA = TemplateRole.OWNER, TemplateRole.PERSONAL_ADMIN
+_PC, _PM, _PT = TemplateRole.TEAM_CONTACT, TemplateRole.TEAM_MEMBER, TemplateRole.TEAM_ADMIN
+_PSA, _PSU = TemplateRole.SHARED_ADMIN, TemplateRole.SHARED_USER
+_SEE = frozenset({_PO, _PA, _PC, _PM, _PT, _PSA, _PSU})
+_MANAGE = frozenset({_PO, _PC, _PT, _PSA})
+
+TEMPLATE_MATRIX: dict[TemplateAction, frozenset[TemplateRole]] = {
+    TemplateAction.VIEW: _SEE,
+    TemplateAction.USE: _SEE,
+    TemplateAction.COPY: _SEE,
+    # B61: an admin does not change someone else's personal template. B66: a team
+    # template is managed by the team contacts of its team and by admins.
+    TemplateAction.EDIT: _MANAGE,
+    TemplateAction.DELETE: _MANAGE,
+}
+
+
+@dataclass(frozen=True)
+class TemplateRef:
+    owner_id: uuid.UUID
+    team_id: uuid.UUID | None
+    shared: bool
+
+
+def template_roles(
+    user: User, teams: TeamContext, template: TemplateRef
+) -> frozenset[TemplateRole]:
+    if template.team_id is not None:
+        if template.team_id in teams.contact_of:
+            role = TemplateRole.TEAM_CONTACT
+        elif template.team_id in teams.member_of:
+            role = TemplateRole.TEAM_MEMBER
+        else:
+            role = TemplateRole.TEAM_ADMIN if user.is_admin else TemplateRole.OUTSIDER
+    elif template.shared:
+        role = TemplateRole.SHARED_ADMIN if user.is_admin else TemplateRole.SHARED_USER
+    elif template.owner_id == user.id:
+        role = TemplateRole.OWNER
+    else:
+        role = TemplateRole.PERSONAL_ADMIN if user.is_admin else TemplateRole.OUTSIDER
+    roles = {role}
+    if user.is_admin and template.team_id is not None:
+        roles.add(TemplateRole.TEAM_ADMIN)
+    return frozenset(roles)
+
+
+def can_template(
+    user: User | None, teams: TeamContext, action: TemplateAction, template: TemplateRef
+) -> bool:
+    if user is None or not user.is_active:
+        return False
+    return bool(template_roles(user, teams, template) & TEMPLATE_MATRIX[action])
+
+
 # Education teams (PLAN B63) ---------------------------------------------------------
 
 
@@ -196,6 +272,7 @@ class TeamAction(StrEnum):
     MANAGE_CREBOS = "manage_crebos"
     DELETE = "delete"  # only when empty: the service enforces that
     MANAGE_CLASS_LISTS = "manage_class_lists"  # create lists for the team (B65)
+    MANAGE_TEMPLATES = "manage_templates"  # create or copy templates into the team (B66)
 
 
 _TA, _TC, _TM, _TT = TeamRole.ADMIN, TeamRole.CONTACT, TeamRole.MEMBER, TeamRole.OTHER_TEACHER
@@ -209,6 +286,7 @@ TEAM_MATRIX: dict[TeamAction, frozenset[TeamRole]] = {
     TeamAction.MANAGE_CREBOS: frozenset({_TA}),
     TeamAction.DELETE: frozenset({_TA}),
     TeamAction.MANAGE_CLASS_LISTS: frozenset({_TA, _TC}),
+    TeamAction.MANAGE_TEMPLATES: frozenset({_TA, _TC}),
 }
 
 
